@@ -1,6 +1,16 @@
 Name: consumer.rpc
 ListenOn: 0.0.0.0:8080
-Etcd:
-  Hosts:
-  - 127.0.0.1:2379
-  Key: consumer.rpc
+# Etcd:
+#   Hosts:
+#   - 127.0.0.1:2379
+#   Key: consumer.rpc
+
+# 设置消费者数量
+Consumer:
+  Concurrency: 1
+
+Sol:
+  ChainId: 100000
+  NodeUrl:
+    - "https://devnet.helius-rpc.com/?api-key=31dcdddd-35b1-4f63-bfd4-37e7e3ed6fa4"
+  WSUrl: "wss://devnet.helius-rpc.com/?api-key=31dcdddd-35b1-4f63-bfd4-37e7e3ed6fa4"

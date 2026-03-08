@@ -7,7 +7,7 @@ package consumerclient
 import (
 	"context"
 
-	"consumer/consumer"
+	"richcode.cc/dex/consumer/consumer"
 
 	"github.com/zeromicro/go-zero/zrpc"
 	"google.golang.org/grpc"

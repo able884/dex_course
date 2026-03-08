@@ -1,6 +1,6 @@
 package svc
 
-import "consumer/internal/config"
+import "richcode.cc/dex/consumer/internal/config"
 
 type ServiceContext struct {
 	Config config.Config

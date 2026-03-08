@@ -3,8 +3,8 @@ package logic
 import (
 	"context"
 
-	"consumer/consumer"
-	"consumer/internal/svc"
+	"richcode.cc/dex/consumer/consumer"
+	"richcode.cc/dex/consumer/internal/svc"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )

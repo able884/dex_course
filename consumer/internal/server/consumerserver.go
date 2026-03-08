@@ -7,9 +7,9 @@ package server
 import (
 	"context"
 
-	"consumer/consumer"
-	"consumer/internal/logic"
-	"consumer/internal/svc"
+	"richcode.cc/dex/consumer/consumer"
+	"richcode.cc/dex/consumer/internal/logic"
+	"richcode.cc/dex/consumer/internal/svc"
 )
 
 type ConsumerServer struct {

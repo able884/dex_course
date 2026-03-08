@@ -4,10 +4,12 @@ import (
 	"flag"
 	"fmt"
 
-	"consumer/consumer"
-	"consumer/internal/config"
-	"consumer/internal/server"
-	"consumer/internal/svc"
+	"richcode.cc/dex/consumer/consumer"
+	"richcode.cc/dex/consumer/internal/config"
+	"richcode.cc/dex/consumer/internal/logic/block"
+	"richcode.cc/dex/consumer/internal/logic/slot"
+	"richcode.cc/dex/consumer/internal/server"
+	"richcode.cc/dex/consumer/internal/svc"
 
 	"github.com/zeromicro/go-zero/core/conf"
 	"github.com/zeromicro/go-zero/core/service"
@@ -25,6 +27,10 @@ func main() {
 	conf.MustLoad(*configFile, &c)
 	ctx := svc.NewServiceContext(c)
 
+	// 管理多个服务
+	group := service.NewServiceGroup()
+	defer group.Stop()
+
 	s := zrpc.MustNewServer(c.RpcServerConf, func(grpcServer *grpc.Server) {
 		consumer.RegisterConsumerServer(grpcServer, server.NewConsumerServer(ctx))
 
@@ -32,8 +38,23 @@ func main() {
 			reflection.Register(grpcServer)
 		}
 	})
-	defer s.Stop()
+	// defer s.Stop()
+
+	group.Add(s)
+
+	{
+		// 添加消息队列
+		slotChan := make(chan uint64, 50)
+		// 消费者：消费slot
+		for i := 0; i < c.Consumer.Concurrency; i++ {
+			group.Add(block.NewBlockService(ctx, "block-real", slotChan, i))
+		}
+
+		// 生产者：获取最新的slot
+		group.Add(slot.NewSlotServiceGroup(ctx, slotChan))
+	}
 
 	fmt.Printf("Starting rpc server at %s...\n", c.ListenOn)
-	s.Start()
+	// s.Start()
+	group.Start()
 }
