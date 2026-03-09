@@ -25,7 +25,7 @@ func main() {
 
 	var c config.Config
 	conf.MustLoad(*configFile, &c)
-	ctx := svc.NewServiceContext(c)
+	ctx := svc.NewSolServiceContext(c)
 
 	// 管理多个服务
 	group := service.NewServiceGroup()
