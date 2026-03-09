@@ -14,15 +14,17 @@ import (
 
 	"github.com/blocto/solana-go-sdk/client"
 	"github.com/blocto/solana-go-sdk/rpc"
+	"github.com/blocto/solana-go-sdk/types"
 	"github.com/duke-git/lancet/v2/slice"
 	"github.com/gorilla/websocket"
-	"github.com/mr-tron/base58"
 	"github.com/panjf2000/ants/v2"
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/threading"
 )
 
 var ErrServiceStop = errors.New("service stop")
+
+var ErrUnknowProgram = errors.New("unknow program")
 
 type BlockService struct {
 	Name string
@@ -84,7 +86,7 @@ func (s *BlockService) GetBlockFromHttp() {
 				return
 			}
 			//打印当前最新slot
-			fmt.Println("consume slot is:", slot)
+			// fmt.Println("consume slot is:", slot)
 
 			// 使用协程池处理块信息，让读取slot和处理块信息解耦，避免处理块信息过慢导致读取slot的goroutine过多
 			threading.RunSafe(func() {
@@ -106,10 +108,46 @@ func (s *BlockService) ProcessBlock(ctx context.Context, slot int64) {
 	}
 
 	slice.ForEach(blockInfo.Transactions, func(index int, tx client.BlockTransaction) {
-		if len(tx.Transaction.Signatures) > 0 {
-			sig858 := base58.Encode(tx.Transaction.Signatures[0])
-			fmt.Println("Transaction signature: ", sig858)
-			// 交易过滤（合约id）/指令过滤
-		}
+		// if len(tx.Transaction.Signatures) > 0 {
+		// 	sig858 := base58.Encode(tx.Transaction.Signatures[0])
+		// 	fmt.Println("Transaction signature: ", sig858)
+		// 	// 交易过滤（合约id）/指令过滤
+		// }
+		DecodeTx(&tx)
 	})
+}
+
+func DecodeTx(tx *client.BlockTransaction) {
+	if tx == nil {
+		return
+	}
+
+	for i := range tx.Transaction.Message.Instructions {
+		inst := &tx.Transaction.Message.Instructions[i]
+		err := DecodeInstruction(inst, tx)
+		if err != nil {
+			return
+		}
+	}
+}
+
+func DecodeInstruction(inst *types.CompiledInstruction, tx *client.BlockTransaction) (err error) {
+	if inst == nil {
+		return errors.New("instruction is null")
+	}
+
+	if len(tx.AccountKeys) == 0 {
+		return errors.New("account keys is empty")
+	}
+
+	program := tx.AccountKeys[inst.ProgramIDIndex].String()
+
+	switch program {
+	case ProgramStrPumpFun:
+		return DecodePumpFunInstruction(inst, tx)
+	case ProgramStrPumpFunAMM:
+		return DecodePumpFunAMMInstruction(inst, tx)
+	default:
+		return ErrUnknowProgram
+	}
 }
