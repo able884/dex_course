@@ -22,9 +22,10 @@ type SlotService struct {
 	maxSlot uint64
 
 	realTimeChan chan uint64
+	errChan      chan uint64
 }
 
-func NewSlotService(sc *svc.ServiceContext, slotChan chan uint64) *SlotService {
+func NewSlotService(sc *svc.ServiceContext, slotChan chan uint64, errChan chan uint64) *SlotService {
 	ctx, cancel := context.WithCancelCause(context.Background())
 	return &SlotService{
 		Logger:       logx.WithContext(context.Background()).WithFields(logx.Field("service", "slot")),
@@ -32,6 +33,7 @@ func NewSlotService(sc *svc.ServiceContext, slotChan chan uint64) *SlotService {
 		ctx:          ctx,
 		cancel:       cancel,
 		realTimeChan: slotChan,
+		errChan:      errChan,
 	}
 }
 

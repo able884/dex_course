@@ -10,8 +10,11 @@ import (
 	solclient "github.com/blocto/solana-go-sdk/client"
 	"github.com/blocto/solana-go-sdk/rpc"
 	"github.com/zeromicro/go-zero/core/logx"
+	"gorm.io/driver/mysql"
+	"gorm.io/gorm"
 
 	"richcode.cc/dex/consumer/internal/config"
+	"richcode.cc/dex/model/solmodel"
 )
 
 type ServiceContext struct {
@@ -20,6 +23,7 @@ type ServiceContext struct {
 	solClientIndex int
 	solClient      *solclient.Client
 	solClients     []*solclient.Client
+	BlockModel     solmodel.BlockModel
 }
 
 func NewServiceContext(c config.Config) *ServiceContext {
@@ -40,10 +44,28 @@ func NewSolServiceContext(c config.Config) *ServiceContext {
 		}))
 		solClients = append(solClients, client.NewClient(node))
 	}
-	fmt.Println("solClients: ", c.Sol.NodeUrl)
+	// fmt.Println("solClients: ", c.Sol.NodeUrl)
+
+	// Initialize database connection
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=utf8mb4&parseTime=True&loc=Local",
+		c.MySQLConfig.User,
+		c.MySQLConfig.Password,
+		c.MySQLConfig.Host,
+		c.MySQLConfig.Port,
+		c.MySQLConfig.DBName,
+	)
+	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
+	if err != nil {
+		panic(fmt.Sprintf("failed to connect database: %v", err))
+	}
+
+	// Initialize BlockModel
+	blockModel := solmodel.NewBlockModel(db)
+
 	return &ServiceContext{
 		Config:     c,
 		solClients: solClients,
+		BlockModel: blockModel,
 	}
 }
 

@@ -31,6 +31,7 @@ func (s *SlotWsService) Start() {
 }
 
 func (s *SlotService) SlotWs() {
+	// 连接websocket
 	s.MustConnect()
 	s.Infof("SlotWs:MustConnect success")
 

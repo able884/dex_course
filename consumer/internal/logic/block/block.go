@@ -5,9 +5,11 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"richcode.cc/dex/consumer/internal/svc"
+	"richcode.cc/dex/model/solmodel"
 	constants "richcode.cc/dex/pkg/constrants"
 
 	"richcode.cc/dex/consumer/internal/config"
@@ -97,15 +99,44 @@ func (s *BlockService) GetBlockFromHttp() {
 }
 
 func (s *BlockService) ProcessBlock(ctx context.Context, slot int64) {
+	beginTime := time.Now()
+
 	if slot == 0 {
 		return
+	}
+
+	block := &solmodel.Block{
+		Slot:   slot,
+		Status: constants.BlockFailed, // 默认设置为失败，后续根据获取块信息的结果更新状态
 	}
 
 	blockInfo, err := GetSolBlockInfoDelay(s.sc.GetSolClient(), ctx, uint64(slot))
 	if err != nil || blockInfo == nil {
 		fmt.Println("err :", err)
+		// 如果是空区块，则跳过
+		if strings.Contains(err.Error(), "was skipped") {
+			block.Status = constants.BlockSkipped
+		}
+		_ = s.sc.BlockModel.Insert(ctx, block)
 		return
 	}
+
+	// Set the block time from the retrieved block info
+	if blockInfo.BlockTime != nil {
+		block.BlockTime = *blockInfo.BlockTime
+		blockTime := blockInfo.BlockTime.Format("2006-01-02 15:04:05")
+		s.Infof("processBlock:%v getBlockInfo blockTime: %v,cur: %v, dur: %v, queue size: %v", slot, blockTime, time.Now().Format("15:04:05"), time.Since(beginTime), len(s.slotChan))
+	} else {
+		s.Infof("processBlock:%v getBlockInfo blockTime is nil,cur: %v, dur: %v, queue size: %v", slot, time.Now().Format("15:04:05"), time.Since(beginTime), len(s.slotChan))
+	}
+
+	if blockInfo.BlockHeight != nil {
+		block.BlockHeight = *blockInfo.BlockHeight
+	}
+	block.Status = constants.BlockProcessed
+
+	// TODDO: 获取 sol 价格
+	block.SolPrice = 0
 
 	slice.ForEach(blockInfo.Transactions, func(index int, tx client.BlockTransaction) {
 		// if len(tx.Transaction.Signatures) > 0 {
@@ -115,6 +146,12 @@ func (s *BlockService) ProcessBlock(ctx context.Context, slot int64) {
 		// }
 		DecodeTx(&tx)
 	})
+
+	// 保存块信息到数据库
+	err = s.sc.BlockModel.Insert(ctx, block)
+	if err != nil {
+		s.Error("insert block error", err)
+	}
 }
 
 func DecodeTx(tx *client.BlockTransaction) {
