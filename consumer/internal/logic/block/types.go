@@ -1,5 +1,11 @@
 package block
 
+import (
+	"github.com/blocto/solana-go-sdk/client"
+	"github.com/blocto/solana-go-sdk/common"
+	"richcode.cc/dex/model/solmodel"
+)
+
 /*
 TokenAccount
 1.	Owner (string)：表示账户的所有者的地址（通常是钱包的公钥）。
@@ -24,4 +30,29 @@ type TokenAccount struct {
 	Init                bool
 	PostValueUIString   string
 	PreValueUIString    string
+}
+
+type DecodedTx struct {
+	BlockDb             *solmodel.Block
+	SolPrice            float64
+	TokenAccountMap     map[string]*TokenAccount
+	InnerInstructionMap map[int]*client.InnerInstruction
+	Tx                  *client.BlockTransaction
+	TxIndex             int
+	TxHash              string
+	TokenDecimalMap     map[string]uint8
+	PumpEvents          []PumpEvent
+	PumpEventIndex      int
+}
+
+type PumpEvent struct {
+	Sign                 uint64
+	Mint                 common.PublicKey
+	SolAmount            uint64
+	TokenAmount          uint64
+	IsBuy                bool
+	User                 common.PublicKey
+	Timestamp            uint64
+	VirtualSolReserves   uint64
+	VirtualTokenReserves uint64
 }

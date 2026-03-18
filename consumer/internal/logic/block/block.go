@@ -20,10 +20,10 @@ import (
 	"github.com/blocto/solana-go-sdk/common"
 	"github.com/blocto/solana-go-sdk/program/token"
 	"github.com/blocto/solana-go-sdk/rpc"
-	"github.com/blocto/solana-go-sdk/types"
 	solTypes "github.com/blocto/solana-go-sdk/types"
 	"github.com/duke-git/lancet/v2/slice"
 	"github.com/gorilla/websocket"
+	"github.com/mr-tron/base58"
 	"github.com/panjf2000/ants/v2"
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/threading"
@@ -151,12 +151,14 @@ func (s *BlockService) ProcessBlock(ctx context.Context, slot int64) {
 	block.SolPrice = solPrice
 
 	slice.ForEach(blockInfo.Transactions, func(index int, tx client.BlockTransaction) {
-		// if len(tx.Transaction.Signatures) > 0 {
-		// 	sig858 := base58.Encode(tx.Transaction.Signatures[0])
-		// 	fmt.Println("Transaction signature: ", sig858)
-		// 	// 交易过滤（合约id）/指令过滤
-		// }
-		DecodeTx(&tx)
+		decodeTx := &DecodedTx{
+			BlockDb:         block,
+			Tx:              &tx,
+			TxIndex:         index,
+			TokenAccountMap: tokenAccountMap,
+		}
+
+		DecodeTx(ctx, s.sc, decodeTx)
 	})
 
 	// 保存块信息到数据库
@@ -166,36 +168,54 @@ func (s *BlockService) ProcessBlock(ctx context.Context, slot int64) {
 	}
 }
 
-func DecodeTx(tx *client.BlockTransaction) {
-	if tx == nil {
+// 解析每一个区块的交易
+func DecodeTx(ctx context.Context, sc *svc.ServiceContext, dtx *DecodedTx) {
+	if dtx.Tx == nil || dtx.BlockDb == nil {
 		return
 	}
 
+	tx := dtx.Tx
+	dtx.TxHash = base58.Encode(tx.Transaction.Signatures[0])
+
+	if tx.Meta.Err != nil {
+		return
+	}
+
+	dtx.InnerInstructionMap = GetInnerInstructionMap(tx)
+
 	for i := range tx.Transaction.Message.Instructions {
 		inst := &tx.Transaction.Message.Instructions[i]
-		err := DecodeInstruction(inst, tx)
+		err := DecodeInstruction(ctx, sc, dtx, inst, i)
 		if err != nil {
 			return
 		}
 	}
 }
 
-func DecodeInstruction(inst *types.CompiledInstruction, tx *client.BlockTransaction) (err error) {
-	if inst == nil {
-		return errors.New("instruction is null")
-	}
-
-	if len(tx.AccountKeys) == 0 {
+func DecodeInstruction(ctx context.Context, sc *svc.ServiceContext, dtx *DecodedTx, instruction *solTypes.CompiledInstruction, index int) (err error) {
+	if len(dtx.Tx.AccountKeys) == 0 {
 		return errors.New("account keys is empty")
 	}
 
-	program := tx.AccountKeys[inst.ProgramIDIndex].String()
+	if int(instruction.ProgramIDIndex) >= len(dtx.Tx.AccountKeys) {
+		return fmt.Errorf("program ID index %d out of bounds for account keys length %d", instruction.ProgramIDIndex, len(dtx.Tx.AccountKeys))
+	}
+
+	tx := dtx.Tx
+	program := tx.AccountKeys[instruction.ProgramIDIndex].String()
 
 	switch program {
 	case ProgramStrPumpFun:
-		return DecodePumpFunInstruction(inst, tx)
+		return DecodePumpFunInstruction(instruction, tx)
 	case ProgramStrPumpFunAMM:
-		return DecodePumpFunAMMInstruction(inst, tx)
+		decoder := &PumpAmmDecoder{
+			ctx:                 ctx,
+			svcCtx:              sc,
+			dtx:                 dtx,
+			compiledInstruction: instruction,
+		}
+		decoder.DecodePumpFunAMMInstruction()
+		return
 	default:
 		return ErrUnknowProgram
 	}
