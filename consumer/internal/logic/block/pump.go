@@ -11,9 +11,6 @@ import (
 	"github.com/mr-tron/base58"
 )
 
-const ProgramStrPumpFun = "6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEwF6P"
-const ProgramStrPumpFunAMM = "pAMMBay6oceH9fJKBRHGP5D4bD4sWpmSwMn52FMfXEA"
-
 var (
 	PumpAmmBuyDiscriminator  = []byte{102, 6, 61, 18, 1, 218, 235, 234}
 	PumpAmmSellDiscriminator = []byte{51, 230, 133, 164, 1, 127, 131, 173}
