@@ -13,6 +13,7 @@ import (
 	"richcode.cc/dex/consumer/internal/svc"
 	"richcode.cc/dex/model/solmodel"
 	constants "richcode.cc/dex/pkg/constrants"
+	"richcode.cc/dex/pkg/types"
 
 	"richcode.cc/dex/consumer/internal/config"
 
@@ -40,6 +41,7 @@ type BlockService struct {
 	logx.Logger
 	workerPool *ants.Pool
 	slotChan   chan uint64
+	slot       uint64
 	Conn       *websocket.Conn
 	solPrice   float64
 	ctx        context.Context
@@ -104,12 +106,20 @@ func (s *BlockService) GetBlockFromHttp() {
 	}
 }
 
+func (s *BlockService) FillTradeWithPairInfo(trade *types.TradeWithPair, slot int64) {
+	trade.Slot = slot
+	trade.BlockNum = slot
+	trade.ChainIdInt = constants.SolChainIdInt
+	trade.ChainId = constants.SolChainId
+}
+
 func (s *BlockService) ProcessBlock(ctx context.Context, slot int64) {
 	beginTime := time.Now()
 
 	if slot == 0 {
 		return
 	}
+	s.slot = uint64(slot)
 
 	block := &solmodel.Block{
 		Slot:   slot,
@@ -118,8 +128,9 @@ func (s *BlockService) ProcessBlock(ctx context.Context, slot int64) {
 
 	blockInfo, err := GetSolBlockInfoDelay(s.sc.GetSolClient(), ctx, uint64(slot))
 	if err != nil || blockInfo == nil {
-		fmt.Println("err :", err)
-		// 如果是空区块，则跳过
+		fmt.Println("get block info error:", err)
+
+		// Anchor 会返回 was skipped 的 slot，直接标记为跳槽并落库
 		if strings.Contains(err.Error(), "was skipped") {
 			block.Status = constants.BlockSkipped
 		}
@@ -127,13 +138,9 @@ func (s *BlockService) ProcessBlock(ctx context.Context, slot int64) {
 		return
 	}
 
-	// Set the block time from the retrieved block info
+	// Step1: 同步 blockTime、blockHeight 等基础信息
 	if blockInfo.BlockTime != nil {
 		block.BlockTime = *blockInfo.BlockTime
-		blockTime := blockInfo.BlockTime.Format("2006-01-02 15:04:05")
-		s.Infof("processBlock:%v getBlockInfo blockTime: %v,cur: %v, dur: %v, queue size: %v", slot, blockTime, time.Now().Format("15:04:05"), time.Since(beginTime), len(s.slotChan))
-	} else {
-		s.Infof("processBlock:%v getBlockInfo blockTime is nil,cur: %v, dur: %v, queue size: %v", slot, time.Now().Format("15:04:05"), time.Since(beginTime), len(s.slotChan))
 	}
 
 	if blockInfo.BlockHeight != nil {
@@ -141,7 +148,7 @@ func (s *BlockService) ProcessBlock(ctx context.Context, slot int64) {
 	}
 	block.Status = constants.BlockProcessed
 
-	// 获取 sol 价格
+	// Step2: 计算当期 SOL 价格，为后续成交估值提供基准
 	var tokenAccountMap = make(map[string]*TokenAccount)
 	solPrice := s.GetBlockSolPrice(ctx, blockInfo, tokenAccountMap)
 	if solPrice == 0 {
@@ -150,7 +157,18 @@ func (s *BlockService) ProcessBlock(ctx context.Context, slot int64) {
 	// 区块 -> 交易 -> 转账（Transfer）SOL-(USDT/USDC) -> (USDT|USDC) / SOL = 价格
 	block.SolPrice = solPrice
 
+	// 初始化一个存放交易信息的切片，初始容量设为1000
+	// 后续会把从区块中解析出来的交易(TradeWithPair)加入到这个切片中，便于统一处理（如分类落库等）
+	trades := make([]*types.TradeWithPair, 0, 1000)
+
+	// 遍历区块中的每一笔链上交易，进行处理
 	slice.ForEach(blockInfo.Transactions, func(index int, tx client.BlockTransaction) {
+
+		// Step3: 构造解码上下文。这里新建一个 DecodedTx 结构体用来保存当前交易的相关信息：
+		// BlockDb            当前处理的区块指针
+		// Tx                 当前遍历到的链上交易指针
+		// TxIndex            交易在区块内的序号
+		// TokenAccountMap    本次区块处理中维护的token账户（复用，提升效率）
 		decodeTx := &DecodedTx{
 			BlockDb:         block,
 			Tx:              &tx,
@@ -158,10 +176,98 @@ func (s *BlockService) ProcessBlock(ctx context.Context, slot int64) {
 			TokenAccountMap: tokenAccountMap,
 		}
 
-		DecodeTx(ctx, s.sc, decodeTx)
+		// 解码链上交易，返回解码后的 TradeWithPair 切片
+		trade, err := DecodeTx(ctx, s.sc, decodeTx)
+		if err != nil {
+			// 如果是未识别的合约（unknow program），则直接跳过此条
+			if strings.Contains(err.Error(), "unknow program") {
+				return
+			}
+			// 其他解码出错则输出日志并跳过
+			fmt.Println("decode tx failed: ", err.Error())
+			return
+		}
+
+		// 对解码出来的 trade 结果再次过滤，只保留非空项；
+		// 并填充 TradeWithPair 的补充信息（如引用了Slot等元数据）
+		trade = slice.Filter(trade, func(index int, item *types.TradeWithPair) bool {
+			if item == nil {
+				return false
+			}
+			s.FillTradeWithPairInfo(item, slot)
+			return true
+		})
+
+		// 将本笔交易对应的所有成交记入 trades 切片，后面统一处理
+		trades = append(trades, trade...)
 	})
 
-	// 保存块信息到数据库
+	// Step4: 将成交按 Pair 归类，方便后续批量写入
+	tradeMap := make(map[string][]*types.TradeWithPair)
+
+	pumpSwapCount := 0
+	pumpFunCount := 0
+
+	for _, trade := range trades {
+		if len(trade.PairAddr) > 0 {
+			tradeMap[trade.PairAddr] = append(tradeMap[trade.PairAddr], trade)
+		}
+	}
+
+	for _, value := range tradeMap {
+		// 简单统计不同 Swap 的成交数量，方便监控
+		if value[0].SwapName == constants.PumpFun {
+			pumpFunCount++
+			continue
+		}
+		if value[0].SwapName == constants.PumpSwap {
+			pumpSwapCount++
+			continue
+		}
+	}
+
+	{
+		// 额外挑出 Mint 行为，触发 Token 总量刷新
+		tokenMints := slice.Filter[*types.TradeWithPair](trades, func(_ int, item *types.TradeWithPair) bool {
+			if item != nil && item.Type == types.TradeTokenMint {
+				return true
+			}
+			return false
+		})
+
+		s.UpdateTokenMints(ctx, tokenMints)
+		s.Infof("processBlock:%v UpdateTokenMints size: %v, dur: %v, tokenMints: %v", slot, len(tokenMints), time.Since(beginTime), len(tokenMints))
+	}
+
+	//并发处理： 保存交易信息，保存token账户信息
+	group := threading.NewRoutineGroup()
+	group.RunSafe(func() {
+		// Step5: 写入成交信息 & TokenAccount 快照
+		s.SaveTrades(ctx, constants.SolChainIdInt, tradeMap)
+		s.Infof("processBlock:%v saveTrades tx_size: %v, dur: %v, trade_size: %v", slot, len(blockInfo.Transactions), time.Since(beginTime), len(trades))
+
+		s.SaveTokenAccounts(ctx, trades, tokenAccountMap)
+		s.Infof("processBlock:%v saveTokenAccounts tx_size: %v, dur: %v, trade_size: %v", slot, len(blockInfo.Transactions), time.Since(beginTime), len(trades))
+	})
+
+	// pump swap
+	group.RunSafe(func() {
+		// Step6: 针对 PumpSwap 交易补充池子元数据
+		slice.ForEach(trades, func(_ int, trade *types.TradeWithPair) {
+			if trade.SwapName == constants.PumpSwap || trade.SwapName == "PumpSwap" {
+				if trade.Type == types.TradeTypeBuy || trade.Type == types.TradeTypeSell {
+					if err = s.SavePumpSwapPoolInfo(ctx, trade); err != nil {
+						s.Errorf("processBlock:%v SavePumpSwapPoolInfo err: %v", slot, err)
+					}
+				}
+
+			}
+		})
+	})
+
+	group.Wait()
+
+	// Step7: 区块落库，标识处理完成
 	err = s.sc.BlockModel.Insert(ctx, block)
 	if err != nil {
 		s.Error("insert block error", err)
@@ -169,7 +275,7 @@ func (s *BlockService) ProcessBlock(ctx context.Context, slot int64) {
 }
 
 // 解析每一个区块的交易
-func DecodeTx(ctx context.Context, sc *svc.ServiceContext, dtx *DecodedTx) {
+func DecodeTx(ctx context.Context, sc *svc.ServiceContext, dtx *DecodedTx) (trades []*types.TradeWithPair, err error) {
 	if dtx.Tx == nil || dtx.BlockDb == nil {
 		return
 	}
@@ -183,22 +289,26 @@ func DecodeTx(ctx context.Context, sc *svc.ServiceContext, dtx *DecodedTx) {
 
 	dtx.InnerInstructionMap = GetInnerInstructionMap(tx)
 
+	// 遍历交易内所有指令，挨个解析生成业务侧的成交结构
 	for i := range tx.Transaction.Message.Instructions {
 		inst := &tx.Transaction.Message.Instructions[i]
-		err := DecodeInstruction(ctx, sc, dtx, inst, i)
+		var trade *types.TradeWithPair
+		trade, err = DecodeInstruction(ctx, sc, dtx, inst, i)
 		if err != nil {
-			return
+			return nil, err
 		}
+		trades = append(trades, trade)
 	}
+	return
 }
 
-func DecodeInstruction(ctx context.Context, sc *svc.ServiceContext, dtx *DecodedTx, instruction *solTypes.CompiledInstruction, index int) (err error) {
+func DecodeInstruction(ctx context.Context, sc *svc.ServiceContext, dtx *DecodedTx, instruction *solTypes.CompiledInstruction, index int) (trade *types.TradeWithPair, err error) {
 	if len(dtx.Tx.AccountKeys) == 0 {
-		return errors.New("account keys is empty")
+		return nil, errors.New("account keys is empty")
 	}
 
 	if int(instruction.ProgramIDIndex) >= len(dtx.Tx.AccountKeys) {
-		return fmt.Errorf("program ID index %d out of bounds for account keys length %d", instruction.ProgramIDIndex, len(dtx.Tx.AccountKeys))
+		return nil, fmt.Errorf("program ID index %d out of bounds for account keys length %d", instruction.ProgramIDIndex, len(dtx.Tx.AccountKeys))
 	}
 
 	tx := dtx.Tx
@@ -206,7 +316,8 @@ func DecodeInstruction(ctx context.Context, sc *svc.ServiceContext, dtx *Decoded
 
 	switch program {
 	case ProgramStrPumpFun:
-		return DecodePumpFunInstruction(instruction, tx)
+		trade, err = DecodePumpFunInstruction(instruction, tx)
+		return
 	case ProgramStrPumpFunAMM:
 		decoder := &PumpAmmDecoder{
 			ctx:                 ctx,
@@ -214,10 +325,10 @@ func DecodeInstruction(ctx context.Context, sc *svc.ServiceContext, dtx *Decoded
 			dtx:                 dtx,
 			compiledInstruction: instruction,
 		}
-		decoder.DecodePumpFunAMMInstruction()
+		trade, err = decoder.DecodePumpFunAMMInstruction()
 		return
 	default:
-		return ErrUnknowProgram
+		return nil, ErrUnknowProgram
 	}
 }
 

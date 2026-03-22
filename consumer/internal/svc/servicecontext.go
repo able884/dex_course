@@ -2,7 +2,9 @@ package svc
 
 import (
 	"fmt"
+	"log"
 	"net/http"
+	"os"
 	"sync"
 	"time"
 
@@ -12,18 +14,24 @@ import (
 	"github.com/zeromicro/go-zero/core/logx"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 
 	"richcode.cc/dex/consumer/internal/config"
 	"richcode.cc/dex/model/solmodel"
 )
 
 type ServiceContext struct {
-	Config         config.Config
-	solClientLock  sync.Mutex
-	solClientIndex int
-	solClient      *solclient.Client
-	solClients     []*solclient.Client
-	BlockModel     solmodel.BlockModel
+	Config               config.Config
+	solClientLock        sync.Mutex
+	solClientIndex       int
+	solClient            *solclient.Client
+	solClients           []*solclient.Client
+	PairModel            solmodel.PairModel
+	BlockModel           solmodel.BlockModel
+	TokenModel           solmodel.TokenModel
+	TradeModel           solmodel.TradeModel
+	PumpAmmInfoModel     solmodel.PumpAmmInfoModel
+	SolTokenAccountModel solmodel.SolTokenAccountModel
 }
 
 func NewServiceContext(c config.Config) *ServiceContext {
@@ -54,7 +62,18 @@ func NewSolServiceContext(c config.Config) *ServiceContext {
 		c.MySQLConfig.Port,
 		c.MySQLConfig.DBName,
 	)
-	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
+	newLogger := logger.New(
+		log.New(os.Stdout, "\r\n", log.LstdFlags),
+		logger.Config{
+			SlowThreshold:             200 * time.Millisecond, // 慢 sql 阈值
+			LogLevel:                  logger.Warn,            // 日志级别
+			IgnoreRecordNotFoundError: true,                   // 忽略 record not found
+			Colorful:                  true,
+		},
+	)
+	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{
+		Logger: newLogger,
+	})
 	if err != nil {
 		panic(fmt.Sprintf("failed to connect database: %v", err))
 	}
@@ -63,9 +82,14 @@ func NewSolServiceContext(c config.Config) *ServiceContext {
 	blockModel := solmodel.NewBlockModel(db)
 
 	return &ServiceContext{
-		Config:     c,
-		solClients: solClients,
-		BlockModel: blockModel,
+		Config:               c,
+		solClients:           solClients,
+		BlockModel:           blockModel,
+		PairModel:            solmodel.NewPairModel(db),
+		TokenModel:           solmodel.NewTokenModel(db),
+		TradeModel:           solmodel.NewTradeModel(db),
+		PumpAmmInfoModel:     solmodel.NewPumpAmmInfoModel(db),
+		SolTokenAccountModel: solmodel.NewSolTokenAccountModel(db),
 	}
 }
 
