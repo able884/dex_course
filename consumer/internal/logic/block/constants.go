@@ -1,6 +1,10 @@
 package block
 
-import constants "richcode.cc/dex/pkg/constrants"
+import (
+	"errors"
+
+	constants "richcode.cc/dex/pkg/constrants"
+)
 
 const SolChainId = constants.SolChainId
 const SolChainIdInt = constants.SolChainIdInt
@@ -25,3 +29,5 @@ const TokenStrUSDT = constants.TokenStrUSDT
 
 // pump swap名称
 const PumpSwap = constants.PumpSwap
+
+var ErrNotSupportInstruction = errors.New("not support instruction")

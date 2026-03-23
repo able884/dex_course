@@ -239,6 +239,19 @@ func (s *BlockService) ProcessBlock(ctx context.Context, slot int64) {
 		s.Infof("processBlock:%v UpdateTokenMints size: %v, dur: %v, tokenMints: %v", slot, len(tokenMints), time.Since(beginTime), len(tokenMints))
 	}
 
+	{
+		// 额外挑出 Burn 行为，触发 Token 总量刷新
+		tokenBurns := slice.Filter[*types.TradeWithPair](trades, func(_ int, item *types.TradeWithPair) bool {
+			if item != nil && item.Type == types.TradeTokenBurn {
+				return true
+			}
+			return false
+		})
+
+		s.UpdateTokenBurns(ctx, tokenBurns)
+		s.Infof("processBlock:%v UpdateTokenBurns size: %v, dur: %v, tokenBurns: %v", slot, len(tokenBurns), time.Since(beginTime), len(tokenBurns))
+	}
+
 	//并发处理： 保存交易信息，保存token账户信息
 	group := threading.NewRoutineGroup()
 	group.RunSafe(func() {
@@ -312,6 +325,7 @@ func DecodeInstruction(ctx context.Context, sc *svc.ServiceContext, dtx *Decoded
 	}
 
 	tx := dtx.Tx
+	var innerInstructions *client.InnerInstruction
 	program := tx.AccountKeys[instruction.ProgramIDIndex].String()
 
 	switch program {
@@ -327,6 +341,29 @@ func DecodeInstruction(ctx context.Context, sc *svc.ServiceContext, dtx *Decoded
 		}
 		trade, err = decoder.DecodePumpFunAMMInstruction()
 		return
+	case common.TokenProgramID.String():
+		trade, err = DecodeTokenProgramInstruction(ctx, sc, dtx, instruction, index)
+
+		if trade != nil {
+			fmt.Println("find token program tx: %v", trade.TxHash)
+		}
+		return trade, err
+	case common.Token2022ProgramID.String():
+		innerInstructions = dtx.InnerInstructionMap[index]
+		decoder := &Token2022Decoder{
+			ctx:                 ctx,
+			svcCtx:              sc,
+			dtx:                 dtx,
+			compiledInstruction: instruction,
+			innerInstruction:    innerInstructions,
+		}
+		trade, err = decoder.DecodeToken2022DecoderInstruction()
+		if err != nil {
+			logx.Errorf("error find token2022 tx: %v, err : %v", dtx.TxHash, err)
+			return nil, err
+		}
+		logx.Infof("find token2022 tx: %v, pairInfo: %#v", dtx.TxHash, trade.PairInfo)
+		return trade, err
 	default:
 		return nil, ErrUnknowProgram
 	}
