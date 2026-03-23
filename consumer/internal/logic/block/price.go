@@ -74,7 +74,20 @@ func GetInnerInstructionMap(tx *client.BlockTransaction) map[int]*client.InnerIn
 	var innerInstructionMap = make(map[int]*client.InnerInstruction)
 	// 遍历内部指令  InnerInstructions：交易中的内部指令
 	for i := range tx.Meta.InnerInstructions {
-		// 内部指令索引作为map的key，指令作为map的value
+		/*
+				TransactionMeta ：
+			Err	any	交易执行结果（nil=成功）
+			Fee	uint64	手续费（lamports）
+			PreBalances	[]int64	交易前SOL余额
+			PostBalances	[]int64	交易后SOL余额
+			PreTokenBalances	[]TokenBalance	交易前SPL代币余额
+			PostTokenBalances	[]TokenBalance	交易后SPL代币余额
+			LogMessages	[]string	程序执行日志
+			InnerInstructions	[]InnerInstruction	跨程序调用详情
+			LoadedAddresses	LoadedAddresses	动态加载的地址
+			ReturnData	*ReturnData	程序返回数据
+			ComputeUnitsConsumed	*uint64	消耗的计算单元
+		*/
 		innerInstructionMap[int(tx.Meta.InnerInstructions[i].Index)] = &tx.Meta.InnerInstructions[i]
 	}
 	return innerInstructionMap
