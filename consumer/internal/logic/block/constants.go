@@ -31,3 +31,5 @@ const TokenStrUSDT = constants.TokenStrUSDT
 const PumpSwap = constants.PumpSwap
 
 var ErrNotSupportInstruction = errors.New("not support instruction")
+
+var ErrNotSupportWarp = errors.New("not support swap")

@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/blocto/solana-go-sdk/common"
+	"github.com/blocto/solana-go-sdk/types"
 	bin "github.com/gagliardetto/binary"
 	"richcode.cc/dex/model/solmodel"
 )
@@ -20,6 +21,7 @@ const (
 	TradePumpLaunch                                    = "launch"
 	TradeTokenMint                                     = "token_mint"
 	TradeTokenBurn                                     = "token_burn"
+	TradeRaydiumConcentratedLiquidityCreatePool        = "create"
 	TradeRaydiumConcentratedLiquidityDecreaseLiquidity = "raydium_concentrated_liquidity_decrease"
 	TradeRaydiumConcentratedLiquidityIncreaseLiquidity = "raydium_concentrated_liquidity_increase"
 	TradeRaydiumCPMMDecreaseLiquidity                  = "raydium_cpmm_decrease"
@@ -129,8 +131,12 @@ type TradeWithPair struct {
 	CreateTime                   time.Time `json:"create_time"`
 
 	// sol
-	BaseTokenAccountAddress string `json:"-"`
-	TokenAccountAddress     string `json:"-"`
+	BaseTokenAccountAddress string                 `json:"-"`
+	TokenAccountAddress     string                 `json:"-"`
+	RaydiumPool             *solmodel.RaydiumPool  `json:"-"`
+	ClmmPoolInfoV1          *CLMMPoolInfo          `json:"clmm_pool_info_v1"`
+	ClmmPoolInfoV2          *CLMMPoolInfo          `json:"clmm_pool_info_v2"`
+	CpmmPoolInfo            *solmodel.CpmmPoolInfo `json:"cpmm_pool_info"`
 
 	// PumpAmm
 	LpMintAddress          string                `json:"lp_mint_address"`
@@ -139,4 +145,48 @@ type TradeWithPair struct {
 	PoolBaseTokenReserves  uint64                `json:"pool_base_token_reserves"`
 	PoolQuoteTokenReserves uint64                `json:"pool_quote_token_reserves"`
 	PumpAmmInfo            *solmodel.PumpAmmInfo `json:"-"`
+}
+
+type CLMMPoolInfo struct {
+
+	// AMM 池的配置，用于获取协议费用
+	AmmConfig common.PublicKey
+
+	// AMM 池状态账户，存储池的详细信息
+	PoolState types.AccountMeta
+
+	// 输入代币的资金库（vault）
+	InputVault types.AccountMeta
+
+	// 输出代币的资金库（vault）
+	OutputVault types.AccountMeta
+
+	// Oracle 观察状态账户，提供最近的价格信息
+	ObservationState types.AccountMeta
+
+	// Solana SPL 代币程序（标准）
+	TokenProgram common.PublicKey
+
+	// Solana SPL 2022 代币程序（支持扩展功能）
+	TokenProgram2022 common.PublicKey
+
+	// 交易备注（可选）
+	MemoProgram common.PublicKey
+
+	// 输入代币的 mint 信息
+	InputVaultMint common.PublicKey
+
+	// 输出代币的 mint 信息
+	OutputVaultMint common.PublicKey
+
+	// For V1
+	TickArray common.PublicKey
+
+	// 其余账户（如流动性池的 tick 数组）
+	RemainingAccounts []types.AccountMeta
+
+	// TxHash
+	TxHash string
+	// 交易手续费
+	TradeFeeRate uint32
 }

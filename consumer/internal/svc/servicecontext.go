@@ -21,17 +21,21 @@ import (
 )
 
 type ServiceContext struct {
-	Config               config.Config
-	solClientLock        sync.Mutex
-	solClientIndex       int
-	solClient            *solclient.Client
-	solClients           []*solclient.Client
-	PairModel            solmodel.PairModel
-	BlockModel           solmodel.BlockModel
-	TokenModel           solmodel.TokenModel
-	TradeModel           solmodel.TradeModel
-	PumpAmmInfoModel     solmodel.PumpAmmInfoModel
-	SolTokenAccountModel solmodel.SolTokenAccountModel
+	Config                    config.Config
+	solClientLock             sync.Mutex
+	solClientIndex            int
+	solClient                 *solclient.Client
+	solClients                []*solclient.Client
+	PairModel                 solmodel.PairModel
+	BlockModel                solmodel.BlockModel
+	TokenModel                solmodel.TokenModel
+	TradeModel                solmodel.TradeModel
+	PumpAmmInfoModel          solmodel.PumpAmmInfoModel
+	SolTokenAccountModel      solmodel.SolTokenAccountModel
+	SolRaydiumCLMMPoolV1Model solmodel.ClmmPoolInfoV1Model
+	SolRaydiumCLMMPoolV2Model solmodel.ClmmPoolInfoV2Model
+	SolRaydiumCPMMPoolModel   solmodel.CpmmPoolInfoModel
+	SolRaydiumPoolModel       solmodel.RaydiumPoolModel
 }
 
 func NewServiceContext(c config.Config) *ServiceContext {
@@ -82,14 +86,16 @@ func NewSolServiceContext(c config.Config) *ServiceContext {
 	blockModel := solmodel.NewBlockModel(db)
 
 	return &ServiceContext{
-		Config:               c,
-		solClients:           solClients,
-		BlockModel:           blockModel,
-		PairModel:            solmodel.NewPairModel(db),
-		TokenModel:           solmodel.NewTokenModel(db),
-		TradeModel:           solmodel.NewTradeModel(db),
-		PumpAmmInfoModel:     solmodel.NewPumpAmmInfoModel(db),
-		SolTokenAccountModel: solmodel.NewSolTokenAccountModel(db),
+		Config:                    c,
+		solClients:                solClients,
+		BlockModel:                blockModel,
+		PairModel:                 solmodel.NewPairModel(db),
+		TokenModel:                solmodel.NewTokenModel(db),
+		TradeModel:                solmodel.NewTradeModel(db),
+		PumpAmmInfoModel:          solmodel.NewPumpAmmInfoModel(db),
+		SolTokenAccountModel:      solmodel.NewSolTokenAccountModel(db),
+		SolRaydiumCLMMPoolV1Model: solmodel.NewClmmPoolInfoV1Model(db),
+		SolRaydiumCLMMPoolV2Model: solmodel.NewClmmPoolInfoV2Model(db),
 	}
 }
 

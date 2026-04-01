@@ -56,3 +56,14 @@ type PumpEvent struct {
 	VirtualSolReserves   uint64
 	VirtualTokenReserves uint64
 }
+
+type Swap struct {
+	BaseTokenInfo      *TokenAccount
+	TokenInfo          *TokenAccount
+	BaseTokenAmount    float64
+	TokenAmount        float64
+	BaseTokenAmountInt int64
+	TokenAmountInt     int64
+	Type               string
+	To                 string
+}

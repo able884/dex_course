@@ -13,6 +13,7 @@ import (
 	"richcode.cc/dex/consumer/internal/svc"
 	"richcode.cc/dex/model/solmodel"
 	constants "richcode.cc/dex/pkg/constrants"
+	"richcode.cc/dex/pkg/raydium/clmm"
 	"richcode.cc/dex/pkg/types"
 
 	"richcode.cc/dex/consumer/internal/config"
@@ -469,6 +470,21 @@ func DecodeInstruction(ctx context.Context, sc *svc.ServiceContext, dtx *Decoded
 		}
 		logx.Infof("find token2022 tx: %v, pairInfo: %#v", dtx.TxHash, trade.PairInfo)
 		return trade, err
+	case clmm.ProgramRaydiumConcentratedLiquidity.String():
+		decoder := &ConcentratedLiquidityDecoder{
+			ctx:                 ctx,
+			svcCtx:              sc,
+			dtx:                 dtx,
+			compiledInstruction: instruction,
+			innerInstruction:    innerInstructions,
+		}
+		trade, err = decoder.DecodeRaydiumConcentratedLiquidityInstruction()
+		if err != nil {
+			logx.Errorf("error find inner clmm tx: %v, err : %v", dtx.TxHash, err)
+			return nil, err
+		}
+		logx.Infof("find inner clmm tx: %v, pairInfo: %#v", dtx.TxHash, trade.PairInfo)
+		return trade, nil
 	default:
 		// 未知程序，返回错误（这是正常的，不是所有程序都需要处理）
 		return nil, ErrUnknowProgram
