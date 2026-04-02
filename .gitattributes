@@ -1,0 +1,11 @@
+# 所有文本强制使用 LF 作为换行符
+* text eol=lf
+
+# 所有二进制文件不进行换行符转换
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.pdf binary
+*.zip binary
+*.exe binary
