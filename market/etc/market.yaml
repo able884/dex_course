@@ -1,0 +1,24 @@
+Name: market.rpc
+ListenOn: 0.0.0.0:8090
+# Etcd:
+#   Hosts:
+#   - 127.0.0.1:2379
+#   Key: market.rpc
+
+Mysql:
+  Master:
+    Username: root
+    Password: "123456"
+    Path: localhost
+    Port: 3306
+    Dbname: rc_dex_study
+    MaxOpenConns: 500
+    MaxIdleConns: 200
+
+Redis:
+  Host: 127.0.0.1:6379
+  # Pass: 123456
+  Type: node
+  Key: dexs
+  PingTimeout: 10s
+  Tls: false

@@ -1,0 +1,182 @@
+syntax = "proto3";
+
+package market;
+option go_package = "./market";
+
+// GetPumpTokenList
+message GetPumpTokenListRequest {
+  int64 chain_id = 1;
+  int32 pump_status = 2;
+  string sorted_type = 3;
+  string honeypot_filter = 4;
+  int32 page_no = 5;
+  int32 page_size = 6;
+  string pump_type = 7; // "pumpfun" or "pumpamm", default "pumpfun"
+}
+message GetPumpTokenListResponse {
+  repeated PumpTokenItem list = 1;
+  int32 total = 2;
+}
+
+message PumpTokenItem {
+  int64 chain_id = 1;
+  string chain_icon = 2;
+  string token_address = 3;
+  string token_icon = 4;
+  string token_name = 5;
+  int64 launch_time = 6;
+  double mkt_cap = 7;
+  int64 hold_count = 8;
+  uint32 txs_24h = 9;
+  double vol_24h = 10;
+  double domestic_progress = 11;
+  string twitter_username = 12;
+  string telegram = 13;
+  double change24 = 14;
+  string pair_address = 15;
+}
+
+// GetClmmPoolList
+message GetClmmPoolListRequest {
+  int64 chain_id = 1;
+  int32 pool_version = 2; // 1 for v1, 2 for v2
+  string sorted_type = 3;
+  int32 page_no = 4;
+  int32 page_size = 5;
+}
+
+message GetClmmPoolListResponse {
+  repeated ClmmPoolItem list = 1;
+  int32 total = 2;
+}
+
+message ClmmPoolItem {
+  int64 chain_id = 1;
+  string chain_icon = 2;
+  string pool_state = 3;           // Pool state address (like pair_address for pumps)
+  string input_vault_mint = 4;     // Input token address
+  string output_vault_mint = 5;    // Output token address
+  string input_token_symbol = 6;   // Input token symbol
+  string output_token_symbol = 7;  // Output token symbol
+  string input_token_icon = 8;     // Input token icon
+  string output_token_icon = 9;    // Output token icon
+  int64 trade_fee_rate = 10;       // Trade fee rate
+  int64 launch_time = 11;          // Pool creation time
+  double liquidity_usd = 12;       // Liquidity in USD
+  uint32 txs_24h = 13;            // 24h transactions
+  double vol_24h = 14;            // 24h volume
+  double apr = 15;                // Annual percentage rate
+  int32 pool_version = 16;        // 1 for v1, 2 for v2
+}
+
+message PushTokenInfoRequest {
+  int64 chain_id = 1;
+  string token_address = 2;
+  string pair_address = 3;
+  double token_price = 4;
+  double mkt_cap = 5;
+  string token_name = 6;
+  string token_symbol = 7;
+  string token_icon = 8;
+  int64 launch_time = 9;
+  int64 hold_count = 10;
+  double change_24 = 11;
+  int64 txs_24h = 12;
+  int32 pump_status = 13;
+}
+
+message PushTokenInfoResponse{
+  int64 chain_id = 1;
+  string token_address = 2;
+  uint32 txs_24h = 3;
+  string vol_24h = 4;
+  string change_24 = 5;
+  string token_price = 6;
+  string mkt_cap = 7;
+}
+
+message GetPairInfoByTokenRequest {
+  int64 chain_id = 1;
+  string token_address = 2;
+}
+
+message GetPairInfoByTokenResponse {
+  int64 chain_id = 1;  // Chain ID
+  string address = 2;  // Trading pair address
+  string name = 3;  // DEX factory version swap name
+  string factory_address = 4;  // Factory contract address
+  string base_token_address = 5;  // Base token address
+  string token_address = 6;  // Token address
+  string base_token_symbol = 7;  // Base token symbol
+  string token_symbol = 8;  // Token symbol
+  int64 base_token_decimal = 9;  // Base token decimals
+  int64 token_decimal = 10;  // Token decimals
+  bool base_token_is_native_token = 11;  // Is base token native currency
+  bool base_token_is_token0 = 12;  // Is base token token0
+  double init_base_token_amount = 13;  // Initial base token liquidity
+  double init_token_amount = 14;  // Initial token liquidity
+  double current_base_token_amount = 15;  // Current base token liquidity
+  double current_token_amount = 16;  // Current token liquidity
+  double fdv = 17;  // Fully diluted valuation
+  double mkt_cap = 18;  // Market capitalization
+  double token_price = 19;  // Token price
+  double base_token_price = 20;  // Base token price
+  int64 block_num = 21;  // Creation block height
+  int64 block_time = 22;  // Creation block timestamp
+  double highest_token_price = 23;  // Highest token price
+  int64 latest_trade_time = 24;  // Latest on-chain trade timestamp
+}
+
+message GetNativeTokenPriceRequest {
+  int64  chain_id = 1;
+  string search_time = 2;
+}
+
+message GetNativeTokenPriceResponse {
+  double base_token_price_usd = 1;
+}
+
+message GetTokenInfoRequest {
+  int64 chain_id = 1;
+  string token_address = 2;
+}
+
+message GetTokenInfoResponse {
+  int64 chain_id = 1;                  // Chain ID
+  string address = 2;                  // Token contract address
+  string name = 3;                     // Token name
+  string symbol = 4;                   // Token symbol
+  int64 decimals = 5;                  // Token decimals
+  double total_supply = 6;             // Total token supply
+  string icon = 7;                     // Token icon URL
+  int64 hold_count = 8;                // Number of holders
+  int64 is_ca_drop_owner = 9;           // Owner rights renounced
+  int64 is_ca_verify = 10;              // Contract verified
+  int64 is_honey_scam = 11;             // Honeypot check (Cannot sell)
+  int64 is_liquid_lock = 12;            // Liquidity locked
+  int64 is_can_pause_trade = 13;        // Can pause trading
+  int64 is_can_change_tax = 14;         // Can modify tax rate
+  int64 is_have_black_list = 15;        // Has blacklist mechanism
+  int64 is_can_all_sell = 16;           // Can sell entire balance
+  int64 is_have_proxy = 17;             // Has proxy contract
+  int64 is_can_external_call = 18;      // Contract can make external calls
+  int64 is_can_add_token = 19;          // Contract has minting capability
+  int64 is_can_change_token = 20;       // Owner can modify user balances
+  double sell_tax = 21;                // Sell tax rate
+  double buy_tax = 22;                 // Buy tax rate
+  string twitter_username = 23;        // Twitter username
+  string website = 24;                 // Official website
+  string telegram = 25;                // Telegram link
+  int64 is_check_ca = 26;               // Contract analysis completed
+  int64 check_ca_at = 27;              // Contract analysis datetime(3)
+  string program = 28;                 // token owner program
+}
+
+service Market {
+  rpc GetPumpTokenList(GetPumpTokenListRequest) returns (GetPumpTokenListResponse);
+  rpc GetClmmPoolList(GetClmmPoolListRequest) returns (GetClmmPoolListResponse);
+  rpc PushTokenInfo(PushTokenInfoRequest) returns (PushTokenInfoResponse);
+  rpc GetPairInfoByToken(GetPairInfoByTokenRequest) returns (GetPairInfoByTokenResponse);
+  rpc GetNativeTokenPrice(GetNativeTokenPriceRequest) returns (GetNativeTokenPriceResponse);
+  rpc GetTokenInfo(GetTokenInfoRequest) returns (GetTokenInfoResponse);
+}

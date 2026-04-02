@@ -1,4 +1,20 @@
 target
+# go 编译产物
+bin/
+*.exe
+*.dll
 
+# 依赖目录
+node_modules/
+vendor/
+
+# IDE 相关
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# 日志文件
+*.log
 # Go modules
 go.sum
