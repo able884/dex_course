@@ -45,6 +45,11 @@ type (
 		OutputTokenMint    string    `gorm:"column:output_token_mint"`    // Output Token Mint
 		TradeFeeRate       int64     `gorm:"column:trade_fee_rate"`       // Trade Fee Rate
 		ObservationState   string    `gorm:"column:observation_state"`    // Observation State
+		LpMint             string    `gorm:"column:lp_mint"`              // LP mint
+		Liquidity          float64   `gorm:"column:liquidity"`            // Pool liquidity (USD)
+		Volume24h          float64   `gorm:"column:volume_24h"`           // 24h volume (USD)
+		Fees24h            float64   `gorm:"column:fees_24h"`             // 24h fees (USD)
+		Apr24h             float64   `gorm:"column:apr_24h"`              // 24h APR (%)
 		TxHash             string    `gorm:"column:tx_hash"`              // Tx hash
 		CreatedAt          time.Time `gorm:"column:created_at"`           // Creation timestamp
 		UpdatedAt          time.Time `gorm:"column:updated_at"`           // Update timestamp

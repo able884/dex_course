@@ -11,7 +11,7 @@ import (
 	"github.com/duke-git/lancet/v2/slice"
 	"github.com/zeromicro/go-zero/core/threading"
 	"richcode.cc/dex/model/solmodel"
-	constants "richcode.cc/dex/pkg/constrants"
+	constants "richcode.cc/dex/pkg/constants"
 	"richcode.cc/dex/pkg/sol"
 	"richcode.cc/dex/pkg/types"
 )

@@ -3,7 +3,7 @@ package block
 import (
 	"errors"
 
-	constants "richcode.cc/dex/pkg/constrants"
+	constants "richcode.cc/dex/pkg/constants"
 )
 
 const SolChainId = constants.SolChainId
@@ -33,3 +33,26 @@ const PumpSwap = constants.PumpSwap
 var ErrNotSupportInstruction = errors.New("not support instruction")
 
 var ErrNotSupportWarp = errors.New("not support swap")
+
+var ErrTokenAmountIsZero = errors.New("tokenAmount is zero")
+
+const (
+	MetricComponentTradeBatch    = "trade_batch"
+	MetricComponentMetadataCache = "metadata_cache"
+	MetricComponentMarketPush    = "market_push"
+	MetricComponentRetry         = "retry"
+)
+
+const (
+	LogFieldSlot    = "slot"
+	LogFieldPair    = "pair"
+	LogFieldToken   = "token"
+	LogFieldAttempt = "attempt"
+	LogFieldBatchID = "batch_id"
+)
+
+const (
+	RedisKeyTokenMetadataPrefix = "token-meta"
+	RedisKeyTokenAccountPrefix  = "token-account"
+	RedisKeyPairStatePrefix     = "pair-state"
+)

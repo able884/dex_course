@@ -3,7 +3,7 @@ package solmodel
 import (
 	"context"
 
-	constants "richcode.cc/dex/pkg/constrants"
+	constants "richcode.cc/dex/pkg/constants"
 
 	"github.com/klen-ygs/gorm-zero/gormc"
 	. "github.com/klen-ygs/gorm-zero/gormc/sql"

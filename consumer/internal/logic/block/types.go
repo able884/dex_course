@@ -23,6 +23,8 @@ type TokenAccount struct {
 	Owner               string
 	TokenAccountAddress string
 	TokenAddress        string
+	TokenSymbol         string // token 符号
+	TokenName           string // token 名称
 	TokenDecimal        uint8
 	PreValue            int64
 	PostValue           int64
@@ -55,6 +57,8 @@ type PumpEvent struct {
 	Timestamp            uint64
 	VirtualSolReserves   uint64
 	VirtualTokenReserves uint64
+	RealSolReserves      uint64
+	RealTokenReserves    uint64
 }
 
 type Swap struct {

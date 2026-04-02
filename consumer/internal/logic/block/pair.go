@@ -11,7 +11,7 @@ import (
 	"github.com/shopspring/decimal"
 	"github.com/zeromicro/go-zero/core/logx"
 	"richcode.cc/dex/model/solmodel"
-	constants "richcode.cc/dex/pkg/constrants"
+	constants "richcode.cc/dex/pkg/constants"
 	"richcode.cc/dex/pkg/types"
 	"richcode.cc/dex/pkg/util"
 )

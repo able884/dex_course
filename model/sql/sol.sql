@@ -1,22 +1,21 @@
 CREATE TABLE `block`
- (
-     `id`           bigint                                                         NOT NULL AUTO_INCREMENT,
-     `slot`         bigint                                                         NOT NULL DEFAULT '0' COMMENT 'slot',
-     `block_height` bigint                                                         NOT NULL DEFAULT '0' COMMENT 'block_height',
-     `block_time`   timestamp                                                      NOT NULL COMMENT 'block_time',
-     `status`       tinyint                                                        NOT NULL DEFAULT '0' COMMENT '1 processed, 2 failed',
-     `sol_price`    decimal(64, 18)                                                NOT NULL DEFAULT '0.000000000000000000' COMMENT 'sol price',
-     `created_at`   timestamp                                                      NOT NULL DEFAULT CURRENT_TIMESTAMP,
-     `updated_at`   timestamp                                                      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-     `deleted_at`   timestamp                                                      NULL     DEFAULT NULL,
-     `err_message`  varchar(1000) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT 'error message',
-     PRIMARY KEY (`id`),
-     UNIQUE KEY `slot_index` (`slot`),
-     KEY `block_time_index` (`block_time`)
- ) ENGINE = InnoDB
-   DEFAULT CHARSET = utf8mb4
-   COLLATE = utf8mb4_general_ci COMMENT ='block';
-
+(
+    `id`           bigint                                                         NOT NULL AUTO_INCREMENT,
+    `slot`         bigint                                                         NOT NULL DEFAULT '0' COMMENT '区块 Slot 编号',
+    `block_height` bigint                                                         NOT NULL DEFAULT '0' COMMENT '区块高度',
+    `block_time`   timestamp                                                      NOT NULL COMMENT '区块时间',
+    `status`       tinyint                                                        NOT NULL DEFAULT '0' COMMENT '状态：1 已处理，2 处理失败',
+    `sol_price`    decimal(64, 18)                                                NOT NULL DEFAULT '0.000000000000000000' COMMENT 'SOL 价格',
+    `created_at`   timestamp                                                      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at`   timestamp                                                      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `deleted_at`   timestamp                                                      NULL     DEFAULT NULL,
+    `err_message`  varchar(1000) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '错误信息',
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `slot_index` (`slot`),
+    KEY `block_time_index` (`block_time`)
+) ENGINE = InnoDB
+  DEFAULT CHARSET = utf8mb4
+   COLLATE = utf8mb4_general_ci COMMENT ='区块表';
 
 CREATE TABLE `token` (
   `id` bigint NOT NULL AUTO_INCREMENT,
@@ -62,7 +61,7 @@ CREATE TABLE `token` (
   KEY `address_index` (`address`) USING BTREE,
   KEY `idx_created_audit` (`created_at` DESC) USING BTREE,
   KEY `icon_index` (`icon`(255)) USING BTREE
-) ENGINE=InnoDB AUTO_INCREMENT=1165832 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci ROW_FORMAT=DYNAMIC COMMENT='代币表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci ROW_FORMAT=DYNAMIC COMMENT='代币表';
 
 CREATE TABLE `trade` (
   `id` bigint NOT NULL AUTO_INCREMENT,
@@ -142,7 +141,7 @@ CREATE TABLE `pair` (
   KEY `block_num_index` (`block_num`) USING BTREE,
   KEY `pump_status_index` (`pump_status`) USING BTREE,
   KEY `block_time_index` (`block_time`) USING BTREE
-) ENGINE=InnoDB AUTO_INCREMENT=1099042 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci ROW_FORMAT=DYNAMIC COMMENT='交易对表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci ROW_FORMAT=DYNAMIC COMMENT='交易对表';
 
  CREATE TABLE `sol_account`
  (
@@ -225,8 +224,13 @@ CREATE TABLE `raydium_pool` (
      `output_token_program` VARCHAR(256)                                                  NOT NULL COMMENT 'Output Token Program',
      `input_token_mint`     VARCHAR(256)                                                  NOT NULL COMMENT 'Input Token Mint',
      `output_token_mint`    VARCHAR(256)                                                  NOT NULL COMMENT 'Output Token Mint',
+     `lp_mint`              VARCHAR(256)                                                  NOT NULL DEFAULT '' COMMENT 'LP mint',
      `trade_fee_rate`       INT                                                           NOT NULL COMMENT 'Trade Fee Rate',
      `observation_state`    VARCHAR(256)                                                  NOT NULL COMMENT 'Observation State',
+     `liquidity`            DOUBLE                                                        NOT NULL DEFAULT 0 COMMENT 'Pool liquidity (USD)',
+     `volume_24h`           DOUBLE                                                        NOT NULL DEFAULT 0 COMMENT '24h volume (USD)',
+     `fees_24h`             DOUBLE                                                        NOT NULL DEFAULT 0 COMMENT '24h fees (USD)',
+     `apr_24h`              DOUBLE                                                        NOT NULL DEFAULT 0 COMMENT '24h APR (%)',
      `tx_hash`              VARCHAR(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT 'Tx hash',
      `created_at`           TIMESTAMP                                                     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'Creation timestamp',
      `updated_at`           TIMESTAMP                                                     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'Update timestamp',
@@ -284,3 +288,31 @@ CREATE TABLE `clmm_pool_info_v2` (
   KEY `idx_input_vault` (`input_vault`) USING BTREE,
   KEY `idx_output_vault` (`output_vault`) USING BTREE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci ROW_FORMAT=DYNAMIC COMMENT='CLMM Pool V2 Information';
+
+-- Unsigned Pump Token Create transactions, pending status for callback-based completion
+CREATE TABLE `pump_create_token_unsigned` (
+  `id` bigint NOT NULL AUTO_INCREMENT,
+  `chain_id` int NOT NULL DEFAULT '0' COMMENT 'ID',
+  `mint` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT 'token mint address',
+  `user_wallet_address` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT 'creator wallet',
+  `name` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT 'token name',
+  `symbol` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT 'token symbol',
+  `uri` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT 'metadata uri',
+  `website` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT 'website',
+  `twitter` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT 'twitter',
+  `telegram` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT 'telegram',
+  `description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT 'desc',
+  `image_uri` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT 'image uri',
+  `unsigned_tx` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT 'unsigned tx base64',
+  `dex_name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT 'dex name, pump_fun',
+  `status` tinyint NOT NULL DEFAULT '0' COMMENT '0 processing,1 success,2 failed',
+  `tx_signature` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT 'tx signature',
+  `pair_addr` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT 'derived pair address (bonding curve)',
+  `error_message` varchar(1000) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT 'error',
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uniq_chain_mint` (`chain_id`,`mint`),
+  KEY `idx_status` (`status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci ROW_FORMAT=DYNAMIC COMMENT='Unsigned Pump Create Transactions';

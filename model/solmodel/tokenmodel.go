@@ -1,6 +1,8 @@
 package solmodel
 
 import (
+	"context"
+
 	. "github.com/klen-ygs/gorm-zero/gormc/sql"
 	"gorm.io/gorm"
 )
@@ -19,6 +21,7 @@ type (
 
 	customTokenLogicModel interface {
 		WithSession(tx *gorm.DB) TokenModel
+		FindAllByAddresses(ctx context.Context, chainId int64, tokenAddresses []string) ([]Token, error)
 	}
 
 	customTokenModel struct {
@@ -45,4 +48,10 @@ func (m *defaultTokenModel) customCacheKeys(data *Token) []string {
 		return []string{}
 	}
 	return []string{}
+}
+
+func (m customTokenModel) FindAllByAddresses(ctx context.Context, chainId int64, tokenAddresses []string) ([]Token, error) {
+	resp := make([]Token, 0)
+	err := m.conn.WithContext(ctx).Model(&Token{}).Where("chain_id = ? and address in ?", chainId, tokenAddresses).Find(&resp).Error
+	return resp, err
 }

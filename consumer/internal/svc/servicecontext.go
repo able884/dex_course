@@ -12,6 +12,7 @@ import (
 	solclient "github.com/blocto/solana-go-sdk/client"
 	"github.com/blocto/solana-go-sdk/rpc"
 	"github.com/zeromicro/go-zero/core/logx"
+	"github.com/zeromicro/go-zero/core/stores/redis"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
@@ -22,6 +23,7 @@ import (
 
 type ServiceContext struct {
 	Config                    config.Config
+	Redis                     *redis.Redis
 	solClientLock             sync.Mutex
 	solClientIndex            int
 	solClient                 *solclient.Client

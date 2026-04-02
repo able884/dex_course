@@ -12,7 +12,7 @@ import (
 
 	"richcode.cc/dex/consumer/internal/svc"
 	"richcode.cc/dex/model/solmodel"
-	constants "richcode.cc/dex/pkg/constrants"
+	constants "richcode.cc/dex/pkg/constants"
 	"richcode.cc/dex/pkg/raydium/clmm"
 	"richcode.cc/dex/pkg/types"
 
@@ -388,7 +388,11 @@ func DecodeTx(ctx context.Context, sc *svc.ServiceContext, dtx *DecodedTx) (trad
 		// 根据指令类型调用相应的解码器
 		trade, err = DecodeInstruction(ctx, sc, dtx, inst, i)
 		if err != nil {
-			return nil, err
+			if strings.Contains(err.Error(), "unknow program") || strings.Contains(err.Error(), "not support instruction") {
+				continue
+			}
+			logx.Errorf("decode instruction error: %v, hash: %v, index: %d", err, dtx.TxHash, i)
+			continue
 		}
 		// 将解码出的成交记录添加到列表（可能为 nil，表示该指令不产生成交）
 		trades = append(trades, trade)
@@ -433,7 +437,7 @@ func DecodeInstruction(ctx context.Context, sc *svc.ServiceContext, dtx *Decoded
 	switch program {
 	case ProgramStrPumpFun:
 		// PumpFun 程序：用于代币发行和交易的平台
-		trade, err = DecodePumpFunInstruction(instruction, tx)
+		trade, err = DecodePumpFunInstruction(ctx, sc, dtx, instruction, index)
 		return
 	case ProgramStrPumpFunAMM:
 		// PumpFun AMM 程序：自动做市商，处理 Swap 交易
