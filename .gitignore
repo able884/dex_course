@@ -18,3 +18,8 @@ vendor/
 *.log
 # Go modules
 go.sum
+
+build/
+specs/
+.specify/
+.specify.specify/
