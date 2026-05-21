@@ -1,0 +1,36 @@
+{
+  "program": {
+    "admin": "6QC9MjYEBQ8XXxgs4ipJbJ3LFSK4zNvQgqg2SyaWYHW5",
+    "treasury": "6QC9MjYEBQ8XXxgs4ipJbJ3LFSK4zNvQgqg2SyaWYHW5",
+    "matcher": null,
+    "pythConfidenceTolBps": 500,
+    "pythMaxStalenessSlots": 100,
+    "feeBpsLimit": 5000
+  },
+  "markets": [
+    {
+      "baseMint": "So11111111111111111111111111111111111111112",
+      "quoteMint": "Egn9AWQrkstM4NJv2g8rqLfxiYdgFWLr2UxrsrvSRCQZ",
+      "tickSize": 100,
+      "minBaseLot": 1000000,
+      "minQuoteLot": 1000000,
+      "makerFeeBps": 0,
+      "takerFeeBps": 30,
+      "pythPriceFeed": null
+    }
+  ],
+  "comments": {
+    "admin": "Public key of the admin who can update program parameters",
+    "treasury": "Public key where protocol fees will be sent",
+    "matcher": "Optional: Set to a specific pubkey to restrict matching to that address only",
+    "pythConfidenceTolBps": "Maximum allowed Pyth price confidence in basis points (500 = 5%)",
+    "pythMaxStalenessSlots": "Maximum staleness of Pyth price in slots",
+    "feeBpsLimit": "Maximum fee rate allowed in basis points (5000 = 50%)",
+    "tickSize": "Minimum price increment in lots",
+    "minBaseLot": "Minimum order size for base token in lots (with decimals)",
+    "minQuoteLot": "Minimum order size for quote token in lots (with decimals)",
+    "makerFeeBps": "Fee for maker orders in basis points (0 = free)",
+    "takerFeeBps": "Fee for taker orders in basis points (30 = 0.3%)",
+    "pythPriceFeed": "Optional: Pyth price feed account for this market"
+  }
+}

@@ -24,6 +24,7 @@ const (
 	TradeRaydiumConcentratedLiquidityCreatePool        = "create"
 	TradeRaydiumConcentratedLiquidityDecreaseLiquidity = "raydium_concentrated_liquidity_decrease"
 	TradeRaydiumConcentratedLiquidityIncreaseLiquidity = "raydium_concentrated_liquidity_increase"
+	TradeRaydiumCPMMCreatePool                         = "raydium_cpmm_create"
 	TradeRaydiumCPMMDecreaseLiquidity                  = "raydium_cpmm_decrease"
 	TradeRaydiumCPMMIncreaseLiquidity                  = "raydium_cpmm_increase"
 )

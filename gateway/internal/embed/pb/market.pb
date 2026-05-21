@@ -1,5 +1,5 @@
 
-Î(
+„P
 market.protomarket"ò
 GetPumpTokenListRequest
 chain_id (RchainId
@@ -87,7 +87,53 @@ hold_count
 	change_24 (Rchange24
 txs_24h (Rtxs24h
 pump_status (R
-pumpStatus"à
+pumpStatus"£
+GetPoolDetailRequest
+chain_id (RchainId
+
+pool_state (	R	poolState!
+pool_version (RpoolVersion.
+user_wallet_address (	RuserWalletAddress"Ð
+
+GetPoolDetailResponse
+chain_id (RchainId
+
+pool_state (	R	poolState(
+input_vault_mint (	RinputVaultMint*
+output_vault_mint (	RoutputVaultMint,
+input_token_symbol (	RinputTokenSymbol.
+output_token_symbol (	RoutputTokenSymbol(
+input_token_icon (	RinputTokenIcon*
+output_token_icon (	RoutputTokenIcon$
+trade_fee_rate	 (RtradeFeeRate
+launch_time
+ (R
+launchTime#
+liquidity_usd (RliquidityUsd
+txs_24h (Rtxs24h
+vol_24h (Rvol24h
+apr (Rapr!
+pool_version (RpoolVersion%
+locked_percent (RlockedPercent!
+input_amount (RinputAmount#
+output_amount (RoutputAmount!
+base_reserve (RbaseReserve#
+quote_reserve (RquoteReserve#
+input_reserve (RinputReserve%
+output_reserve (RoutputReserve
+price (Rprice$
+quote_per_base (RquotePerBase!
+market_price (RmarketPrice*
+user_pooled_input (RuserPooledInput,
+user_pooled_output (RuserPooledOutput$
+user_staked_lp (RuserStakedLp(
+user_unstaked_lp (RuserUnstakedLp-
+price_range_24h_min (RpriceRange24hMin-
+price_range_24h_max (RpriceRange24hMax+
+price_range_7d_min  (RpriceRange7dMin+
+price_range_7d_max! (RpriceRange7dMax-
+price_range_30d_min" (RpriceRange30dMin-
+price_range_30d_max# (RpriceRange30dMax"à
 PushTokenInfoResponse
 chain_id (RchainId#
 token_address (	RtokenAddress
@@ -168,12 +214,139 @@ isCaVerify"
 telegram (	Rtelegram
 is_check_ca (R	isCheckCa
 check_ca_at (R	checkCaAt
-program (	Rprogram2‰
+program (	Rprogram"ë
+QuoteCpmmRequest
+chain_id (RchainId
+
+pool_state (	R	poolState
+
+input_mint (	R	inputMint
+output_mint (	R
+outputMint
+	amount_in (	RamountIn
+
+amount_out (	R	amountOut!
+slippage_bps (RslippageBps"§
+QuoteCpmmResponse
+pay_mint (	RpayMint!
+receive_mint (	RreceiveMint
+
+pay_amount (	R	payAmount%
+receive_amount (	RreceiveAmount,
+min_receive_amount (	RminReceiveAmount(
+price_impact_pct (	RpriceImpactPct 
+fee_rate_pct (	R
+feeRatePct
+price (Rprice"ë
+QuoteClmmRequest
+chain_id (RchainId
+
+pool_state (	R	poolState
+
+input_mint (	R	inputMint
+output_mint (	R
+outputMint
+	amount_in (	RamountIn
+
+amount_out (	R	amountOut!
+slippage_bps (RslippageBps"§
+QuoteClmmResponse
+pay_mint (	RpayMint!
+receive_mint (	RreceiveMint
+
+pay_amount (	R	payAmount%
+receive_amount (	RreceiveAmount,
+min_receive_amount (	RminReceiveAmount(
+price_impact_pct (	RpriceImpactPct 
+fee_rate_pct (	R
+feeRatePct
+price (Rprice"W
+GetClmmPoolDepthDataRequest
+chain_id (RchainId
+
+pool_state (	R	poolState"¬
+GetClmmPoolDepthDataResponse
+count (Rcount*
+line (2.market.DepthDataPointRline$
+time_range_min (RtimeRangeMin$
+time_range_max (RtimeRangeMax"X
+DepthDataPoint
+price (Rprice
+	liquidity (	R	liquidity
+tick (Rtick"·
+GetUserPositionsRequest
+chain_id (RchainId.
+user_wallet_address (	RuserWalletAddress
+	pool_type (	RpoolType
+page_no (RpageNo
+	page_size (RpageSize"’
+GetUserPositionsResponse*
+items (2.market.PositionItemRitems
+total (Rtotal
+page_no (RpageNo
+	page_size (RpageSize"Í
+
+PositionItem
+chain_id (RchainId.
+user_wallet_address (	RuserWalletAddress
+
+pool_state (	R	poolState!
+pool_version (RpoolVersion*
+position_nft_mint (	RpositionNftMint0
+position_nft_account (	RpositionNftAccount+
+personal_position (	RpersonalPosition(
+tick_lower_index (RtickLowerIndex(
+tick_upper_index	 (RtickUpperIndex
+	liquidity
+ (	R	liquidity
+token0_mint (	R
+token0Mint
+token1_mint (	R
+token1Mint#
+token0_symbol (	Rtoken0Symbol#
+token1_symbol (	Rtoken1Symbol
+token0_name (	R
+token0Name
+token1_name (	R
+token1Name'
+token0_decimals (Rtoken0Decimals'
+token1_decimals (Rtoken1Decimals
+token0_icon (	R
+token0Icon
+token1_icon (	R
+token1Icon%
+position_value (RpositionValue#
+token0_amount (Rtoken0Amount#
+token1_amount (Rtoken1Amount%
+unclaimed_fees (RunclaimedFees
+	price_min (RpriceMin
+	price_max (RpriceMax#
+current_price (RcurrentPrice
+is_in_range (R	isInRange
+
+lp_balance (R	lpBalance
+lp_value (RlpValue,
+pool_liquidity_usd (RpoolLiquidityUsd&
+pool_volume_24h  (RpoolVolume24h
+pool_apr! (RpoolApr
+fee_tier" (RfeeTier
+tx_hash# (	RtxHash
+
+block_time$ (R	blockTime
+
+created_at% (R	createdAt
+
+updated_at& (R	updatedAt2•
 MarketU
 GetPumpTokenList.market.GetPumpTokenListRequest .market.GetPumpTokenListResponseR
 GetClmmPoolList.market.GetClmmPoolListRequest.market.GetClmmPoolListResponseL
+GetPoolDetail.market.GetPoolDetailRequest.market.GetPoolDetailResponseL
 PushTokenInfo.market.PushTokenInfoRequest.market.PushTokenInfoResponse[
 GetPairInfoByToken!.market.GetPairInfoByTokenRequest".market.GetPairInfoByTokenResponse^
 GetNativeTokenPrice".market.GetNativeTokenPriceRequest#.market.GetNativeTokenPriceResponseI
-GetTokenInfo.market.GetTokenInfoRequest.market.GetTokenInfoResponseB
+GetTokenInfo.market.GetTokenInfoRequest.market.GetTokenInfoResponse@
+	QuoteCpmm.market.QuoteCpmmRequest.market.QuoteCpmmResponse@
+	QuoteClmm.market.QuoteClmmRequest.market.QuoteClmmResponsea
+GetClmmPoolDepthData#.market.GetClmmPoolDepthDataRequest$.market.GetClmmPoolDepthDataResponseU
+GetUserPositions.market.GetUserPositionsRequest .market.GetUserPositionsResponseB
 Z./marketbproto3

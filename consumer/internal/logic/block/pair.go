@@ -4,12 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"math/big"
+	"math"
 	"strings"
 	"time"
 
 	"github.com/shopspring/decimal"
 	"github.com/zeromicro/go-zero/core/logx"
+	"richcode.cc/dex/market/market"
 	"richcode.cc/dex/model/solmodel"
 	constants "richcode.cc/dex/pkg/constants"
 	"richcode.cc/dex/pkg/types"
@@ -25,6 +26,9 @@ func (s *BlockService) SavePair(ctx context.Context, trade *types.TradeWithPair,
 		tokenTotalSupply = tokenDb.TotalSupply
 		tokenSymbol = tokenDb.Symbol
 	}
+	if tokenTotalSupply == 0 && trade.PairInfo.TokenTotalSupply > 0 {
+		tokenTotalSupply = trade.PairInfo.TokenTotalSupply
+	}
 
 	// 第一步：尝试读取现有交易对信息，判断是新增还是增量更新
 	pairAtDB, err = s.sc.PairModel.FindOneByChainIdAddress(ctx, int64(chainId), trade.PairAddr)
@@ -32,20 +36,8 @@ func (s *BlockService) SavePair(ctx context.Context, trade *types.TradeWithPair,
 		s.Errorf("SavePair:FindOneByChainIdAddress err: %v, pair address: %v", err, trade.PairAddr)
 	}
 	// 根据成交信息估算即时流动性，后续用于更新市值、流动性指标
+	// 注意：这个值只是初始值，最终会在 UpdatePairDBPoint 中重新计算
 	liq := trade.CurrentBaseTokenInPoolAmount*trade.BaseTokenPriceUSD + trade.CurrentTokenInPoolAmount*trade.TokenPriceUSD
-	if liq == 0 {
-		if trade.CLMMOpenPositionInfo != nil && trade.CLMMOpenPositionInfo.Liquidity != nil {
-
-			u := trade.CLMMOpenPositionInfo.Liquidity
-			bi := new(big.Int).Lsh(new(big.Int).SetUint64(u.Hi), 64)
-			bi = bi.Add(bi, new(big.Int).SetUint64(u.Lo))
-			f, _ := new(big.Float).SetInt(bi).Float64()
-			liq = f
-
-			fmt.Println("liq is:", liq)
-		}
-	}
-
 	if trade.SwapName == constants.PumpFun {
 		// PumpFun 池子的流动性以双倍基础 Token 估算，贴合官方前端展示
 		liq = trade.CurrentBaseTokenInPoolAmount * trade.BaseTokenPriceUSD * 2
@@ -82,7 +74,7 @@ func (s *BlockService) SavePair(ctx context.Context, trade *types.TradeWithPair,
 			FactoryAddress:               "",
 			BaseTokenAddress:             trade.PairInfo.BaseTokenAddr,
 			TokenAddress:                 trade.PairInfo.TokenAddr,
-			BaseTokenSymbol:              util.GetBaseToken(SolChainIdInt).Symbol,
+			BaseTokenSymbol:              trade.PairInfo.BaseTokenSymbol, // 使用从交易对信息中获取的 base token symbol
 			TokenSymbol:                  tokenSymbol,
 			BaseTokenDecimal:             int64(trade.PairInfo.BaseTokenDecimal),
 			TokenDecimal:                 int64(trade.PairInfo.TokenDecimal),
@@ -123,7 +115,32 @@ func (s *BlockService) SavePair(ctx context.Context, trade *types.TradeWithPair,
 
 		// Push new pump.fun token creation to WebSocket
 		if pairAtDB.Name == constants.PumpFun || pairAtDB.Name == "PumpFun" && pairAtDB.PumpPoint == 0 {
-			fmt.Println("new token created")
+			go func() {
+				fmt.Printf("🆕 [NEW PUMP TOKEN] Broadcasting: %s (%s)\n", pairAtDB.TokenSymbol, pairAtDB.TokenAddress)
+
+				pushReq := &market.PushTokenInfoRequest{
+					ChainId:      pairAtDB.ChainId,
+					TokenAddress: pairAtDB.TokenAddress,
+					PairAddress:  pairAtDB.Address,
+					TokenPrice:   pairAtDB.TokenPrice,
+					MktCap:       pairAtDB.MktCap,
+					TokenName:    "", // Will be populated by market service from token database
+					TokenSymbol:  pairAtDB.TokenSymbol,
+					TokenIcon:    "", // Will be populated by market service from token database
+					LaunchTime:   pairAtDB.BlockTime.Unix(),
+					HoldCount:    0,   // Will be calculated by market service
+					Change_24:    0.0, // Will be calculated by market service
+					Txs_24H:      0,   // Will be calculated by market service
+					PumpStatus:   int32(pairAtDB.PumpStatus),
+				}
+
+				_, err := s.sc.MarketService.PushTokenInfo(ctx, pushReq)
+				if err != nil {
+					fmt.Printf("❌ [NEW PUMP TOKEN] Failed to push: %v\n", err)
+				} else {
+					fmt.Printf("✅ [NEW PUMP TOKEN] Successfully pushed: %s\n", pairAtDB.TokenSymbol)
+				}
+			}()
 		}
 
 		err = s.sc.PairModel.Insert(ctx, pairAtDB)
@@ -141,80 +158,58 @@ func (s *BlockService) SavePair(ctx context.Context, trade *types.TradeWithPair,
 		}
 
 	case err == nil:
-		// 分支二：交易对已存在，直接更新核心指标
-		pairAtDB.CurrentBaseTokenAmount = trade.CurrentBaseTokenInPoolAmount
-		pairAtDB.CurrentTokenAmount = trade.CurrentTokenInPoolAmount
-		pairAtDB.Fdv = liq
-		if trade.SwapName == constants.PumpFun {
-			pairAtDB.Liquidity = trade.CurrentBaseTokenInPoolAmount * trade.BaseTokenPriceUSD * 2
-		}
-		pairAtDB.BaseTokenPrice = baseTokenPrice
-		pairAtDB.TokenPrice = tokenPrice
-		pairAtDB.Slot = trade.Slot
-		pairAtDB.BlockTime = time.Unix(trade.BlockTime, 0)
-		pairAtDB.Liquidity = liq
-
-		// 其它可选字段也可同步更新
-		// 保存到数据库
-		err = s.sc.PairModel.Update(ctx, pairAtDB)
-		if err != nil {
-			err = fmt.Errorf("PairModel.Update err:%w", err)
-			return
-		}
-
-		// 同步 trade 的市值等
-		trade.Mcap = pairAtDB.MktCap
-		trade.Fdv = pairAtDB.Fdv
-		return
+		// 交易对已存在，后续根据 slot 判断是否需要增量更新
+		break
 	default:
 		err = fmt.Errorf("PairModel.FindOneByChainIdAddress err:%w", err)
 		return
 	}
 	// logx.Infof("SavePair:%v db token price: %v, trade token price: %v", trade.PairAddr, pairAtDB.TokenPrice, trade.TokenPriceUSD)
 
+	prevSlot := pairAtDB.Slot
+	if trade.Slot <= prevSlot {
+		trade.Mcap = pairAtDB.MktCap
+		trade.Fdv = pairAtDB.Fdv
+		return
+	}
+
 	// 默认值
 	trade.Mcap = pairAtDB.MktCap
 	trade.Fdv = pairAtDB.Fdv
 
-	if trade.Slot > pairAtDB.Slot {
-		// 只有出现更高的 Slot 才刷新历史指标，避免旧数据覆盖新状态
-		// s.Infof("SavePair will UpdatePairDBPoint slot: %v, db slot: %v, hash: %v, pair address: %v", trade.Slot, pairAtDB.Slot, trade.TxHash, trade.PairAddr)
-
-		if pairAtDB.InitBaseTokenAmount == 0 || pairAtDB.InitTokenAmount == 0 {
-			if trade.PairInfo.InitBaseTokenAmount > 0 && trade.PairInfo.InitTokenAmount > 0 {
-				pairAtDB.InitBaseTokenAmount = trade.PairInfo.InitBaseTokenAmount
-				pairAtDB.InitTokenAmount = trade.PairInfo.InitTokenAmount
-			}
+	if pairAtDB.InitBaseTokenAmount == 0 || pairAtDB.InitTokenAmount == 0 {
+		if trade.PairInfo.InitBaseTokenAmount > 0 && trade.PairInfo.InitTokenAmount > 0 {
+			pairAtDB.InitBaseTokenAmount = trade.PairInfo.InitBaseTokenAmount
+			pairAtDB.InitTokenAmount = trade.PairInfo.InitTokenAmount
 		}
+	}
 
-		// s.initAmount(pairAtDB)
+	pairAtDB.TokenSymbol = tokenSymbol
+	pairAtDB.BlockTime = time.Unix(trade.BlockTime, 0)
+	pairAtDB.Slot = trade.Slot
+	pairAtDB.Liquidity = liq
+	err = s.UpdatePairDBPoint(ctx, trade, pairAtDB, tokenTotalSupply)
+	if err != nil {
+		err = fmt.Errorf("UpdatePairDBPoint err:%w", err)
+		return
+	}
+	pairAtDB.BaseTokenPrice = baseTokenPrice
+	pairAtDB.TokenPrice = tokenPrice
 
-		pairAtDB.TokenSymbol = tokenSymbol
-		pairAtDB.Slot = trade.Slot
-		pairAtDB.Liquidity = liq
-		err = UpdatePairDBPoint(trade, pairAtDB, tokenTotalSupply)
-		if err != nil {
-			err = fmt.Errorf("UpdatePairDBPoint err:%w", err)
-			return
-		}
-		pairAtDB.BaseTokenPrice = baseTokenPrice
-		pairAtDB.TokenPrice = tokenPrice
+	trade.Mcap = pairAtDB.MktCap
+	trade.Fdv = pairAtDB.Fdv
 
-		trade.Mcap = pairAtDB.MktCap
-		trade.Fdv = pairAtDB.Fdv
-
-		err = s.sc.PairModel.Update(ctx, pairAtDB)
-		if err != nil {
-			err = fmt.Errorf("PairModel.Update err:%w", err)
-			return
-		}
+	err = s.sc.PairModel.Update(ctx, pairAtDB)
+	if err != nil {
+		err = fmt.Errorf("PairModel.Update err:%w", err)
+		return
 	}
 
 	return
 }
 
 // UpdatePairDBPoint 根据最新成交刷新交易对的价格、流动性和 Pump 指标。
-func UpdatePairDBPoint(trade *types.TradeWithPair, pairDB *solmodel.Pair, tokenTotalSupply float64) error {
+func (s *BlockService) UpdatePairDBPoint(ctx context.Context, trade *types.TradeWithPair, pairDB *solmodel.Pair, tokenTotalSupply float64) error {
 	currentTokenInPoolAmount := trade.CurrentTokenInPoolAmount
 	currentBaseTokenInPoolAmount := trade.CurrentBaseTokenInPoolAmount
 	baseTokenPriceUSD := trade.BaseTokenPriceUSD
@@ -233,27 +228,19 @@ func UpdatePairDBPoint(trade *types.TradeWithPair, pairDB *solmodel.Pair, tokenT
 	pairDB.PumpStatus = int64(trade.PumpStatus)
 	pairDB.PumpVirtualBaseTokenReserves = trade.PumpVirtualBaseTokenReserves
 	pairDB.PumpVirtualTokenReserves = trade.PumpVirtualTokenReserves
-	// logx.Infof("UpdatePairDBPoint:update token address: %v pump ponit: %v", trade.PairInfo.TokenAddr, pairDB.PumpPoint)
-
-	// Reset token price if base token liquidity is critically low, unless from specific swap types.
-	// if trade.SwapName != util.SwapNamePump && currentBaseTokenInPoolAmount > 0 && currentBaseTokenInPoolAmount < 0.01 {
-	// 	tokenPriceUSD = 0
-	// }
-
-	// Return early if the trade is older than the last update.
-	// if tradeTime < pairDB.LatestTradeTime.Unix() {
-	// 	return nil
-	// }
 
 	// Update token and base token prices only if valid.
 	if tokenPriceUSD > 0 {
 		pairDB.TokenPrice = tokenPriceUSD
-		// logx.Infof("UpdatePairDBPoint %v db price:%v, trade price %v,", pairDB.Address, pairDB.TokenPrice, trade.TokenPriceUSD)
-		// if trade.TokenPriceUSD != pairDB.TokenPrice {
-		// 	logx.Infof("Diff UpdatePairDBPoint %v db price:%v, trade price %v,", pairDB.Address, pairDB.TokenPrice, trade.TokenPriceUSD)
-		// }
+	} else if pairDB.TokenPrice > 0 {
+		tokenPriceUSD = pairDB.TokenPrice
 	}
-	pairDB.BaseTokenPrice = baseTokenPriceUSD
+
+	if baseTokenPriceUSD > 0 {
+		pairDB.BaseTokenPrice = baseTokenPriceUSD
+	} else if pairDB.BaseTokenPrice > 0 {
+		baseTokenPriceUSD = pairDB.BaseTokenPrice
+	}
 
 	// Update FDV (fully diluted valuation) based on token supply.
 	if tokenTotalSupply > 0 {
@@ -274,6 +261,64 @@ func UpdatePairDBPoint(trade *types.TradeWithPair, pairDB *solmodel.Pair, tokenT
 	if pairDB.Name == constants.PumpFun {
 		// PumpFun 使用对半占比的方式估算池子总流动性
 		pairDB.Liquidity = decimal.NewFromFloat(baseTokenPriceUSD).Mul(decimal.NewFromFloat(pairDB.CurrentBaseTokenAmount)).Mul(decimal.NewFromFloat(2)).InexactFloat64()
+	} else if pairDB.Name == constants.RaydiumConcentratedLiquidity {
+		// CLMM 池子的流动性计算
+		// 如果 CurrentBaseTokenAmount 和 CurrentTokenAmount 都为 0，尝试从数据库获取 vault balances
+		if pairDB.CurrentBaseTokenAmount == 0 && pairDB.CurrentTokenAmount == 0 {
+			// 尝试从 clmm_pool_info 表获取 vault balances
+			if poolInfoV1, err := s.sc.SolRaydiumCLMMPoolV1Model.FindOneByPoolState(ctx, trade.PairAddr); err == nil && poolInfoV1 != nil {
+				// 从链上获取 vault balances，根据 mint 地址判断对应关系
+				if cli := s.sc.GetSolClient(); cli != nil {
+					// 获取 InputVault 余额
+					if resp, err := cli.GetTokenAccountBalance(ctx, poolInfoV1.InputVault); err == nil && resp.Amount > 0 {
+						amount := float64(resp.Amount) / math.Pow10(int(resp.Decimals))
+						// 根据 mint 地址判断是 base token 还是 token
+						if poolInfoV1.InputVaultMint == trade.PairInfo.BaseTokenAddr {
+							pairDB.CurrentBaseTokenAmount = amount
+						} else if poolInfoV1.InputVaultMint == trade.PairInfo.TokenAddr {
+							pairDB.CurrentTokenAmount = amount
+						}
+					}
+					// 获取 OutputVault 余额
+					if resp, err := cli.GetTokenAccountBalance(ctx, poolInfoV1.OutputVault); err == nil && resp.Amount > 0 {
+						amount := float64(resp.Amount) / math.Pow10(int(resp.Decimals))
+						// 根据 mint 地址判断是 base token 还是 token
+						if poolInfoV1.OutputVaultMint == trade.PairInfo.BaseTokenAddr {
+							pairDB.CurrentBaseTokenAmount = amount
+						} else if poolInfoV1.OutputVaultMint == trade.PairInfo.TokenAddr {
+							pairDB.CurrentTokenAmount = amount
+						}
+					}
+				}
+			} else if poolInfoV2, err := s.sc.SolRaydiumCLMMPoolV2Model.FindOneByPoolState(ctx, trade.PairAddr); err == nil && poolInfoV2 != nil {
+				// 从链上获取 vault balances，根据 mint 地址判断对应关系
+				if cli := s.sc.GetSolClient(); cli != nil {
+					// 获取 InputVault 余额
+					if resp, err := cli.GetTokenAccountBalance(ctx, poolInfoV2.InputVault); err == nil && resp.Amount > 0 {
+						amount := float64(resp.Amount) / math.Pow10(int(resp.Decimals))
+						// 根据 mint 地址判断是 base token 还是 token
+						if poolInfoV2.InputVaultMint == trade.PairInfo.BaseTokenAddr {
+							pairDB.CurrentBaseTokenAmount = amount
+						} else if poolInfoV2.InputVaultMint == trade.PairInfo.TokenAddr {
+							pairDB.CurrentTokenAmount = amount
+						}
+					}
+					// 获取 OutputVault 余额
+					if resp, err := cli.GetTokenAccountBalance(ctx, poolInfoV2.OutputVault); err == nil && resp.Amount > 0 {
+						amount := float64(resp.Amount) / math.Pow10(int(resp.Decimals))
+						// 根据 mint 地址判断是 base token 还是 token
+						if poolInfoV2.OutputVaultMint == trade.PairInfo.BaseTokenAddr {
+							pairDB.CurrentBaseTokenAmount = amount
+						} else if poolInfoV2.OutputVaultMint == trade.PairInfo.TokenAddr {
+							pairDB.CurrentTokenAmount = amount
+						}
+					}
+				}
+			}
+		}
+		// 计算 CLMM 流动性
+		pairDB.Liquidity = decimal.NewFromFloat(tokenPriceUSD).Mul(decimal.NewFromFloat(pairDB.CurrentTokenAmount)).
+			Add(decimal.NewFromFloat(baseTokenPriceUSD).Mul(decimal.NewFromFloat(pairDB.CurrentBaseTokenAmount))).InexactFloat64()
 	} else {
 		pairDB.Liquidity = decimal.NewFromFloat(tokenPriceUSD).Mul(decimal.NewFromFloat(pairDB.CurrentTokenAmount)).
 			Add(decimal.NewFromFloat(baseTokenPriceUSD).Mul(decimal.NewFromFloat(pairDB.CurrentBaseTokenAmount))).InexactFloat64()

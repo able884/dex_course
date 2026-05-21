@@ -1,11 +1,9 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { WalletAdapterNetwork } from '@solana/wallet-adapter-base';
 import { ConnectionProvider, WalletProvider } from '@solana/wallet-adapter-react';
 import { WalletModalProvider } from '@solana/wallet-adapter-react-ui';
 import { PhantomWalletAdapter, SolflareWalletAdapter } from '@solana/wallet-adapter-wallets';
 import { clusterApiUrl } from '@solana/web3.js';
-import { useMemo } from 'react';
-
 import HeaderNew from './components/Layout/HeaderNew';
 import CreateTokenModal from './components/Pump/CreateTokenModal';
 import DashboardNew from './components/Dashboard/DashboardNew';
@@ -13,6 +11,9 @@ import TokenListNew from './components/Tokens/TokenListNew';
 import TokenCreationNew from './components/Tokens/TokenCreationNew';
 import LiquidityPage from './components/liquidity/LiquidityPage';
 import PoolsPage from './components/Pools/PoolsPage';
+import PoolDeposit from './components/Pools/PoolDeposit';
+import ClmmPoolDeposit from './components/Pools/ClmmPoolDeposit';
+import SwapPage from './components/Swap/SwapPage';
 import Footer from './components/Layout/Footer';
 import LanguageSelector from './components/Layout/LanguageSelector';
 import { LanguageProvider } from './i18n/LanguageContext';
@@ -31,6 +32,8 @@ function App() {
   const [isLanguageSelectorOpen, setIsLanguageSelectorOpen] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [poolCreationType, setPoolCreationType] = useState('cpmm');
+  const [selectedPool, setSelectedPool] = useState(null);
+  const [selectedSwapPool, setSelectedSwapPool] = useState(null);
 
   // Solana network configuration
   const network = WalletAdapterNetwork.Devnet;
@@ -58,7 +61,17 @@ function App() {
   };
 
   const navigateToPoolsPage = () => {
+    setSelectedPool(null);
+    setSelectedSwapPool(null);
     setCurrentPage('pools');
+    setActiveTab('pools');
+  };
+
+  const navigateToSwap = (pool) => {
+    setSelectedSwapPool(pool || null);
+    setSelectedPool(null);
+    setCurrentPage('swap');
+    setActiveTab('pools');
   };
 
   const navigateToPoolCreation = (type = 'cpmm') => {
@@ -70,11 +83,10 @@ function App() {
   const navigateToCharts = (pool) => {
     console.log('Navigate to charts for pool:', pool?.poolState);
   };
-  const navigateToSwap = (tokenA, tokenB) => {
-    console.log('Navigate to swap for pair:', tokenA?.symbol, tokenB?.symbol);
-  };
   const navigateToAddLiquidity = (pool) => {
-    console.log('Navigate to add-liquidity for pool:', pool?.poolState);
+    setSelectedPool(pool || null);
+    setCurrentPage('deposit');
+    setActiveTab('pools');
   };
 
   const handleTabChange = (tabId) => {
@@ -85,6 +97,7 @@ function App() {
         setCurrentPage('home');
         break;
       case 'pools':
+        setSelectedPool(null);
         setCurrentPage('pools');
         break;
       case 'tokens':
@@ -141,6 +154,34 @@ function App() {
           <LiquidityPage 
             onNavigateBack={navigateToPoolsPage} 
             initialType={poolCreationType}
+          />
+        );
+      case 'deposit':
+        // Check pool version to determine which deposit component to use
+        // CLMM pools have poolVersion 1 or 2, CPMM pools have poolVersion 3
+        const poolVersion = selectedPool?.poolVersion;
+        const isClmm = poolVersion === 1 || poolVersion === 2;
+        
+        if (isClmm) {
+          return (
+            <ClmmPoolDeposit
+              pool={selectedPool}
+              onNavigateBack={navigateToPoolsPage}
+            />
+          );
+        }
+        
+        return (
+          <PoolDeposit
+            pool={selectedPool}
+            onNavigateBack={navigateToPoolsPage}
+          />
+        );
+      case 'swap':
+        return (
+          <SwapPage
+            pool={selectedSwapPool}
+            onNavigateBack={navigateToPoolsPage}
           />
         );
       case 'home':

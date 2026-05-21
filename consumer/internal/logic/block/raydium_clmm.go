@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"time"
 
 	"github.com/blocto/solana-go-sdk/client"
 	"github.com/blocto/solana-go-sdk/common"
@@ -18,9 +19,9 @@ import (
 	"github.com/zeromicro/go-zero/core/logx"
 	"richcode.cc/dex/consumer/internal/svc"
 	constants "richcode.cc/dex/pkg/constants"
+	"richcode.cc/dex/pkg/raydium/clmm"
 	"richcode.cc/dex/pkg/raydium/clmm/idl/generated/amm_v3"
 	"richcode.cc/dex/pkg/types"
-	"richcode.cc/dex/pkg/util"
 )
 
 const (
@@ -87,8 +88,9 @@ func (decoder *ConcentratedLiquidityDecoder) createPairInfo(poolStateAccount str
 		Addr:             poolStateAccount,
 		BaseTokenAddr:    baseAccount.TokenAddress,
 		BaseTokenDecimal: baseAccount.TokenDecimal,
-		BaseTokenSymbol:  util.GetBaseToken(SolChainIdInt).Symbol,
+		BaseTokenSymbol:  baseAccount.TokenSymbol, // 使用从数据库获取的 base token symbol
 		TokenAddr:        tokenAccount.TokenAddress,
+		TokenSymbol:      tokenAccount.TokenSymbol, // 使用从数据库获取的 token symbol
 		TokenDecimal:     tokenAccount.TokenDecimal,
 		BlockTime:        decoder.dtx.BlockDb.BlockTime.Unix(),
 		BlockNum:         decoder.dtx.BlockDb.Slot,
@@ -128,11 +130,11 @@ func (decoder *ConcentratedLiquidityDecoder) buildPairInfoForOpenPosition(
 	if token0Info != nil && token0Info.TokenAddress == TokenStrWrapSol {
 		// token0 是 WSOL,作为基础代币
 		baseTokenAddr = token0Info.TokenAddress
-		baseTokenSymbol = util.GetBaseToken(SolChainIdInt).Symbol
+		baseTokenSymbol = token0Info.TokenSymbol
 		baseTokenDecimal = token0Info.TokenDecimal
 		if token1Info != nil {
 			tokenAddr = token1Info.TokenAddress
-			tokenSymbol = ""
+			tokenSymbol = token1Info.TokenSymbol
 			tokenDecimal = token1Info.TokenDecimal
 		} else {
 			tokenAddr = tokenAccount1
@@ -142,11 +144,11 @@ func (decoder *ConcentratedLiquidityDecoder) buildPairInfoForOpenPosition(
 	} else if token1Info != nil && token1Info.TokenAddress == TokenStrWrapSol {
 		// token1 是 WSOL,作为基础代币
 		baseTokenAddr = token1Info.TokenAddress
-		baseTokenSymbol = util.GetBaseToken(SolChainIdInt).Symbol
+		baseTokenSymbol = token1Info.TokenSymbol
 		baseTokenDecimal = token1Info.TokenDecimal
 		if token0Info != nil {
 			tokenAddr = token0Info.TokenAddress
-			tokenSymbol = ""
+			tokenSymbol = token0Info.TokenSymbol
 			tokenDecimal = token0Info.TokenDecimal
 		} else {
 			tokenAddr = tokenAccount0
@@ -156,10 +158,10 @@ func (decoder *ConcentratedLiquidityDecoder) buildPairInfoForOpenPosition(
 	} else if token0Info != nil && token1Info != nil {
 		// 两个都不是 WSOL,默认 token0 作为基础代币
 		baseTokenAddr = token0Info.TokenAddress
-		baseTokenSymbol = ""
+		baseTokenSymbol = token0Info.TokenSymbol
 		baseTokenDecimal = token0Info.TokenDecimal
 		tokenAddr = token1Info.TokenAddress
-		tokenSymbol = ""
+		tokenSymbol = token1Info.TokenSymbol
 		tokenDecimal = token1Info.TokenDecimal
 	} else {
 		// 两个代币信息都不可用,使用默认值
@@ -254,7 +256,7 @@ func (decoder *ConcentratedLiquidityDecoder) DecodeRaydiumConcentratedLiquidityI
 		return decoder.DecodeRaydiumConcentratedLiquiditySwapV2()
 	} else if bytes.Equal(discriminator, amm_v3.Instruction_CreatePool[:]) {
 		return decoder.DecodeRaydiumConcentratedLiquidityCreatePool()
-	} else if bytes.Equal(discriminator, amm_v3.Instruction_OpenPosition[:]) {
+	} else if bytes.Equal(discriminator, amm_v3.Instruction_OpenPosition[:]) || bytes.Equal(discriminator, amm_v3.Instruction_OpenPositionWithToken22Nft[:]) {
 		return decoder.DecodeRaydiumConcentratedLiquidityOpenPosition()
 	} else if bytes.Equal(discriminator, amm_v3.Instruction_IncreaseLiquidityV2[:]) {
 		return decoder.DecodeRaydiumConcentratedLiquidityIncreaseLiquidityV2()
@@ -269,9 +271,17 @@ func (decoder *ConcentratedLiquidityDecoder) DecodeRaydiumConcentratedLiquidityI
 func (decoder *ConcentratedLiquidityDecoder) DecodeRaydiumConcentratedLiquidityIncreaseLiquidityV2() (*types.TradeWithPair, error) {
 	tx := decoder.dtx.Tx
 	nftOwnerAccount := tx.AccountKeys[decoder.compiledInstruction.Accounts[0]]
+	nftAccount := tx.AccountKeys[decoder.compiledInstruction.Accounts[1]] // NFT TokenAccount
 	poolStateAccount := tx.AccountKeys[decoder.compiledInstruction.Accounts[2]]
 	tokenAccount0 := tx.AccountKeys[decoder.compiledInstruction.Accounts[7]]
 	tokenAccount1 := tx.AccountKeys[decoder.compiledInstruction.Accounts[8]]
+
+	// 从 NFT 账户获取 position_nft_mint
+	positionNftMint := ""
+	nftAccountInfo, err := decoder.getTokenAccountInfo(nftAccount.String())
+	if err == nil && nftAccountInfo != nil {
+		positionNftMint = nftAccountInfo.TokenAddress
+	}
 
 	// 获取代币账户信息
 	account0Info, err := decoder.getTokenAccountInfo(tokenAccount0.String())
@@ -300,6 +310,16 @@ func (decoder *ConcentratedLiquidityDecoder) DecodeRaydiumConcentratedLiquidityI
 	decoder.updatePoolAmounts(trade, account0Info, baseAccount.TokenAddress, tokenAccount.TokenAddress)
 	decoder.updatePoolAmounts(trade, account1Info, baseAccount.TokenAddress, tokenAccount.TokenAddress)
 
+	// 将 position_nft_mint 存储到扩展字段中（如果 TradeWithPair 有相关字段）
+	// 或者创建一个新的 CLMMLiquidityChangeInfo 结构
+	if positionNftMint != "" {
+		// 使用 CLMMOpenPositionInfo 作为临时存储（虽然字段不完全匹配，但可以存储 position_nft_mint）
+		if trade.CLMMOpenPositionInfo == nil {
+			trade.CLMMOpenPositionInfo = &types.CLMMOpenPositionInfo{}
+		}
+		trade.CLMMOpenPositionInfo.PositionNftMint = positionNftMint
+	}
+
 	return trade, nil
 }
 
@@ -307,9 +327,17 @@ func (decoder *ConcentratedLiquidityDecoder) DecodeRaydiumConcentratedLiquidityI
 func (decoder *ConcentratedLiquidityDecoder) DecodeRaydiumConcentratedLiquidityDecreaseLiquidityV2() (*types.TradeWithPair, error) {
 	tx := decoder.dtx.Tx
 	nftOwnerAccount := tx.AccountKeys[decoder.compiledInstruction.Accounts[0]]
+	nftAccount := tx.AccountKeys[decoder.compiledInstruction.Accounts[1]] // NFT TokenAccount
 	poolStateAccount := tx.AccountKeys[decoder.compiledInstruction.Accounts[3]]
 	tokenVault0 := tx.AccountKeys[decoder.compiledInstruction.Accounts[5]]
 	tokenVault1 := tx.AccountKeys[decoder.compiledInstruction.Accounts[6]]
+
+	// 从 NFT 账户获取 position_nft_mint
+	positionNftMint := ""
+	nftAccountInfo, err := decoder.getTokenAccountInfo(nftAccount.String())
+	if err == nil && nftAccountInfo != nil {
+		positionNftMint = nftAccountInfo.TokenAddress
+	}
 
 	// 获取代币账户信息
 	account0Info, err := decoder.getTokenAccountInfo(tokenVault0.String())
@@ -338,30 +366,112 @@ func (decoder *ConcentratedLiquidityDecoder) DecodeRaydiumConcentratedLiquidityD
 	decoder.updatePoolAmounts(trade, account0Info, baseAccount.TokenAddress, tokenAccount.TokenAddress)
 	decoder.updatePoolAmounts(trade, account1Info, baseAccount.TokenAddress, tokenAccount.TokenAddress)
 
+	// 将 position_nft_mint 存储到扩展字段中
+	if positionNftMint != "" {
+		if trade.CLMMOpenPositionInfo == nil {
+			trade.CLMMOpenPositionInfo = &types.CLMMOpenPositionInfo{}
+		}
+		trade.CLMMOpenPositionInfo.PositionNftMint = positionNftMint
+	}
+
 	return trade, nil
 }
 
 func (decoder *ConcentratedLiquidityDecoder) DecodeRaydiumConcentratedLiquidityOpenPosition() (*types.TradeWithPair, error) {
 	tx := decoder.dtx.Tx
-	payerAccount := tx.AccountKeys[decoder.compiledInstruction.Accounts[0]]                   // payerAccount
-	positionNftOwnerAccount := tx.AccountKeys[decoder.compiledInstruction.Accounts[1]]        // positionNftOwnerAccount
-	positionNftMintAccount := tx.AccountKeys[decoder.compiledInstruction.Accounts[2]]         // positionNftMintAccount
-	positionNftAccountAccount := tx.AccountKeys[decoder.compiledInstruction.Accounts[3]]      // positionNftAccountAccount
-	metadataAccountAccount := tx.AccountKeys[decoder.compiledInstruction.Accounts[4]]         // metadataAccountAccount
-	poolStateAccount := tx.AccountKeys[decoder.compiledInstruction.Accounts[6]]               // poolStateAccount
-	protocolPositionAccount := tx.AccountKeys[decoder.compiledInstruction.Accounts[7]]        // protocolPositionAccount
-	tickArrayLowerAccount := tx.AccountKeys[decoder.compiledInstruction.Accounts[8]]          // tickArrayLowerAccount
-	tickArrayUpperAccount := tx.AccountKeys[decoder.compiledInstruction.Accounts[9]]          // tickArrayUpperAccount
-	personalPositionAccount := tx.AccountKeys[decoder.compiledInstruction.Accounts[10]]       // personalPositionAccount
-	tokenAccount0account := tx.AccountKeys[decoder.compiledInstruction.Accounts[11]]          // tokenAccount0account
-	tokenAccount1account := tx.AccountKeys[decoder.compiledInstruction.Accounts[12]]          // tokenAccount1account
-	tokenVault0account := tx.AccountKeys[decoder.compiledInstruction.Accounts[13]]            // tokenVault0account
-	tokenVault1account := tx.AccountKeys[decoder.compiledInstruction.Accounts[14]]            // tokenVault1account
-	rentAccount := tx.AccountKeys[decoder.compiledInstruction.Accounts[15]]                   // rentAccount
-	systemProgramAccount := tx.AccountKeys[decoder.compiledInstruction.Accounts[16]]          // systemProgramAccount
-	tokenProgramAccount := tx.AccountKeys[decoder.compiledInstruction.Accounts[17]]           // tokenProgramAccount
-	associatedTokenProgramAccount := tx.AccountKeys[decoder.compiledInstruction.Accounts[18]] // associatedTokenProgramAccount
-	metadataProgramAccount := tx.AccountKeys[decoder.compiledInstruction.Accounts[19]]        // metadataProgramAccount
+	discriminator := GetInstructionDiscriminator(decoder.compiledInstruction.Data)
+
+	// 判断是指令类型：OpenPosition 还是 OpenPositionWithToken22Nft
+	isToken22Nft := bytes.Equal(discriminator, amm_v3.Instruction_OpenPositionWithToken22Nft[:])
+
+	// 根据指令类型确定账户索引
+	// OpenPosition: 有 metadata_account (索引4), 共19个账户
+	// OpenPositionWithToken22Nft: 没有 metadata_account, 共20个账户，索引前移
+	var (
+		poolStateIdx, protocolPositionIdx, tickArrayLowerIdx, tickArrayUpperIdx int
+		personalPositionIdx, tokenAccount0Idx, tokenAccount1Idx                 int
+		tokenVault0Idx, tokenVault1Idx, rentIdx, systemProgramIdx               int
+		tokenProgramIdx, associatedTokenProgramIdx                              int
+		metadataAccountIdx, metadataProgramIdx                                  int
+	)
+
+	if isToken22Nft {
+		// OpenPositionWithToken22Nft 账户索引（没有 metadata_account）
+		// 账户顺序: [0]payer, [1]position_nft_owner, [2]position_nft_mint, [3]position_nft_account,
+		// [4]pool_state, [5]protocol_position, [6]tick_array_lower, [7]tick_array_upper,
+		// [8]personal_position, [9]token_account_0, [10]token_account_1, [11]token_vault_0,
+		// [12]token_vault_1, [13]rent, [14]system_program, [15]token_program,
+		// [16]associated_token_program, [17]token_program_2022, [18]vault_0_mint, [19]vault_1_mint
+		poolStateIdx = 4
+		protocolPositionIdx = 5
+		tickArrayLowerIdx = 6
+		tickArrayUpperIdx = 7
+		personalPositionIdx = 8
+		tokenAccount0Idx = 9
+		tokenAccount1Idx = 10
+		tokenVault0Idx = 11
+		tokenVault1Idx = 12
+		rentIdx = 13
+		systemProgramIdx = 14
+		tokenProgramIdx = 15
+		associatedTokenProgramIdx = 16
+		// Token22Nft 没有 metadata 相关账户
+		metadataAccountIdx = -1
+		metadataProgramIdx = -1
+	} else {
+		// OpenPosition 账户索引（有 metadata_account）
+		// 账户顺序: [0]payer, [1]position_nft_owner, [2]position_nft_mint, [3]position_nft_account,
+		// [4]metadata_account, [5]pool_state, [6]protocol_position, [7]tick_array_lower,
+		// [8]tick_array_upper, [9]personal_position, [10]token_account_0, [11]token_account_1,
+		// [12]token_vault_0, [13]token_vault_1, [14]rent, [15]system_program, [16]token_program,
+		// [17]associated_token_program, [18]metadata_program
+		poolStateIdx = 5
+		protocolPositionIdx = 6
+		tickArrayLowerIdx = 7
+		tickArrayUpperIdx = 8
+		personalPositionIdx = 9
+		tokenAccount0Idx = 10
+		tokenAccount1Idx = 11
+		tokenVault0Idx = 12
+		tokenVault1Idx = 13
+		rentIdx = 14
+		systemProgramIdx = 15
+		tokenProgramIdx = 16
+		associatedTokenProgramIdx = 17
+		metadataAccountIdx = 4
+		metadataProgramIdx = 18
+	}
+
+	// 公共账户（两种指令类型都相同）
+	payerAccount := tx.AccountKeys[decoder.compiledInstruction.Accounts[0]]              // payerAccount
+	positionNftOwnerAccount := tx.AccountKeys[decoder.compiledInstruction.Accounts[1]]   // positionNftOwnerAccount
+	positionNftMintAccount := tx.AccountKeys[decoder.compiledInstruction.Accounts[2]]    // positionNftMintAccount
+	positionNftAccountAccount := tx.AccountKeys[decoder.compiledInstruction.Accounts[3]] // positionNftAccountAccount
+
+	// 根据指令类型获取账户
+	var metadataAccountAccount common.PublicKey
+	if metadataAccountIdx >= 0 {
+		metadataAccountAccount = tx.AccountKeys[decoder.compiledInstruction.Accounts[metadataAccountIdx]]
+	}
+
+	poolStateAccount := tx.AccountKeys[decoder.compiledInstruction.Accounts[poolStateIdx]]
+	protocolPositionAccount := tx.AccountKeys[decoder.compiledInstruction.Accounts[protocolPositionIdx]]
+	tickArrayLowerAccount := tx.AccountKeys[decoder.compiledInstruction.Accounts[tickArrayLowerIdx]]
+	tickArrayUpperAccount := tx.AccountKeys[decoder.compiledInstruction.Accounts[tickArrayUpperIdx]]
+	personalPositionAccount := tx.AccountKeys[decoder.compiledInstruction.Accounts[personalPositionIdx]]
+	tokenAccount0account := tx.AccountKeys[decoder.compiledInstruction.Accounts[tokenAccount0Idx]]
+	tokenAccount1account := tx.AccountKeys[decoder.compiledInstruction.Accounts[tokenAccount1Idx]]
+	tokenVault0account := tx.AccountKeys[decoder.compiledInstruction.Accounts[tokenVault0Idx]]
+	tokenVault1account := tx.AccountKeys[decoder.compiledInstruction.Accounts[tokenVault1Idx]]
+	rentAccount := tx.AccountKeys[decoder.compiledInstruction.Accounts[rentIdx]]
+	systemProgramAccount := tx.AccountKeys[decoder.compiledInstruction.Accounts[systemProgramIdx]]
+	tokenProgramAccount := tx.AccountKeys[decoder.compiledInstruction.Accounts[tokenProgramIdx]]
+	associatedTokenProgramAccount := tx.AccountKeys[decoder.compiledInstruction.Accounts[associatedTokenProgramIdx]]
+
+	var metadataProgramAccount common.PublicKey
+	if metadataProgramIdx >= 0 {
+		metadataProgramAccount = tx.AccountKeys[decoder.compiledInstruction.Accounts[metadataProgramIdx]]
+	}
 
 	trade := &types.TradeWithPair{}
 	trade.ChainId = SolChainId
@@ -395,7 +505,6 @@ func (decoder *ConcentratedLiquidityDecoder) DecodeRaydiumConcentratedLiquidityO
 		PositionNftOwner:         positionNftOwnerAccount.String(),
 		PositionNftMint:          positionNftMintAccount.String(),
 		PositionNftAccount:       positionNftAccountAccount.String(),
-		MetadataAccount:          metadataAccountAccount.String(),
 		PoolState:                poolStateAccount.String(),
 		ProtocolPosition:         protocolPositionAccount.String(),
 		TickArrayLower:           tickArrayLowerAccount.String(),
@@ -409,7 +518,14 @@ func (decoder *ConcentratedLiquidityDecoder) DecodeRaydiumConcentratedLiquidityO
 		SystemProgram:            systemProgramAccount.String(),
 		TokenProgram:             tokenProgramAccount.String(),
 		AssociatedTokenProgram:   associatedTokenProgramAccount.String(),
-		MetadataProgram:          metadataProgramAccount.String(),
+	}
+
+	// 根据指令类型设置可选字段
+	if metadataAccountIdx >= 0 {
+		trade.CLMMOpenPositionInfo.MetadataAccount = metadataAccountAccount.String()
+	}
+	if metadataProgramIdx >= 0 {
+		trade.CLMMOpenPositionInfo.MetadataProgram = metadataProgramAccount.String()
 	}
 
 	// 获取代币账户信息
@@ -502,21 +618,18 @@ func (decoder *ConcentratedLiquidityDecoder) DecodeRaydiumConcentratedLiquidityC
 	}
 
 	// Process AMM config to get the trade fee rate
-	solClient := decoder.svcCtx.GetSolClient()
-	if solClient != nil {
-		accountInfo, err := solClient.GetAccountInfoWithConfig(decoder.ctx, clmmInfo.AmmConfig.String(), client.GetAccountInfoConfig{
-			Commitment: rpc.CommitmentConfirmed,
-		})
-		if err == nil {
-			ammConfig := amm_v3.AmmConfig{}
-			if err := ammConfig.UnmarshalWithDecoder(bin.NewBorshDecoder(accountInfo.Data)); err == nil {
-				clmmInfo.TradeFeeRate = ammConfig.TradeFeeRate
-			}
-		}
+	if tradeFeeRate, err := decoder.parseTradeFeeRate(clmmInfo.AmmConfig); err == nil {
+		clmmInfo.TradeFeeRate = tradeFeeRate
+	} else {
+		logx.Errorf("decode createPool clmm: parseTradeFeeRate err: %v, ammConfig=%s", err, clmmInfo.AmmConfig.String())
 	}
 
 	// Set the ClmmPoolInfoV1 field in the trade object
 	trade.ClmmPoolInfoV1 = clmmInfo
+
+	// 根据基础代币和交易代币地址，正确填充池中代币数量和代币精度
+	decoder.fillVaultBalances(trade, inputVaultAccount.String(), outputVaultAccount.String(), baseTokenAddr, tokenAddr)
+
 	return trade, nil
 }
 
@@ -530,18 +643,19 @@ func (decoder *ConcentratedLiquidityDecoder) DecodeRaydiumConcentratedLiquidityS
 	outputVaultAccount := tx.AccountKeys[decoder.compiledInstruction.Accounts[6]]      // outputVaultAccount
 	observationStateAccount := tx.AccountKeys[decoder.compiledInstruction.Accounts[7]] // observationStateAccount
 
+	// 构造swap对象，包含输入输出token信息和本次交易的amount
 	tokenSwap, err := decoder.decodeTokenSwap(inputTokenAccount, outputTokenAccount)
 	if err != nil {
 		return nil, err
 	}
 
-	// 构建基础交易信息
+	// 构建基础trade，这里面会设置tokenUsdPrice
 	trade, err := decoder.buildBaseTrade(poolStateAccount, inputTokenAccount, tokenSwap)
 	if err != nil {
 		return nil, err
 	}
 
-	// 更新池中的代币数量
+	// 更新池中的基础代币和交易代币数量
 	decoder.updatePoolTokenAmounts(trade, inputVaultAccount, outputVaultAccount, tokenSwap)
 
 	// 构建 V2 CLMM 信息
@@ -565,6 +679,7 @@ func (decoder *ConcentratedLiquidityDecoder) DecodeRaydiumConcentratedLiquidityS
 	return trade, nil
 }
 
+// 构造swap对象，包含输入输出token信息和本次交易的amount
 // decodeTokenSwap 统一的代币交换解析方法，适用于V1和V2
 func (decoder *ConcentratedLiquidityDecoder) decodeTokenSwap(inputTokenAccount, outputTokenAccount common.PublicKey) (swap *Swap, err error) {
 	var fromTransfer *token.TransferParam
@@ -593,6 +708,7 @@ func (decoder *ConcentratedLiquidityDecoder) decodeTokenSwap(inputTokenAccount, 
 	}
 
 	for _, innerInstruction := range decoder.innerInstruction.Instructions {
+		// 解析代币转账指令，找到 fromTransfer 和 toTransfer
 		transfer, err := DecodeTokenTransfer(accountKeys, &innerInstruction)
 		if err != nil {
 			continue
@@ -611,6 +727,7 @@ func (decoder *ConcentratedLiquidityDecoder) decodeTokenSwap(inputTokenAccount, 
 		err = errors.New("toTransfer not found ")
 		return
 	}
+	// 验证是否为交换指令（确保 fromTransfer 和 toTransfer 是对应的交换关系）
 	if !IsSwapTransfer(fromTransfer, toTransfer, decoder.dtx.TokenAccountMap) {
 		err = errors.New("not swap transfer")
 		return
@@ -704,12 +821,13 @@ func (decoder *ConcentratedLiquidityDecoder) DecodeRaydiumConcentratedLiquidityS
 	observationStateAccount := tx.AccountKeys[decoder.compiledInstruction.Accounts[7]] // observationStateAccount
 	tickArrayAccount := tx.AccountKeys[decoder.compiledInstruction.Accounts[9]]        // tickArrayAccount
 
+	// 构造swap对象，包含输入输出token信息和本次交易的amount
 	tokenSwap, err := decoder.decodeTokenSwap(inputTokenAccount, outputTokenAccount)
 	if err != nil {
 		return nil, err
 	}
 
-	// 构建基础交易信息
+	// 构建基础trade，这里面会设置tokenUsdPrice
 	trade, err := decoder.buildBaseTrade(poolStateAccount, inputTokenAccount, tokenSwap)
 	if err != nil {
 		return nil, err
@@ -741,7 +859,70 @@ func (decoder *ConcentratedLiquidityDecoder) DecodeRaydiumConcentratedLiquidityS
 	return trade, nil
 }
 
-// buildBaseTrade 构建基础交易信息
+// fetchClmmPriceFromChain 从链上获取 CLMM 池子的价格信息
+// 使用 price = (sqrt_price_x64 / 2^64)^2 * (10^decimals0) / (10^decimals1) 计算价格
+// 如果 inputMint 是 token1 则反转价格
+func (decoder *ConcentratedLiquidityDecoder) fetchClmmPriceFromChain(poolState common.PublicKey, inputMint, outputMint string) (float64, error) {
+	cli := decoder.svcCtx.GetSolClient()
+	if cli == nil {
+		return 0, errors.New("solana rpc client not configured")
+	}
+
+	ctx, cancel := context.WithTimeout(decoder.ctx, 5*time.Second)
+	defer cancel()
+
+	// 从链上获取 PoolState 账户数据
+	accountInfo, err := cli.GetAccountInfo(ctx, poolState.String())
+	if err != nil {
+		return 0, fmt.Errorf("failed to get pool state account: %w", err)
+	}
+	if len(accountInfo.Data) == 0 {
+		return 0, errors.New("pool state account not found or empty")
+	}
+
+	// 解析 PoolState 账户数据
+	data := accountInfo.Data
+	dec := bin.NewBorshDecoder(data)
+	var poolStateAccount amm_v3.PoolStateAccount
+	if err := poolStateAccount.UnmarshalWithDecoder(dec); err != nil {
+		return 0, fmt.Errorf("failed to decode pool state: %w", err)
+	}
+
+	// 获取 sqrt_price_x64
+	sqrtPriceX64 := poolStateAccount.SqrtPriceX64
+	poolTokenMint0 := poolStateAccount.TokenMint0.String()
+	poolTokenMint1 := poolStateAccount.TokenMint1.String()
+	decimals0 := int64(poolStateAccount.MintDecimals0)
+	decimals1 := int64(poolStateAccount.MintDecimals1)
+
+	// 使用公共函数计算价格 price = (sqrt_price_x64 / 2^64)^2 * (10^decimals0) / (10^decimals1)
+	// 如果 inputMint 是 token1 则反转价格
+	price, err := clmm.CalculatePriceFromSqrtPriceX64(
+		clmm.Uint128{
+			Lo: sqrtPriceX64.Lo,
+			Hi: sqrtPriceX64.Hi,
+		},
+		decimals0,
+		decimals1,
+		poolTokenMint0,
+		poolTokenMint1,
+		inputMint,
+		outputMint,
+	)
+	if err != nil {
+		return 0, err
+	}
+
+	// 如果 mint 地址不匹配，记录警告
+	if inputMint != poolTokenMint0 && inputMint != poolTokenMint1 {
+		logx.Errorf("fetchClmmPriceFromChain: mint addresses don't match. inputMint=%s, outputMint=%s, poolTokenMint0=%s, poolTokenMint1=%s",
+			inputMint, outputMint, poolTokenMint0, poolTokenMint1)
+	}
+
+	return price, nil
+}
+
+// buildBaseTrade 构建基础交易信息，设置tokenUsdPrice
 func (decoder *ConcentratedLiquidityDecoder) buildBaseTrade(poolStateAccount, inputTokenAccount common.PublicKey, tokenSwap *Swap) (*types.TradeWithPair, error) {
 	// 验证 TokenAmount 不能为零
 	if tokenSwap.TokenAmount == 0 {
@@ -758,8 +939,9 @@ func (decoder *ConcentratedLiquidityDecoder) buildBaseTrade(poolStateAccount, in
 		Addr:             poolStateAccount.String(),
 		BaseTokenAddr:    tokenSwap.BaseTokenInfo.TokenAddress,
 		BaseTokenDecimal: tokenSwap.BaseTokenInfo.TokenDecimal,
-		BaseTokenSymbol:  util.GetBaseToken(SolChainIdInt).Symbol,
+		BaseTokenSymbol:  tokenSwap.BaseTokenInfo.TokenSymbol, // 使用从数据库获取的 base token symbol
 		TokenAddr:        tokenSwap.TokenInfo.TokenAddress,
+		TokenSymbol:      tokenSwap.TokenInfo.TokenSymbol, // 使用从数据库获取的 token symbol
 		TokenDecimal:     tokenSwap.TokenInfo.TokenDecimal,
 		BlockTime:        decoder.dtx.BlockDb.BlockTime.Unix(),
 		BlockNum:         decoder.dtx.BlockDb.Slot,
@@ -771,7 +953,27 @@ func (decoder *ConcentratedLiquidityDecoder) buildBaseTrade(poolStateAccount, in
 	trade.TokenAmount = tokenSwap.TokenAmount
 	trade.BaseTokenPriceUSD = decoder.dtx.SolPrice
 	trade.TotalUSD = decimal.NewFromFloat(tokenSwap.BaseTokenAmount).Mul(decimal.NewFromFloat(decoder.dtx.SolPrice)).InexactFloat64()
-	trade.TokenPriceUSD = decimal.NewFromFloat(trade.TotalUSD).Div(decimal.NewFromFloat(tokenSwap.TokenAmount)).InexactFloat64()
+
+	// 对于 CLMM 池子，从链上读取 sqrt_price_x64 计算价格
+	// 如果从链上读取失败，回退到使用交易金额计算价格
+	clmmPrice, err := decoder.fetchClmmPriceFromChain(poolStateAccount, tokenSwap.BaseTokenInfo.TokenAddress, tokenSwap.TokenInfo.TokenAddress)
+	if err != nil {
+		logx.Errorf("buildBaseTrade: fetchClmmPriceFromChain failed, poolState:%s err:%v, falling back to trade amount calculation", poolStateAccount.String(), err)
+		// 回退到使用交易金额计算价格
+		if tokenSwap.TokenAmount != 0 {
+			trade.TokenPriceUSD = decimal.NewFromFloat(trade.TotalUSD).Div(decimal.NewFromFloat(tokenSwap.TokenAmount)).InexactFloat64()
+		} else {
+			trade.TokenPriceUSD = 0
+		}
+	} else {
+		// 使用从链上读取的价格计算 TokenPriceUSD
+		// clmmPrice 是 outputMint/inputMint 的价格，即 token/base 的价格
+		// TokenPriceUSD = clmmPrice * BaseTokenPriceUSD
+		trade.TokenPriceUSD = clmmPrice * decoder.dtx.SolPrice
+	}
+
+	logx.Infof("buildBaseTrade CLMM: tx=%v, type=%s, baseAmount=%f, tokenAmount=%f, solPrice=%f, totalUSD=%f, tokenPriceUSD=%f",
+		decoder.dtx.TxHash, trade.Type, tokenSwap.BaseTokenAmount, tokenSwap.TokenAmount, decoder.dtx.SolPrice, trade.TotalUSD, trade.TokenPriceUSD)
 
 	trade.To = tokenSwap.To
 	trade.Slot = decoder.dtx.BlockDb.Slot
@@ -788,7 +990,9 @@ func (decoder *ConcentratedLiquidityDecoder) buildBaseTrade(poolStateAccount, in
 	return trade, nil
 }
 
-// updatePoolTokenAmounts 更新池中的代币数量
+// 更新池子中的代币数量
+// CurrentBaseTokenInPoolAmount = 基础代币账户的余额 / 10^基础代币精度
+// CurrentTokenInPoolAmount数量 = 代币账户的余额 / 10^代币精度
 func (decoder *ConcentratedLiquidityDecoder) updatePoolTokenAmounts(trade *types.TradeWithPair, account1, account2 common.PublicKey, tokenSwap *Swap) {
 	if account1 != (common.PublicKey{}) {
 		poolTokenAccount := decoder.dtx.TokenAccountMap[account1.String()]
@@ -837,11 +1041,24 @@ func (decoder *ConcentratedLiquidityDecoder) parseTradeFeeRate(ammConfigAccount 
 	if err != nil {
 		return 0, err
 	}
+	if len(accountInfo.Data) == 0 {
+		return 0, fmt.Errorf("empty amm_config account data: %s", ammConfigAccount.String())
+	}
+	data := accountInfo.Data
+	if len(data) >= 8 {
+		data = data[8:] // skip Anchor discriminator
+	}
 	ammConfig := amm_v3.AmmConfig{}
-	if err := ammConfig.UnmarshalWithDecoder(bin.NewBorshDecoder(accountInfo.Data)); err != nil {
+	if err := ammConfig.UnmarshalWithDecoder(bin.NewBorshDecoder(data)); err != nil {
 		return 0, err
 	}
-	return ammConfig.TradeFeeRate, nil
+	tradeFee := ammConfig.TradeFeeRate
+	if tradeFee > 1_000_000 { // trade fee is in 1e-6 units; anything larger is likely bad data
+		logx.Errorf("clmm parseTradeFeeRate: suspicious trade_fee_rate=%d for amm_config=%s tx=%s, clamping to sane range",
+			tradeFee, ammConfigAccount.String(), decoder.dtx.TxHash)
+		tradeFee = tradeFee % 1_000_000
+	}
+	return tradeFee, nil
 }
 
 // buildCLMMInfoV1 构建 V1 版本的 CLMM 池信息

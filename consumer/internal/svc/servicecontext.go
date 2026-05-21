@@ -9,25 +9,30 @@ import (
 	"time"
 
 	"github.com/blocto/solana-go-sdk/client"
-	solclient "github.com/blocto/solana-go-sdk/client"
 	"github.com/blocto/solana-go-sdk/rpc"
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/redis"
+	"github.com/zeromicro/go-zero/zrpc"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
-
 	"richcode.cc/dex/consumer/internal/config"
+	"richcode.cc/dex/market/marketclient"
 	"richcode.cc/dex/model/solmodel"
+	"richcode.cc/dex/trade/tradeclient"
 )
 
 type ServiceContext struct {
 	Config                    config.Config
+	MarketService             marketclient.Market
+	TradeService              tradeclient.Trade
 	Redis                     *redis.Redis
+	MetadataCache             *redis.Redis
+	BlockPipelineSettings     config.BlockPipelineConfig
 	solClientLock             sync.Mutex
 	solClientIndex            int
-	solClient                 *solclient.Client
-	solClients                []*solclient.Client
+	solClient                 *client.Client
+	solClients                []*client.Client
 	PairModel                 solmodel.PairModel
 	BlockModel                solmodel.BlockModel
 	TokenModel                solmodel.TokenModel
@@ -38,11 +43,33 @@ type ServiceContext struct {
 	SolRaydiumCLMMPoolV2Model solmodel.ClmmPoolInfoV2Model
 	SolRaydiumCPMMPoolModel   solmodel.CpmmPoolInfoModel
 	SolRaydiumPoolModel       solmodel.RaydiumPoolModel
+	ClmmPositionModel         solmodel.ClmmPositionModel
+	// Pump migration pipeline
+	PumpMigrationChan chan PumpMigrationJob
+	PumpMigrationOnce *sync.Map
+}
+
+// PumpMigrationJob carries the minimal data needed to initialize a Raydium CPMM pool
+// once a Pump pair reaches the migration threshold.
+type PumpMigrationJob struct {
+	PairAddr    string
+	TokenMint   string
+	TokenSymbol string
+	BaseAmount  float64
+	TokenAmount float64
+	PumpPoint   float64
+	Maker       string
 }
 
 func NewServiceContext(c config.Config) *ServiceContext {
+	redisClient := initRedisClient(redisKeyConfToRedisConf(c.Redis))
 	return &ServiceContext{
-		Config: c,
+		Config:                c,
+		Redis:                 redisClient,
+		MetadataCache:         redisClient,
+		BlockPipelineSettings: c.BlockPipeline,
+		PumpMigrationChan:     make(chan PumpMigrationJob, 128),
+		PumpMigrationOnce:     &sync.Map{},
 	}
 }
 
@@ -51,7 +78,7 @@ func NewSolServiceContext(c config.Config) *ServiceContext {
 
 	logx.Infof("newSolServiceContext: config:%#v", c)
 
-	var solClients []*solclient.Client
+	var solClients []*client.Client
 	for _, node := range c.Sol.NodeUrl {
 		client.New(rpc.WithEndpoint(node), rpc.WithHTTPClient(&http.Client{
 			Timeout: 10 * time.Second,
@@ -87,8 +114,20 @@ func NewSolServiceContext(c config.Config) *ServiceContext {
 	// Initialize BlockModel
 	blockModel := solmodel.NewBlockModel(db)
 
+	redisClient := initRedisClient(redisKeyConfToRedisConf(c.Redis))
+
+	var tradeSvc tradeclient.Trade
+	if c.TradeService.Target != "" {
+		tradeSvc = tradeclient.NewTrade(zrpc.MustNewClient(c.TradeService))
+	}
+
 	return &ServiceContext{
 		Config:                    c,
+		MarketService:             marketclient.NewMarket(zrpc.MustNewClient(c.MarketService)),
+		TradeService:              tradeSvc,
+		Redis:                     redisClient,
+		MetadataCache:             redisClient,
+		BlockPipelineSettings:     c.BlockPipeline,
 		solClients:                solClients,
 		BlockModel:                blockModel,
 		PairModel:                 solmodel.NewPairModel(db),
@@ -98,6 +137,10 @@ func NewSolServiceContext(c config.Config) *ServiceContext {
 		SolTokenAccountModel:      solmodel.NewSolTokenAccountModel(db),
 		SolRaydiumCLMMPoolV1Model: solmodel.NewClmmPoolInfoV1Model(db),
 		SolRaydiumCLMMPoolV2Model: solmodel.NewClmmPoolInfoV2Model(db),
+		SolRaydiumCPMMPoolModel:   solmodel.NewCpmmPoolInfoModel(db),
+		ClmmPositionModel:         solmodel.NewClmmPositionModel(db),
+		PumpMigrationChan:         make(chan PumpMigrationJob, 128),
+		PumpMigrationOnce:         &sync.Map{},
 	}
 }
 
@@ -108,4 +151,22 @@ func (sc *ServiceContext) GetSolClient() *client.Client {
 	index := sc.solClientIndex % len(sc.solClients)
 	sc.solClient = sc.solClients[index]
 	return sc.solClients[index]
+}
+
+func redisKeyConfToRedisConf(conf redis.RedisKeyConf) redis.RedisConf {
+	return redis.RedisConf{
+		Host:        conf.Host,
+		Type:        conf.Type,
+		Pass:        conf.Pass,
+		Tls:         conf.Tls,
+		NonBlock:    conf.NonBlock,
+		PingTimeout: conf.PingTimeout,
+	}
+}
+
+func initRedisClient(conf redis.RedisConf) *redis.Redis {
+	if len(conf.Host) == 0 {
+		return nil
+	}
+	return redis.MustNewRedis(conf)
 }

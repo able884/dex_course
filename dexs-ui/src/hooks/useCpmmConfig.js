@@ -48,7 +48,9 @@ export function useCpmmConfig({
   feeEndpoint,
   fallbackTokens = [],
   fallbackFees = [],
+  poolType = 'CPMM',
 }) {
+  const poolTypeKey = (poolType || 'CPMM').toUpperCase();
   const mountedRef = useRef(true);
   const fallbackTokensRef = useRef(fallbackTokens);
   const fallbackFeesRef = useRef(fallbackFees);
@@ -58,8 +60,8 @@ export function useCpmmConfig({
   useEffect(() => {
     fallbackFeesRef.current = fallbackFees;
   }, [fallbackFees]);
-  const cachedTokens = getCachedTokens();
-  const cachedFees = getCachedFeeTiers();
+  const cachedTokens = getCachedTokens(poolTypeKey);
+  const cachedFees = getCachedFeeTiers(poolTypeKey);
   const [tokenState, setTokenState] = useState({
     items: cachedTokens && cachedTokens.length ? cachedTokens : fallbackTokens,
     loading: false,
@@ -85,7 +87,7 @@ export function useCpmmConfig({
           ? data.tokens
           : fallbackTokensRef.current;
       if (!mountedRef.current) return;
-      setCachedTokens(list);
+      setCachedTokens(list, poolTypeKey);
       setTokenState({ items: list, loading: false, error: '' });
     } catch (err) {
       if (!mountedRef.current) return;
@@ -95,7 +97,7 @@ export function useCpmmConfig({
         error: formatErrorMessage(err),
       });
     }
-  }, [tokensEndpoint]);
+  }, [tokensEndpoint, poolTypeKey]);
 
   const fetchFees = useCallback(async () => {
     setFeeState((prev) => ({ ...prev, loading: true, error: '' }));
@@ -107,7 +109,7 @@ export function useCpmmConfig({
           ? data.tiers
           : fallbackFeesRef.current;
       if (!mountedRef.current) return;
-      setCachedFeeTiers(tiers);
+      setCachedFeeTiers(tiers, poolTypeKey);
       setFeeState({ items: tiers, loading: false, error: '' });
     } catch (err) {
       if (!mountedRef.current) return;
@@ -117,7 +119,7 @@ export function useCpmmConfig({
         error: formatErrorMessage(err),
       });
     }
-  }, [feeEndpoint]);
+  }, [feeEndpoint, poolTypeKey]);
 
   useEffect(() => {
     fetchTokens();

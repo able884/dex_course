@@ -1,0 +1,41 @@
+Name: trade.rpc
+ListenOn: 0.0.0.0:8100
+# Etcd:
+#   Hosts:
+#   - 127.0.0.1:2379
+#   Key: trade.rpc
+
+simulate_only: false
+
+Sol:
+  ChainId: 100000
+  #jito 不为空，就用jito地址来发送 (disabled for devnet)
+  Jito: ""
+  NodeUrl:
+    # - "https://devnet.helius-rpc.com/?api-key=ffb452cc-5d85-4d2c-b3b1-2fc808745116"
+    - "https://mainnet.helius-rpc.com/?api-key=ffb452cc-5d85-4d2c-b3b1-2fc808745116"
+  Enable: true
+  UUID: "4dcec5c9-01fb-4f41-bf2c-4d8e30bce6ac"
+
+Ipfs:
+  Provider: "lighthouse"
+  NFTStorageApiKey: "986b3b0b.fe7e05a51d7e408fad94384b21d4ff80" # 请在此填入 NFT.Storage API Key
+  Gateway: "https://gateway.lighthouse.storage/ipfs/"
+
+Mysql:
+  User: root
+  Password: "123456"
+  Host: 172.17.112.1
+  Port: 3306
+  DBname: rc_dex_study
+
+Liquidity:
+  DSN: "root:123456@tcp(172.17.112.1:3306)/rc_dex_study?parseTime=true"
+  TokenPageSize: 200
+  CacheTTLSeconds: 60
+
+market_service:
+  target: localhost:8090
+  nonblock: true
+  timeout: 60000  # 10 seconds timeout
+  transport: tcp

@@ -34,15 +34,15 @@ type (
 
 	Block struct {
 		Id          int64        `gorm:"column:id"`
-		Slot        int64        `gorm:"column:slot"`         // slot
-		BlockHeight int64        `gorm:"column:block_height"` // block_height
-		BlockTime   time.Time    `gorm:"column:block_time"`   // block_time
-		Status      int64        `gorm:"column:status"`       // 1 processed, 2 failed
-		SolPrice    float64      `gorm:"column:sol_price"`    // sol price
+		Slot        int64        `gorm:"column:slot"`         // 区块 Slot 编号
+		BlockHeight int64        `gorm:"column:block_height"` // 区块高度
+		BlockTime   time.Time    `gorm:"column:block_time"`   // 区块时间
+		Status      int64        `gorm:"column:status"`       // 状态：1 已处理，2 处理失败
+		SolPrice    float64      `gorm:"column:sol_price"`    // SOL 价格
 		CreatedAt   time.Time    `gorm:"column:created_at"`
 		UpdatedAt   time.Time    `gorm:"column:updated_at"`
 		DeletedAt   sql.NullTime `gorm:"column:deleted_at;index"`
-		ErrMessage  string       `gorm:"column:err_message"` // error message
+		ErrMessage  string       `gorm:"column:err_message"` // 错误信息
 	}
 )
 

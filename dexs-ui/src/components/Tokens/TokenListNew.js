@@ -51,6 +51,16 @@ const TokenList = ({ onTokenSelect, filterType = 'all' }) => {
   const [newTokens, setNewTokens] = useState([]);
   const [completingTokens, setCompletingTokens] = useState([]);
   const [completedTokens, setCompletedTokens] = useState([]);
+  const PAGE_SIZE = 10;
+  const [newPage, setNewPage] = useState(1);
+  const [completingPage, setCompletingPage] = useState(1);
+  const [completedPage, setCompletedPage] = useState(1);
+  const [newHasMore, setNewHasMore] = useState(true);
+  const [completingHasMore, setCompletingHasMore] = useState(true);
+  const [completedHasMore, setCompletedHasMore] = useState(true);
+  const [loadingNew, setLoadingNew] = useState(false);
+  const [loadingCompleting, setLoadingCompleting] = useState(false);
+  const [loadingCompleted, setLoadingCompleted] = useState(false);
   
   // (removed) CLMM state
   
@@ -174,52 +184,102 @@ const TokenList = ({ onTokenSelect, filterType = 'all' }) => {
   // Initialize WebSocket connection
   const { connectionStatus } = useTokenListWebSocket(handleNewToken, handleTokenUpdate);
 
+  const fetchList = useCallback(
+    async (pumpStatus, page, append = false, pumpType = activeTab) => {
+      const setPageMap = {
+        1: setNewPage,
+        2: setCompletingPage,
+        4: setCompletedPage,
+      };
+      const setDataMap = {
+        1: setNewTokens,
+        2: setCompletingTokens,
+        4: setCompletedTokens,
+      };
+      const setHasMoreMap = {
+        1: setNewHasMore,
+        2: setCompletingHasMore,
+        4: setCompletedHasMore,
+      };
+      const setLoadingMap = {
+        1: setLoadingNew,
+        2: setLoadingCompleting,
+        4: setLoadingCompleted,
+      };
+
+      const setPage = setPageMap[pumpStatus];
+      const setData = setDataMap[pumpStatus];
+      const setHasMore = setHasMoreMap[pumpStatus];
+      const setLoadingFlag = setLoadingMap[pumpStatus];
+
+      if (!setPage || !setData || !setHasMore) return;
+
+      setLoadingFlag?.(true);
+      try {
+        const res = await fetch(
+          `${API_BASE_URL}/v1/market/index_pump?chain_id=100000&pump_status=${pumpStatus}&page_no=${page}&page_size=${PAGE_SIZE}&pump_type=${pumpType}`
+        );
+        const data = await res.json();
+        const list = data?.data?.list || [];
+
+        setData((prev) => (append ? [...prev, ...list] : list));
+
+        if (list.length === 0) {
+          setHasMore(false);
+          return;
+        }
+        if (list.length < PAGE_SIZE) {
+          setHasMore(false);
+        } else {
+          setHasMore(true);
+        }
+        setPage(page + 1);
+      } catch (err) {
+        console.error(`❌ Failed to fetch ${pumpType} tokens (status ${pumpStatus}):`, err);
+        setError(`Failed to fetch tokens: ${err.message}`);
+        setHasMore(false);
+      } finally {
+        setLoadingFlag?.(false);
+      }
+    },
+    [API_BASE_URL, PAGE_SIZE, activeTab]
+  );
+
   // Fetch PumpFun or PumpAMM tokens
+  
   const fetchTokens = useCallback(async (pumpType = 'pumpamm') => {
-    // 先清空所有 token 数据
+    // ?????token ???????
     setNewTokens([]);
     setCompletingTokens([]);
     setCompletedTokens([]);
+    setNewPage(1);
+    setCompletingPage(1);
+    setCompletedPage(1);
+    setNewHasMore(true);
+    setCompletingHasMore(true);
+    setCompletedHasMore(true);
     
     setLoading(true);
     setError('');
     
     try {
-      const [resNew, resCompleting, resCompleted] = await Promise.all([
-        fetch(`${API_BASE_URL}/v1/market/index_pump?chain_id=100000&pump_status=1&page_no=1&page_size=50&pump_type=${pumpType}`),
-        fetch(`${API_BASE_URL}/v1/market/index_pump?chain_id=100000&pump_status=2&page_no=1&page_size=50&pump_type=${pumpType}`),
-        fetch(`${API_BASE_URL}/v1/market/index_pump?chain_id=100000&pump_status=4&page_no=1&page_size=50&pump_type=${pumpType}`)
+      await Promise.all([
+        fetchList(1, 1, false, pumpType),
+        fetchList(2, 1, false, pumpType),
+        fetchList(4, 1, false, pumpType)
       ]);
 
-      const [dataNew, dataCompleting, dataCompleted] = await Promise.all([
-        resNew.json(),
-        resCompleting.json(),
-        resCompleted.json()
-      ]);
-
-      const newTokens = (dataNew?.data?.list) || [];
-      const completingTokens = (dataCompleting?.data?.list) || [];
-      const completedTokens = (dataCompleted?.data?.list) || [];
-      
-      console.log(`✅ Fetched ${pumpType} tokens:`, {
-        newTokens: newTokens.length,
-        completingTokens: completingTokens.length,
-        completedTokens: completedTokens.length
-      });
-      
-      setNewTokens(newTokens);
-      setCompletingTokens(completingTokens);
-      setCompletedTokens(completedTokens);
+      console.log(`? Fetched ${pumpType} tokens`);
       setLastUpdate(new Date());
     } catch (err) {
-      console.error(`❌ Failed to fetch ${pumpType} tokens:`, err);
+      console.error(`? Failed to fetch ${pumpType} tokens:`, err);
       setError(`Failed to fetch tokens: ${err.message}`);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [fetchList]);
 
-  // (removed) Fetch CLMM pools
+// (removed) Fetch CLMM pools
 
   // Initialize data
   useEffect(() => {
@@ -254,6 +314,19 @@ const TokenList = ({ onTokenSelect, filterType = 'all' }) => {
       fetchTokens('pumpfun');
     } else if (activeTab === 'pumpamm') {
       fetchTokens('pumpamm');
+    }
+  };
+
+  const handleScroll = (status) => (e) => {
+    const target = e.currentTarget;
+    const nearBottom = target.scrollHeight - target.scrollTop - target.clientHeight < 60;
+    if (!nearBottom) return;
+    if (status === 1 && !loadingNew && newHasMore) {
+      fetchList(1, newPage, true, activeTab);
+    } else if (status === 2 && !loadingCompleting && completingHasMore) {
+      fetchList(2, completingPage, true, activeTab);
+    } else if (status === 4 && !loadingCompleted && completedHasMore) {
+      fetchList(4, completedPage, true, activeTab);
     }
   };
 
@@ -643,7 +716,10 @@ const TokenList = ({ onTokenSelect, filterType = 'all' }) => {
                 <h2 className="text-xl font-bold text-foreground">{t('tokenList.sections.newTokens')}</h2>
                 <Badge variant="outline">{newTokens.length}</Badge>
               </div>
-              <div className="flex-1 overflow-y-scroll max-h-[calc(100vh-350px)] custom-scrollbar">
+              <div
+                className="flex-1 overflow-y-scroll max-h-[calc(100vh-350px)] custom-scrollbar"
+                onScroll={handleScroll(1)}
+              >
                 {loading && newTokens.length === 0 ? (
                   <div className="flex items-center justify-center py-12">
                     <LoadingSpinner className="mr-2" />
@@ -674,7 +750,10 @@ const TokenList = ({ onTokenSelect, filterType = 'all' }) => {
                 <h2 className="text-xl font-bold text-foreground">{t('tokenList.sections.almostBonded')}</h2>
                 <Badge variant="outline">{completingTokens.length}</Badge>
               </div>
-              <div className="flex-1 overflow-y-scroll max-h-[calc(100vh-350px)] custom-scrollbar">
+              <div
+                className="flex-1 overflow-y-scroll max-h-[calc(100vh-350px)] custom-scrollbar"
+                onScroll={handleScroll(2)}
+              >
                 {loading && completingTokens.length === 0 ? (
                   <div className="flex items-center justify-center py-12">
                     <LoadingSpinner className="mr-2" />
@@ -705,7 +784,10 @@ const TokenList = ({ onTokenSelect, filterType = 'all' }) => {
                 <h2 className="text-xl font-bold text-foreground">{t('tokenList.sections.migrated')}</h2>
                 <Badge variant="outline">{completedTokens.length}</Badge>
               </div>
-              <div className="flex-1 overflow-y-scroll max-h-[calc(100vh-350px)] custom-scrollbar">
+              <div
+                className="flex-1 overflow-y-scroll max-h-[calc(100vh-350px)] custom-scrollbar"
+                onScroll={handleScroll(4)}
+              >
                 {loading && completedTokens.length === 0 ? (
                   <div className="flex items-center justify-center py-12">
                     <LoadingSpinner className="mr-2" />

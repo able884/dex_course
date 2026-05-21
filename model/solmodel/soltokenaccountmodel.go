@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math"
 	"sync"
 	"time"
 
@@ -35,6 +36,9 @@ type (
 		BatchInsertTokenAccounts(ctx context.Context, tokenAccounts []*SolTokenAccount) error
 		BatchUpsertTokenAccounts(ctx context.Context, tokenAccounts []*SolTokenAccount) error
 		CountByTokenAddressWithTime(ctx context.Context, chainId int64, tokenAddress string, createdAt time.Time) (int64, error)
+		FindByTokenAccounts(ctx context.Context, chainId int64, tokenAccounts []string) ([]*SolTokenAccount, error)
+		SumByOwnerAndToken(ctx context.Context, chainId int64, owner string, tokenAddress string) (float64, error)
+		SumByOwnerAndTokens(ctx context.Context, chainId int64, owner string, tokenAddresses []string) (map[string]float64, error)
 	}
 
 	customSolTokenAccountModel struct {
@@ -323,15 +327,225 @@ func (m *defaultSolTokenAccountModel) createTableIfNotExists(tableName string) (
 func (m *defaultSolTokenAccountModel) CountByTokenAddressWithTime(ctx context.Context, chainId int64, tokenAddress string, createdAt time.Time) (int64, error) {
 	tableName := m.getTableName(createdAt)
 
+	// 创建新的ctx，原有超时时间太短
+	newCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), time.Second*30)
+	defer cancel()
+
 	var count int64
-	err := m.conn.WithContext(ctx).
+	err := m.conn.WithContext(newCtx).
 		Table(tableName).
 		Where("chain_id = ? AND token_address = ? AND balance > 0 AND created_at >= ?", chainId, tokenAddress, createdAt).
 		Count(&count).Error
 
 	if err != nil {
+		logc.Errorf(ctx, "未查询到数据 err: %v, chainId: %v, tokenAddress: %v, createdAt: %v, tableName: %v", err, chainId, tokenAddress, createdAt, tableName)
 		return 0, err
 	}
 
 	return count, nil
+}
+
+// FindByTokenAccounts 在分表中查询指定账户（默认近4周），按 slot 取最新记录
+func (m *defaultSolTokenAccountModel) FindByTokenAccounts(ctx context.Context, chainId int64, tokenAccounts []string) ([]*SolTokenAccount, error) {
+	if len(tokenAccounts) == 0 {
+		return []*SolTokenAccount{}, nil
+	}
+
+	seen := make(map[string]struct{}, len(tokenAccounts))
+	filtered := make([]string, 0, len(tokenAccounts))
+	for _, acc := range tokenAccounts {
+		if acc == "" {
+			continue
+		}
+		if _, ok := seen[acc]; ok {
+			continue
+		}
+		seen[acc] = struct{}{}
+		filtered = append(filtered, acc)
+	}
+	if len(filtered) == 0 {
+		return []*SolTokenAccount{}, nil
+	}
+
+	startOfWeek := getStartOfWeek(time.Now().UTC())
+	var rows []*SolTokenAccount
+
+	// 查近4周（含当前周）分表
+	for i := 0; i < 4; i++ {
+		weekStart := startOfWeek.AddDate(0, 0, -7*i)
+		tableName := m.getTableName(weekStart)
+		if !m.conn.Migrator().HasTable(tableName) {
+			continue
+		}
+		var partial []*SolTokenAccount
+		err := m.conn.WithContext(ctx).
+			Table(tableName).
+			Where("chain_id = ? AND token_account_address IN ?", chainId, filtered).
+			Find(&partial).Error
+		if err != nil {
+			return nil, err
+		}
+		rows = append(rows, partial...)
+	}
+
+	// 选 slot 较大的记录
+	best := make(map[string]*SolTokenAccount)
+	for _, r := range rows {
+		if r == nil || r.TokenAccountAddress == "" {
+			continue
+		}
+		if cur, ok := best[r.TokenAccountAddress]; !ok || r.Slot > cur.Slot {
+			best[r.TokenAccountAddress] = r
+		}
+	}
+
+	result := make([]*SolTokenAccount, 0, len(best))
+	for _, v := range best {
+		result = append(result, v)
+	}
+	return result, nil
+}
+
+// SumByOwnerAndToken aggregates the latest balances (by slot) for all token accounts owned by an address for a given token mint.
+func (m *defaultSolTokenAccountModel) SumByOwnerAndToken(ctx context.Context, chainId int64, owner string, tokenAddress string) (float64, error) {
+	if owner == "" || tokenAddress == "" {
+		return 0, nil
+	}
+
+	startOfWeek := getStartOfWeek(time.Now().UTC())
+	type row struct {
+		TokenAccountAddress string
+		TokenDecimal        int64
+		Balance             int64
+		Slot                uint64
+	}
+
+	var rows []row
+	for i := 0; i < 4; i++ {
+		weekStart := startOfWeek.AddDate(0, 0, -7*i)
+		tableName := m.getTableName(weekStart)
+		if !m.conn.Migrator().HasTable(tableName) {
+			continue
+		}
+		var partial []row
+		err := m.conn.WithContext(ctx).
+			Table(tableName).
+			Select("token_account_address, token_decimal, balance, slot").
+			Where("chain_id = ? AND owner_address = ? AND token_address = ?", chainId, owner, tokenAddress).
+			Find(&partial).Error
+		if err != nil {
+			return 0, err
+		}
+		rows = append(rows, partial...)
+	}
+
+	if len(rows) == 0 {
+		return 0, nil
+	}
+
+	best := make(map[string]row)
+	for _, r := range rows {
+		if r.TokenAccountAddress == "" {
+			continue
+		}
+		if cur, ok := best[r.TokenAccountAddress]; !ok || r.Slot > cur.Slot {
+			best[r.TokenAccountAddress] = r
+		}
+	}
+
+	var total float64
+	for _, r := range best {
+		denom := math.Pow10(int(r.TokenDecimal))
+		ui := float64(r.Balance)
+		if denom > 0 {
+			ui = ui / denom
+		}
+		total += ui
+	}
+	return total, nil
+}
+
+// SumByOwnerAndTokens 批量查询用户对多个 Token 的余额总和
+// 返回 map[tokenAddress]balance，只包含余额 > 0 的 Token
+func (m *defaultSolTokenAccountModel) SumByOwnerAndTokens(ctx context.Context, chainId int64, owner string, tokenAddresses []string) (map[string]float64, error) {
+	result := make(map[string]float64)
+	if owner == "" || len(tokenAddresses) == 0 {
+		return result, nil
+	}
+
+	// 去重
+	seen := make(map[string]struct{})
+	filtered := make([]string, 0, len(tokenAddresses))
+	for _, addr := range tokenAddresses {
+		if addr == "" {
+			continue
+		}
+		if _, ok := seen[addr]; ok {
+			continue
+		}
+		seen[addr] = struct{}{}
+		filtered = append(filtered, addr)
+	}
+
+	if len(filtered) == 0 {
+		return result, nil
+	}
+
+	startOfWeek := getStartOfWeek(time.Now().UTC())
+	type row struct {
+		TokenAddress        string
+		TokenAccountAddress string
+		TokenDecimal        int64
+		Balance             int64
+		Slot                uint64
+	}
+
+	var allRows []row
+	// 查近4周（含当前周）分表
+	for i := 0; i < 4; i++ {
+		weekStart := startOfWeek.AddDate(0, 0, -7*i)
+		tableName := m.getTableName(weekStart)
+		if !m.conn.Migrator().HasTable(tableName) {
+			continue
+		}
+		var partial []row
+		err := m.conn.WithContext(ctx).
+			Table(tableName).
+			Select("token_address, token_account_address, token_decimal, balance, slot").
+			Where("chain_id = ? AND owner_address = ? AND token_address IN ? AND balance > 0", chainId, owner, filtered).
+			Find(&partial).Error
+		if err != nil {
+			return nil, err
+		}
+		allRows = append(allRows, partial...)
+	}
+
+	if len(allRows) == 0 {
+		return result, nil
+	}
+
+	// 按 token_account_address 分组，取 slot 最大的记录
+	best := make(map[string]row) // key: token_account_address
+	for _, r := range allRows {
+		if r.TokenAccountAddress == "" {
+			continue
+		}
+		if cur, ok := best[r.TokenAccountAddress]; !ok || r.Slot > cur.Slot {
+			best[r.TokenAccountAddress] = r
+		}
+	}
+
+	// 按 token_address 聚合余额
+	for _, r := range best {
+		denom := math.Pow10(int(r.TokenDecimal))
+		ui := float64(r.Balance)
+		if denom > 0 {
+			ui = ui / denom
+		}
+		if ui > 0 {
+			result[r.TokenAddress] += ui
+		}
+	}
+
+	return result, nil
 }

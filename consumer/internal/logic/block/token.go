@@ -2,6 +2,7 @@ package block
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -18,115 +19,124 @@ import (
 	"richcode.cc/dex/pkg/types"
 )
 
-// SaveToken 根据成交信息补全或落库 Token 元数据，包含总量、符号、社交信息等。
+// TokenMetadata 保存 Token 相关的元数据
+type TokenMetadata struct {
+	Address  string
+	Decimals uint8
+	Slot     int64
+}
+
+type tokenMetadataCachePayload struct {
+	Symbol          string  `json:"symbol,omitempty"`
+	Name            string  `json:"name,omitempty"`
+	Program         string  `json:"program,omitempty"`
+	TwitterUsername string  `json:"twitter,omitempty"`
+	Website         string  `json:"website,omitempty"`
+	Telegram        string  `json:"telegram,omitempty"`
+	Icon            string  `json:"icon,omitempty"`
+	Description     string  `json:"description,omitempty"`
+	TotalSupply     float64 `json:"totalSupply,omitempty"`
+	LastSuccessTs   int64   `json:"lastSuccessTs,omitempty"`
+	LastFailureTs   int64   `json:"lastFailureTs,omitempty"`
+}
+
+// SaveToken 根据成交信息保存 Token 和 BaseToken 的元数据
 func (s *BlockService) SaveToken(ctx context.Context, trade *types.TradeWithPair) (tokenDB *solmodel.Token, err error) {
-	s.Infof("SaveToken: Starting with trade.PairInfo.TokenAddr: %v", trade.PairInfo.TokenAddr)
-
-	// Check if trade is nil or if PairInfo has empty TokenAddr
-	if trade == nil || trade.PairInfo.TokenAddr == "" {
-		s.Errorf("SaveToken: trade is nil or PairInfo.TokenAddr is empty")
-		return nil, fmt.Errorf("trade is nil or PairInfo.TokenAddr is empty")
+	// 保存主 Token
+	token, err := s.saveTokenByAddress(ctx, &TokenMetadata{
+		Address:  trade.PairInfo.TokenAddr,
+		Decimals: trade.PairInfo.TokenDecimal,
+		Slot:     trade.Slot,
+	})
+	if err != nil {
+		s.Errorf("SaveToken: Failed to save token %s: %v", trade.PairInfo.TokenAddr, err)
+		return nil, err
 	}
 
-	// Check if service context and required models are avail	able
-	if s.sc == nil {
-		s.Errorf("SaveToken: service context is nil")
+	// 保存 BaseToken
+	_, err = s.saveTokenByAddress(ctx, &TokenMetadata{
+		Address:  trade.PairInfo.BaseTokenAddr,
+		Decimals: trade.PairInfo.BaseTokenDecimal,
+		Slot:     trade.Slot,
+	})
+	if err != nil {
+		s.Errorf("SaveToken: Failed to save base token %s: %v", trade.PairInfo.BaseTokenAddr, err)
+		// BaseToken 保存失败不影响主 Token 的返回
+	}
+
+	return token, nil
+}
+
+// saveTokenByAddress 保存指定地址的 Token 元数据
+func (s *BlockService) saveTokenByAddress(ctx context.Context, metadata *TokenMetadata) (tokenDB *solmodel.Token, err error) {
+	if metadata == nil || metadata.Address == "" {
+		return nil, fmt.Errorf("metadata is nil or address is empty")
+	}
+	if s.sc == nil || s.sc.TokenModel == nil {
 		return nil, fmt.Errorf("service context is nil")
 	}
-
-	if s.sc.TokenModel == nil {
-		s.Errorf("SaveToken: TokenModel is nil")
-		return nil, fmt.Errorf("TokenModel is nil")
-	}
-
 	if len(s.sc.Config.Sol.NodeUrl) == 0 {
-		s.Errorf("SaveToken: Solana configuration is missing or invalid")
-		return nil, fmt.Errorf("Solana configuration is missing or invalid")
+		return nil, fmt.Errorf("solana configuration is missing or invalid")
 	}
-
-	// Check if context is available
-	if s.ctx == nil {
-		s.Errorf("SaveToken: service context is nil")
-		return nil, fmt.Errorf("service context is nil")
-	}
-
-	s.Infof("SaveToken: All checks passed, proceeding with database query")
 
 	tokenModel := s.sc.TokenModel
 	chainId := SolChainIdInt
-	s.Infof("SaveToken: Calling FindOneByChainIdAddress with chainId: %v, tokenAddr: %v", chainId, trade.PairInfo.TokenAddr)
 
-	tokenDB, err = tokenModel.FindOneByChainIdAddress(ctx, int64(chainId), trade.PairInfo.TokenAddr)
+	tokenDB, err = tokenModel.FindOneByChainIdAddress(ctx, int64(chainId), metadata.Address)
+	if err != nil && !errors.Is(err, solmodel.ErrNotFound) && !strings.Contains(err.Error(), "record not found") {
+		return nil, fmt.Errorf("saveTokenByAddress: unexpected find error: %w", err)
+	}
 
-	s.Infof("SaveToken: FindOneByChainIdAddress result - err: %v, tokenDB: %v", err, tokenDB != nil)
-
-	if err != nil {
-		s.Infof("SaveToken: Error details - %T: %v", err, err)
-		// Check for record not found error - handle both specific error type and string matching
-		if errors.Is(err, solmodel.ErrNotFound) || strings.Contains(err.Error(), "record not found") {
-			s.Infof("SaveToken: Token not found, will create new token")
-		} else {
-			s.Errorf("SaveToken: Unexpected error from FindOneByChainIdAddress: %v", err)
-		}
+	cachedPayload, cacheErr := s.loadCachedTokenMetadata(ctx, metadata.Address)
+	if cacheErr != nil {
+		s.Infof("saveTokenByAddress: metadata cache unavailable for %s: %v", metadata.Address, cacheErr)
 	}
 
 	solClient := s.sc.GetSolClient()
-
 	opts := &jsonrpc.RPCClientOpts{
 		HTTPClient: &http.Client{
 			Timeout: 10 * time.Second,
 		},
 	}
-
 	rpcClient := jsonrpc.NewClientWithOpts(s.sc.Config.Sol.NodeUrl[0], opts)
 
 	if err == nil && tokenDB != nil {
-		// 分支一：数据库中已有记录，按需补全缺失的元数据
-		s.Infof("SaveToken: Token found in database, updating existing token: %v", tokenDB.Address)
-
-		change := false
-
-		if tokenDB.Slot == 0 {
-			tokenDB.Slot = trade.Slot
-			change = true
-			s.Infof("SaveToken: Updated slot to: %v", trade.Slot)
+		changed := false
+		if s.applyCachedMetadata(tokenDB, cachedPayload) {
+			changed = true
 		}
-
+		if tokenDB.Slot == 0 {
+			tokenDB.Slot = metadata.Slot
+			changed = true
+		}
 		if tokenDB.TotalSupply == 0 {
-			// 仅在总量缺失时请求链上，减少 RPC 次数
-			totalSupply, err := sol.GetTokenTotalSupply(solClient, s.ctx, tokenDB.Address)
-			s.Infof("SaveToken:GetTokenMeta update token totalSupply: token addr: %v, totalSupply: %v", tokenDB.Address, totalSupply)
-			if err == nil {
+			if cachedPayload != nil && cachedPayload.TotalSupply > 0 {
+				tokenDB.TotalSupply = cachedPayload.TotalSupply
+				changed = true
+			} else if totalSupply, supplyErr := sol.GetTokenTotalSupply(solClient, s.ctx, tokenDB.Address); supplyErr == nil {
 				tokenDB.TotalSupply = totalSupply.InexactFloat64()
-				change = true
+				changed = true
 			} else {
-				s.Errorf("SaveToken:GetTokenTotalSupply update err:%v, address: %v", err, tokenDB.Address)
+				s.Errorf("saveTokenByAddress:GetTokenTotalSupply update err:%v, address: %v", supplyErr, tokenDB.Address)
+				s.cacheTokenMetadataFailure(ctx, tokenDB.Address, tokenDB)
 			}
 		}
 		if len(tokenDB.Program) == 0 {
-			// 优先探测 TokenProgram，用于后续选择不同的元数据解析方案
-			program, _ := sol.GetTokenProgram(solClient, s.ctx, tokenDB.Address)
-			switch program {
-			case common.TokenProgramID:
-				tokenDB.Program = common.TokenProgramID.String()
-				change = true
-			case common.Token2022ProgramID:
-				tokenDB.Program = common.Token2022ProgramID.String()
-				change = true
-			default:
-
+			if program, progErr := sol.GetTokenProgram(solClient, s.ctx, tokenDB.Address); progErr == nil {
+				switch program {
+				case common.TokenProgramID:
+					tokenDB.Program = common.TokenProgramID.String()
+					changed = true
+				case common.Token2022ProgramID:
+					tokenDB.Program = common.Token2022ProgramID.String()
+					changed = true
+				}
 			}
 		}
-		// todo: support token 2022 https://solscan.io/token/7atgF8KQo4wJrD5ATGX7t1V2zVvykPJbFfNeVf1icFv1#metadata
 		if len(tokenDB.Symbol) == 0 || len(tokenDB.Name) == 0 {
-			// 兜底场景：从链上元数据补齐符号、名称及社交链接
 			switch tokenDB.Program {
 			case common.TokenProgramID.String():
-				tokenInfo, err := sol.GetTokenInfo(solClient, s.ctx, tokenDB.Address)
-				if err != nil {
-					s.Errorf("SaveToken:GetTokenInfo update err: %v, address: %v", err, tokenDB.Address)
-				}
-				if tokenInfo != nil {
+				if tokenInfo, infoErr := sol.GetTokenInfo(solClient, s.ctx, tokenDB.Address); infoErr == nil && tokenInfo != nil {
 					tokenDB.Symbol = tokenInfo.Data.Symbol
 					tokenDB.Name = tokenInfo.Data.Name
 					tokenDB.TwitterUsername = tokenInfo.Uri.Twitter
@@ -134,124 +144,99 @@ func (s *BlockService) SaveToken(ctx context.Context, trade *types.TradeWithPair
 					tokenDB.Telegram = tokenInfo.Uri.Telegram
 					tokenDB.Icon = tokenInfo.Uri.Image
 					tokenDB.Description = tokenInfo.Uri.Description
-
 					if len(tokenInfo.Uri.Symbol) > 0 {
 						tokenDB.Symbol = tokenInfo.Uri.Symbol
 					}
 					if len(tokenInfo.Uri.Name) > 0 {
 						tokenDB.Name = tokenInfo.Uri.Name
 					}
-
-					change = true
-					s.Infof("update parse token address: %v,result: %v", tokenDB.Address, tokenDB)
+					changed = true
+					s.cacheTokenMetadataSuccess(ctx, tokenDB.Address, tokenDB)
+				} else {
+					s.Errorf("saveTokenByAddress:GetTokenInfo update err: %v, address: %v", infoErr, tokenDB.Address)
+					s.cacheTokenMetadataFailure(ctx, tokenDB.Address, tokenDB)
 				}
 			case common.Token2022ProgramID.String():
-
-				_, tokenInfo, err := sol.GetToken2022Info(ag_rpc.NewWithCustomRPCClient(rpcClient), s.ctx, solana.MustPublicKeyFromBase58(tokenDB.Address))
-				if err != nil {
-					s.Errorf("SaveToken:GetToken2022Info err: %v, token address: %v", err, tokenDB.Address)
-				}
-
-				if tokenInfo != nil {
-
+				_, tokenInfo, infoErr := sol.GetToken2022Info(ag_rpc.NewWithCustomRPCClient(rpcClient), s.ctx, solana.MustPublicKeyFromBase58(tokenDB.Address))
+				if infoErr == nil && tokenInfo != nil {
 					tokenDB.Symbol = tokenInfo.Data.Symbol
 					tokenDB.Name = tokenInfo.Data.Name
-
 					tokenDB.TwitterUsername = tokenInfo.Uri.Twitter
 					tokenDB.Website = tokenInfo.Uri.Website
 					tokenDB.Telegram = tokenInfo.Uri.Telegram
 					tokenDB.Icon = tokenInfo.Uri.Image
-
 					tokenDB.Description = tokenInfo.Uri.Description
-
 					if len(tokenInfo.Uri.Name) > 0 {
 						tokenDB.Name = tokenInfo.Uri.Name
 					}
-
 					if len(tokenInfo.Uri.Symbol) > 0 {
 						tokenDB.Symbol = tokenInfo.Uri.Symbol
 					}
-
-					change = true
-
-					s.Infof("update parse token2022 address: %v,result: %v", tokenDB.Address, tokenDB)
+					changed = true
+					s.cacheTokenMetadataSuccess(ctx, tokenDB.Address, tokenDB)
+				} else {
+					s.Errorf("saveTokenByAddress:GetToken2022Info err: %v, token address: %v", infoErr, tokenDB.Address)
+					s.cacheTokenMetadataFailure(ctx, tokenDB.Address, tokenDB)
 				}
-
-			default:
 			}
-
 		}
-
-		if change {
-			s.Infof("SaveToken: Updating existing token in database")
-			_ = tokenModel.Update(s.ctx, tokenDB)
+		if changed {
+			if updateErr := tokenModel.Update(s.ctx, tokenDB); updateErr != nil {
+				return nil, fmt.Errorf("saveTokenByAddress: update token err: %w", updateErr)
+			}
+			s.cacheTokenMetadataSuccess(ctx, tokenDB.Address, tokenDB)
 		}
-
-		//更新成功
-		s.Infof("SaveToken: Successfully updated existing token: %v", tokenDB.Address)
 		return tokenDB, nil
 	}
 
 	if errors.Is(err, solmodel.ErrNotFound) || (err != nil && strings.Contains(err.Error(), "record not found")) {
-		// 分支二：首次出现的 Token，构造基础信息后再补全链上元数据
-		s.Infof("SaveToken: Creating new token for address: %v", trade.PairInfo.TokenAddr)
-
 		tokenDB = &solmodel.Token{
 			ChainId:  int64(chainId),
-			Address:  trade.PairInfo.TokenAddr,
-			Decimals: int64(trade.PairInfo.TokenDecimal),
-			Slot:     trade.Slot,
+			Address:  metadata.Address,
+			Decimals: int64(metadata.Decimals),
+			Slot:     metadata.Slot,
 		}
+		s.applyCachedMetadata(tokenDB, cachedPayload)
 
-		s.Infof("SaveToken: Created token struct with ChainId: %v, Address: %v, Decimals: %v, Slot: %v",
-			tokenDB.ChainId, tokenDB.Address, tokenDB.Decimals, tokenDB.Slot)
-
-		totalSupply, err := sol.GetTokenTotalSupply(solClient, s.ctx, tokenDB.Address)
-		if err == nil {
-			tokenDB.TotalSupply = totalSupply.InexactFloat64()
-		} else {
-			s.Errorf("SaveToken:GetTokenTotalSupply insert err:%v, address: %v", err, tokenDB.Address)
+		if tokenDB.TotalSupply == 0 {
+			if cachedPayload != nil && cachedPayload.TotalSupply > 0 {
+				tokenDB.TotalSupply = cachedPayload.TotalSupply
+			} else if totalSupply, supplyErr := sol.GetTokenTotalSupply(solClient, s.ctx, tokenDB.Address); supplyErr == nil {
+				tokenDB.TotalSupply = totalSupply.InexactFloat64()
+			} else {
+				s.Errorf("saveTokenByAddress:GetTokenTotalSupply insert err:%v, address: %v", supplyErr, tokenDB.Address)
+				s.cacheTokenMetadataFailure(ctx, tokenDB.Address, tokenDB)
+			}
 		}
 
 		program, _ := sol.GetTokenProgram(solClient, s.ctx, tokenDB.Address)
 		switch program {
 		case common.Token2022ProgramID:
 			tokenDB.Program = common.Token2022ProgramID.String()
-
-			_, tokenInfo, err := sol.GetToken2022Info(ag_rpc.NewWithCustomRPCClient(rpcClient), s.ctx, solana.MustPublicKeyFromBase58(tokenDB.Address))
-			if err != nil {
-				s.Errorf("SaveToken:GetToken2022Info err: %v, token address: %v", err, tokenDB.Address)
-			}
-
-			if tokenInfo != nil {
-
+			_, tokenInfo, infoErr := sol.GetToken2022Info(ag_rpc.NewWithCustomRPCClient(rpcClient), s.ctx, solana.MustPublicKeyFromBase58(tokenDB.Address))
+			if infoErr == nil && tokenInfo != nil {
 				tokenDB.Symbol = tokenInfo.Data.Symbol
 				tokenDB.Name = tokenInfo.Data.Name
-
 				tokenDB.TwitterUsername = tokenInfo.Uri.Twitter
 				tokenDB.Website = tokenInfo.Uri.Website
 				tokenDB.Telegram = tokenInfo.Uri.Telegram
 				tokenDB.Icon = tokenInfo.Uri.Image
 				tokenDB.Description = tokenInfo.Uri.Description
-
 				if len(tokenInfo.Uri.Name) > 0 {
 					tokenDB.Name = tokenInfo.Uri.Name
 				}
-
 				if len(tokenInfo.Uri.Symbol) > 0 {
 					tokenDB.Symbol = tokenInfo.Uri.Symbol
 				}
+				s.cacheTokenMetadataSuccess(ctx, tokenDB.Address, tokenDB)
+			} else {
+				s.Errorf("saveTokenByAddress:GetToken2022Info err: %v, token address: %v", infoErr, tokenDB.Address)
+				s.cacheTokenMetadataFailure(ctx, tokenDB.Address, tokenDB)
 			}
-			s.Infof("insert parse token2022 address: %v,result: %v", tokenDB.Address, tokenDB)
 		default:
 			tokenDB.Program = common.TokenProgramID.String()
-
-			// todo: error 	SaveToken:GetTokenInfo nil,insert , err: GetTokenInfo:GetAccountInfo token data is nil,
-			tokenInfo, err := sol.GetTokenInfo(solClient, s.ctx, tokenDB.Address)
-			if err != nil {
-				s.Errorf("SaveToken:GetTokenInfo err: %v, address: %v", err, tokenDB.Address)
-			}
-			if tokenInfo != nil {
+			tokenInfo, infoErr := sol.GetTokenInfo(solClient, s.ctx, tokenDB.Address)
+			if infoErr == nil && tokenInfo != nil {
 				tokenDB.Symbol = tokenInfo.Data.Symbol
 				tokenDB.Name = tokenInfo.Data.Name
 				tokenDB.TwitterUsername = tokenInfo.Uri.Twitter
@@ -259,41 +244,166 @@ func (s *BlockService) SaveToken(ctx context.Context, trade *types.TradeWithPair
 				tokenDB.Telegram = tokenInfo.Uri.Telegram
 				tokenDB.Icon = tokenInfo.Uri.Image
 				tokenDB.Description = tokenInfo.Uri.Description
-
 				if len(tokenInfo.Uri.Symbol) > 0 {
 					tokenDB.Symbol = tokenInfo.Uri.Symbol
 				}
 				if len(tokenInfo.Uri.Name) > 0 {
 					tokenDB.Name = tokenInfo.Uri.Name
 				}
-				// tokenDB.SetSolTokenDefaultCa()
-				// tokenDB.IsCanAddToken = int64(tokenInfo.IsCanAddToken)
+				s.cacheTokenMetadataSuccess(ctx, tokenDB.Address, tokenDB)
+			} else {
+				s.Errorf("saveTokenByAddress:GetTokenInfo err: %v, address: %v", infoErr, tokenDB.Address)
+				s.cacheTokenMetadataFailure(ctx, tokenDB.Address, tokenDB)
 			}
-			s.Infof("insert parse token address: %v,result: %v", tokenDB.Address, tokenDB)
 		}
 
-		err = tokenModel.Insert(ctx, tokenDB)
-		if err != nil {
-			s.Errorf("SaveToken: Insert failed with error: %v", err)
-			if strings.Contains(err.Error(), "Duplicate entry") {
-				s.Infof("SaveToken: Duplicate entry detected, fetching existing token")
-				// db already exists
-				tokenDB, err = tokenModel.FindOneByChainIdAddress(ctx, int64(chainId), trade.PairInfo.TokenAddr)
+		if insertErr := tokenModel.Insert(ctx, tokenDB); insertErr != nil {
+			if strings.Contains(insertErr.Error(), "Duplicate entry") {
+				tokenDB, err = tokenModel.FindOneByChainIdAddress(ctx, int64(chainId), metadata.Address)
 				if err != nil {
-					s.Errorf("SaveToken: Failed to fetch existing token after duplicate: %v", err)
 					return nil, err
 				}
-				s.Infof("SaveToken: Successfully fetched existing token after duplicate")
 				return tokenDB, nil
 			}
-			s.Errorf("SaveToken: Insert failed with non-duplicate error: %v", err)
-			return nil, err
+			return nil, insertErr
 		}
-
-		s.Infof("SaveToken: Successfully inserted new token: %v", tokenDB.Address)
 		return tokenDB, nil
 	}
 
-	s.Errorf("SaveToken: Unexpected error case - err: %v, err type: %T", err, err)
-	return nil, fmt.Errorf("SaveToken: unexpected error from FindOneByChainIdAddress: %w", err)
+	return nil, fmt.Errorf("saveTokenByAddress: unexpected error from FindOneByChainIdAddress: %w", err)
+}
+
+func (s *BlockService) applyCachedMetadata(token *solmodel.Token, payload *tokenMetadataCachePayload) bool {
+	if token == nil || payload == nil {
+		return false
+	}
+	changed := false
+	if token.Symbol == "" && payload.Symbol != "" {
+		token.Symbol = payload.Symbol
+		changed = true
+	}
+	if token.Name == "" && payload.Name != "" {
+		token.Name = payload.Name
+		changed = true
+	}
+	if token.Program == "" && payload.Program != "" {
+		token.Program = payload.Program
+		changed = true
+	}
+	if token.TwitterUsername == "" && payload.TwitterUsername != "" {
+		token.TwitterUsername = payload.TwitterUsername
+		changed = true
+	}
+	if token.Website == "" && payload.Website != "" {
+		token.Website = payload.Website
+		changed = true
+	}
+	if token.Telegram == "" && payload.Telegram != "" {
+		token.Telegram = payload.Telegram
+		changed = true
+	}
+	if token.Icon == "" && payload.Icon != "" {
+		token.Icon = payload.Icon
+		changed = true
+	}
+	if token.Description == "" && payload.Description != "" {
+		token.Description = payload.Description
+		changed = true
+	}
+	if token.TotalSupply == 0 && payload.TotalSupply > 0 {
+		token.TotalSupply = payload.TotalSupply
+		changed = true
+	}
+	return changed
+}
+
+func (s *BlockService) loadCachedTokenMetadata(ctx context.Context, address string) (*tokenMetadataCachePayload, error) {
+	if s.metadataCache == nil {
+		return nil, nil
+	}
+	key := TokenMetadataCacheKey(SolChainIdInt, address)
+	if res, ok := s.metadataCacheGet(key); ok {
+		return res.payload, res.err
+	}
+	raw, err := s.metadataCache.Get(ctx, key)
+	if err != nil || raw == "" {
+		s.metadataCacheSetResult(key, &metadataCacheResult{payload: nil, err: err})
+		return nil, err
+	}
+	var payload tokenMetadataCachePayload
+	if err := json.Unmarshal([]byte(raw), &payload); err != nil {
+		s.metadataCacheSetResult(key, &metadataCacheResult{payload: nil, err: err})
+		return nil, err
+	}
+	var cooldownErr error
+	if payload.LastFailureTs > 0 {
+		if time.Since(time.Unix(payload.LastFailureTs, 0)) < s.metadataFailureCooldown {
+			cooldownErr = fmt.Errorf("metadata fetch suppressed due to cooldown")
+		}
+	}
+	s.metadataCacheSetResult(key, &metadataCacheResult{payload: &payload, err: cooldownErr})
+	return &payload, cooldownErr
+}
+
+func (s *BlockService) cacheTokenMetadataSuccess(ctx context.Context, address string, token *solmodel.Token) {
+	if s.metadataCache == nil || token == nil {
+		return
+	}
+	payload := payloadFromToken(token)
+	if payload == nil {
+		return
+	}
+	payload.LastSuccessTs = time.Now().Unix()
+	payload.LastFailureTs = 0
+	s.writeMetadataCache(ctx, address, payload)
+}
+
+func (s *BlockService) cacheTokenMetadataFailure(ctx context.Context, address string, token *solmodel.Token) {
+	if s.metadataCache == nil {
+		return
+	}
+	payload := payloadFromToken(token)
+	if payload == nil {
+		payload = &tokenMetadataCachePayload{}
+	}
+	payload.LastFailureTs = time.Now().Unix()
+	s.writeMetadataCache(ctx, address, payload)
+}
+
+func (s *BlockService) writeMetadataCache(ctx context.Context, address string, payload *tokenMetadataCachePayload) {
+	if s.metadataCache == nil || payload == nil {
+		return
+	}
+	key := TokenMetadataCacheKey(SolChainIdInt, address)
+	body, err := json.Marshal(payload)
+	if err != nil {
+		s.Errorf("writeMetadataCache: marshal err %v", err)
+		return
+	}
+	ttl := s.metadataTTL
+	if ttl <= 0 {
+		ttl = 24 * time.Hour
+	}
+	if err := s.metadataCache.Set(ctx, key, string(body), ttl); err != nil {
+		s.Errorf("writeMetadataCache: set err %v", err)
+		return
+	}
+	s.metadataCacheSetResult(key, &metadataCacheResult{payload: payload})
+}
+
+func payloadFromToken(token *solmodel.Token) *tokenMetadataCachePayload {
+	if token == nil {
+		return nil
+	}
+	return &tokenMetadataCachePayload{
+		Symbol:          token.Symbol,
+		Name:            token.Name,
+		Program:         token.Program,
+		TwitterUsername: token.TwitterUsername,
+		Website:         token.Website,
+		Telegram:        token.Telegram,
+		Icon:            token.Icon,
+		Description:     token.Description,
+		TotalSupply:     token.TotalSupply,
+	}
 }

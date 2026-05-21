@@ -1,5 +1,5 @@
 Name: gateway-example # gateway name
-Host: localhost # gateway host
+Host: 0.0.0.0 # gateway host
 Port: 8888 # gateway port
 timeout: 60000000
 MaxBytes: 3145728
@@ -27,6 +27,16 @@ RequestLimit:
     QPS: 60
   - Path: /api/liquidity/cpmm/pools
     QPS: 20
+  - Path: /v1/market/pool_detail
+    QPS: 30
+  - Path: /v1/market/quote_cpmm
+    QPS: 60
+  - Path: /v1/market/clmm_pool_depth
+    QPS: 30
+  - Path: /v1/trade/cpmm_swap
+    QPS: 60
+  - Path: /v1/trade/open_position
+    QPS: 20
 
 IpRestriction:
   IsoCode: # example CN,US,HK,SG,JP
@@ -38,9 +48,9 @@ Auth:
   TgToken:
 
 Redis:
-  Host: 127.0.0.1
+  Host: 172.17.112.1
   Port: 6379
-  # Auth: 123456
+  Auth: 123456
   MaxIdle: 20
   MaxActive: 100
   Db: 0
@@ -70,6 +80,18 @@ Upstreams: # upstreams
       - Method: get
         Path: /v1/market/index_cpmm
         RpcPath: market.Market/GetClmmPoolList
+      - Method: get
+        Path: /v1/market/pool_detail
+        RpcPath: market.Market/GetPoolDetail
+      - Method: post
+        Path: /v1/market/quote_cpmm
+        RpcPath: market.Market/QuoteCpmm
+      - Method: get
+        Path: /v1/market/clmm_pool_depth
+        RpcPath: market.Market/GetClmmPoolDepthData
+      - Method: get
+        Path: /v1/market/user_positions
+        RpcPath: market.Market/GetUserPositions        
   - Name: trade
     Grpc: # trade service upstream
       Target: localhost:8100 # grpc target,the direct grpc server address,for only one node
@@ -96,17 +118,48 @@ Upstreams: # upstreams
       - Method: post
         Path: /v1/pump/quote
         RpcPath: trade.Trade/QuotePumpTrade
+      - Method: post
+        Path: /v1/trade/add_cpmm_liquidity
+        RpcPath: trade.Trade/AddCpmmLiquidity
+      - Method: post
+        Path: /v1/trade/remove_cpmm_liquidity
+        RpcPath: trade.Trade/RemoveCpmmLiquidity
+      - Method: post
+        Path: /v1/trade/cpmm_swap
+        RpcPath: trade.Trade/SwapCpmm
+      - Method: post
+        Path: /v1/trade/clmm_swap
+        RpcPath: trade.Trade/SwapClmm
+      - Method: post
+        Path: /v1/trade/open_position
+        RpcPath: trade.Trade/OpenPosition
+      - Method: post
+        Path: /v1/trade/increase_clmm_liquidity
+        RpcPath: trade.Trade/IncreaseClmmLiquidity
+      - Method: post
+        Path: /v1/trade/decrease_clmm_liquidity
+        RpcPath: trade.Trade/DecreaseClmmLiquidity
 whitelist:
   path:
     - /v1/market/index_pump
     - /v1/market/index_clmm
     - /v1/market/index_cpmm
+    - /v1/market/pool_detail
+    - /v1/market/quote_cpmm
+    - /v1/market/clmm_pool_depth
+    - /v1/market/user_positions
     - /v1/trade/create_market_order
     - /v1/pump/create_token
     - /v1/ipfs/upload_file
     - /v1/ipfs/upload_metadata
     - /v1/pump/report_create_result
     - /v1/pump/quote
+    - /v1/trade/add_cpmm_liquidity
+    - /v1/trade/open_position
+    - /v1/trade/increase_clmm_liquidity
+    - /v1/trade/decrease_clmm_liquidity
+    - /v1/trade/remove_cpmm_liquidity
+    - /v1/trade/cpmm_swap
 Liquidity:
   CacheTTLSeconds: 60
   Paths:

@@ -755,6 +755,391 @@ func (x *PushTokenInfoRequest) GetPumpStatus() int32 {
 	return 0
 }
 
+type GetPoolDetailRequest struct {
+	state             protoimpl.MessageState `protogen:"open.v1"`
+	ChainId           int64                  `protobuf:"varint,1,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`
+	PoolState         string                 `protobuf:"bytes,2,opt,name=pool_state,json=poolState,proto3" json:"pool_state,omitempty"`
+	PoolVersion       int32                  `protobuf:"varint,3,opt,name=pool_version,json=poolVersion,proto3" json:"pool_version,omitempty"`                    // 1: v1 clmm, 2: v2 clmm, 3: cpmm (default 3)
+	UserWalletAddress string                 `protobuf:"bytes,4,opt,name=user_wallet_address,json=userWalletAddress,proto3" json:"user_wallet_address,omitempty"` // optional: user wallet for position lookup
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
+}
+
+func (x *GetPoolDetailRequest) Reset() {
+	*x = GetPoolDetailRequest{}
+	mi := &file_market_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetPoolDetailRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetPoolDetailRequest) ProtoMessage() {}
+
+func (x *GetPoolDetailRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_market_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetPoolDetailRequest.ProtoReflect.Descriptor instead.
+func (*GetPoolDetailRequest) Descriptor() ([]byte, []int) {
+	return file_market_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *GetPoolDetailRequest) GetChainId() int64 {
+	if x != nil {
+		return x.ChainId
+	}
+	return 0
+}
+
+func (x *GetPoolDetailRequest) GetPoolState() string {
+	if x != nil {
+		return x.PoolState
+	}
+	return ""
+}
+
+func (x *GetPoolDetailRequest) GetPoolVersion() int32 {
+	if x != nil {
+		return x.PoolVersion
+	}
+	return 0
+}
+
+func (x *GetPoolDetailRequest) GetUserWalletAddress() string {
+	if x != nil {
+		return x.UserWalletAddress
+	}
+	return ""
+}
+
+type GetPoolDetailResponse struct {
+	state             protoimpl.MessageState `protogen:"open.v1"`
+	ChainId           int64                  `protobuf:"varint,1,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`
+	PoolState         string                 `protobuf:"bytes,2,opt,name=pool_state,json=poolState,proto3" json:"pool_state,omitempty"`
+	InputVaultMint    string                 `protobuf:"bytes,3,opt,name=input_vault_mint,json=inputVaultMint,proto3" json:"input_vault_mint,omitempty"`
+	OutputVaultMint   string                 `protobuf:"bytes,4,opt,name=output_vault_mint,json=outputVaultMint,proto3" json:"output_vault_mint,omitempty"`
+	InputTokenSymbol  string                 `protobuf:"bytes,5,opt,name=input_token_symbol,json=inputTokenSymbol,proto3" json:"input_token_symbol,omitempty"`
+	OutputTokenSymbol string                 `protobuf:"bytes,6,opt,name=output_token_symbol,json=outputTokenSymbol,proto3" json:"output_token_symbol,omitempty"`
+	InputTokenIcon    string                 `protobuf:"bytes,7,opt,name=input_token_icon,json=inputTokenIcon,proto3" json:"input_token_icon,omitempty"`
+	OutputTokenIcon   string                 `protobuf:"bytes,8,opt,name=output_token_icon,json=outputTokenIcon,proto3" json:"output_token_icon,omitempty"`
+	TradeFeeRate      int64                  `protobuf:"varint,9,opt,name=trade_fee_rate,json=tradeFeeRate,proto3" json:"trade_fee_rate,omitempty"`
+	LaunchTime        int64                  `protobuf:"varint,10,opt,name=launch_time,json=launchTime,proto3" json:"launch_time,omitempty"`
+	LiquidityUsd      float64                `protobuf:"fixed64,11,opt,name=liquidity_usd,json=liquidityUsd,proto3" json:"liquidity_usd,omitempty"`
+	Txs_24H           uint32                 `protobuf:"varint,12,opt,name=txs_24h,json=txs24h,proto3" json:"txs_24h,omitempty"`
+	Vol_24H           float64                `protobuf:"fixed64,13,opt,name=vol_24h,json=vol24h,proto3" json:"vol_24h,omitempty"`
+	Apr               float64                `protobuf:"fixed64,14,opt,name=apr,proto3" json:"apr,omitempty"`
+	PoolVersion       int32                  `protobuf:"varint,15,opt,name=pool_version,json=poolVersion,proto3" json:"pool_version,omitempty"`
+	LockedPercent     float64                `protobuf:"fixed64,16,opt,name=locked_percent,json=lockedPercent,proto3" json:"locked_percent,omitempty"`
+	InputAmount       float64                `protobuf:"fixed64,17,opt,name=input_amount,json=inputAmount,proto3" json:"input_amount,omitempty"`
+	OutputAmount      float64                `protobuf:"fixed64,18,opt,name=output_amount,json=outputAmount,proto3" json:"output_amount,omitempty"`
+	BaseReserve       float64                `protobuf:"fixed64,19,opt,name=base_reserve,json=baseReserve,proto3" json:"base_reserve,omitempty"`
+	QuoteReserve      float64                `protobuf:"fixed64,20,opt,name=quote_reserve,json=quoteReserve,proto3" json:"quote_reserve,omitempty"`
+	InputReserve      float64                `protobuf:"fixed64,21,opt,name=input_reserve,json=inputReserve,proto3" json:"input_reserve,omitempty"`
+	OutputReserve     float64                `protobuf:"fixed64,22,opt,name=output_reserve,json=outputReserve,proto3" json:"output_reserve,omitempty"`
+	Price             float64                `protobuf:"fixed64,23,opt,name=price,proto3" json:"price,omitempty"`
+	QuotePerBase      float64                `protobuf:"fixed64,24,opt,name=quote_per_base,json=quotePerBase,proto3" json:"quote_per_base,omitempty"`
+	MarketPrice       float64                `protobuf:"fixed64,25,opt,name=market_price,json=marketPrice,proto3" json:"market_price,omitempty"`
+	UserPooledInput   float64                `protobuf:"fixed64,26,opt,name=user_pooled_input,json=userPooledInput,proto3" json:"user_pooled_input,omitempty"`    // user's share of input token in pool
+	UserPooledOutput  float64                `protobuf:"fixed64,27,opt,name=user_pooled_output,json=userPooledOutput,proto3" json:"user_pooled_output,omitempty"` // user's share of output token in pool
+	UserStakedLp      float64                `protobuf:"fixed64,28,opt,name=user_staked_lp,json=userStakedLp,proto3" json:"user_staked_lp,omitempty"`             // user's staked LP amount
+	UserUnstakedLp    float64                `protobuf:"fixed64,29,opt,name=user_unstaked_lp,json=userUnstakedLp,proto3" json:"user_unstaked_lp,omitempty"`       // user's unstaked LP amount
+	// Historical price ranges for different time periods
+	PriceRange_24HMin float64 `protobuf:"fixed64,30,opt,name=price_range_24h_min,json=priceRange24hMin,proto3" json:"price_range_24h_min,omitempty"` // 24H min price
+	PriceRange_24HMax float64 `protobuf:"fixed64,31,opt,name=price_range_24h_max,json=priceRange24hMax,proto3" json:"price_range_24h_max,omitempty"` // 24H max price
+	PriceRange_7DMin  float64 `protobuf:"fixed64,32,opt,name=price_range_7d_min,json=priceRange7dMin,proto3" json:"price_range_7d_min,omitempty"`    // 7D min price
+	PriceRange_7DMax  float64 `protobuf:"fixed64,33,opt,name=price_range_7d_max,json=priceRange7dMax,proto3" json:"price_range_7d_max,omitempty"`    // 7D max price
+	PriceRange_30DMin float64 `protobuf:"fixed64,34,opt,name=price_range_30d_min,json=priceRange30dMin,proto3" json:"price_range_30d_min,omitempty"` // 30D min price
+	PriceRange_30DMax float64 `protobuf:"fixed64,35,opt,name=price_range_30d_max,json=priceRange30dMax,proto3" json:"price_range_30d_max,omitempty"` // 30D max price
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
+}
+
+func (x *GetPoolDetailResponse) Reset() {
+	*x = GetPoolDetailResponse{}
+	mi := &file_market_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetPoolDetailResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetPoolDetailResponse) ProtoMessage() {}
+
+func (x *GetPoolDetailResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_market_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetPoolDetailResponse.ProtoReflect.Descriptor instead.
+func (*GetPoolDetailResponse) Descriptor() ([]byte, []int) {
+	return file_market_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *GetPoolDetailResponse) GetChainId() int64 {
+	if x != nil {
+		return x.ChainId
+	}
+	return 0
+}
+
+func (x *GetPoolDetailResponse) GetPoolState() string {
+	if x != nil {
+		return x.PoolState
+	}
+	return ""
+}
+
+func (x *GetPoolDetailResponse) GetInputVaultMint() string {
+	if x != nil {
+		return x.InputVaultMint
+	}
+	return ""
+}
+
+func (x *GetPoolDetailResponse) GetOutputVaultMint() string {
+	if x != nil {
+		return x.OutputVaultMint
+	}
+	return ""
+}
+
+func (x *GetPoolDetailResponse) GetInputTokenSymbol() string {
+	if x != nil {
+		return x.InputTokenSymbol
+	}
+	return ""
+}
+
+func (x *GetPoolDetailResponse) GetOutputTokenSymbol() string {
+	if x != nil {
+		return x.OutputTokenSymbol
+	}
+	return ""
+}
+
+func (x *GetPoolDetailResponse) GetInputTokenIcon() string {
+	if x != nil {
+		return x.InputTokenIcon
+	}
+	return ""
+}
+
+func (x *GetPoolDetailResponse) GetOutputTokenIcon() string {
+	if x != nil {
+		return x.OutputTokenIcon
+	}
+	return ""
+}
+
+func (x *GetPoolDetailResponse) GetTradeFeeRate() int64 {
+	if x != nil {
+		return x.TradeFeeRate
+	}
+	return 0
+}
+
+func (x *GetPoolDetailResponse) GetLaunchTime() int64 {
+	if x != nil {
+		return x.LaunchTime
+	}
+	return 0
+}
+
+func (x *GetPoolDetailResponse) GetLiquidityUsd() float64 {
+	if x != nil {
+		return x.LiquidityUsd
+	}
+	return 0
+}
+
+func (x *GetPoolDetailResponse) GetTxs_24H() uint32 {
+	if x != nil {
+		return x.Txs_24H
+	}
+	return 0
+}
+
+func (x *GetPoolDetailResponse) GetVol_24H() float64 {
+	if x != nil {
+		return x.Vol_24H
+	}
+	return 0
+}
+
+func (x *GetPoolDetailResponse) GetApr() float64 {
+	if x != nil {
+		return x.Apr
+	}
+	return 0
+}
+
+func (x *GetPoolDetailResponse) GetPoolVersion() int32 {
+	if x != nil {
+		return x.PoolVersion
+	}
+	return 0
+}
+
+func (x *GetPoolDetailResponse) GetLockedPercent() float64 {
+	if x != nil {
+		return x.LockedPercent
+	}
+	return 0
+}
+
+func (x *GetPoolDetailResponse) GetInputAmount() float64 {
+	if x != nil {
+		return x.InputAmount
+	}
+	return 0
+}
+
+func (x *GetPoolDetailResponse) GetOutputAmount() float64 {
+	if x != nil {
+		return x.OutputAmount
+	}
+	return 0
+}
+
+func (x *GetPoolDetailResponse) GetBaseReserve() float64 {
+	if x != nil {
+		return x.BaseReserve
+	}
+	return 0
+}
+
+func (x *GetPoolDetailResponse) GetQuoteReserve() float64 {
+	if x != nil {
+		return x.QuoteReserve
+	}
+	return 0
+}
+
+func (x *GetPoolDetailResponse) GetInputReserve() float64 {
+	if x != nil {
+		return x.InputReserve
+	}
+	return 0
+}
+
+func (x *GetPoolDetailResponse) GetOutputReserve() float64 {
+	if x != nil {
+		return x.OutputReserve
+	}
+	return 0
+}
+
+func (x *GetPoolDetailResponse) GetPrice() float64 {
+	if x != nil {
+		return x.Price
+	}
+	return 0
+}
+
+func (x *GetPoolDetailResponse) GetQuotePerBase() float64 {
+	if x != nil {
+		return x.QuotePerBase
+	}
+	return 0
+}
+
+func (x *GetPoolDetailResponse) GetMarketPrice() float64 {
+	if x != nil {
+		return x.MarketPrice
+	}
+	return 0
+}
+
+func (x *GetPoolDetailResponse) GetUserPooledInput() float64 {
+	if x != nil {
+		return x.UserPooledInput
+	}
+	return 0
+}
+
+func (x *GetPoolDetailResponse) GetUserPooledOutput() float64 {
+	if x != nil {
+		return x.UserPooledOutput
+	}
+	return 0
+}
+
+func (x *GetPoolDetailResponse) GetUserStakedLp() float64 {
+	if x != nil {
+		return x.UserStakedLp
+	}
+	return 0
+}
+
+func (x *GetPoolDetailResponse) GetUserUnstakedLp() float64 {
+	if x != nil {
+		return x.UserUnstakedLp
+	}
+	return 0
+}
+
+func (x *GetPoolDetailResponse) GetPriceRange_24HMin() float64 {
+	if x != nil {
+		return x.PriceRange_24HMin
+	}
+	return 0
+}
+
+func (x *GetPoolDetailResponse) GetPriceRange_24HMax() float64 {
+	if x != nil {
+		return x.PriceRange_24HMax
+	}
+	return 0
+}
+
+func (x *GetPoolDetailResponse) GetPriceRange_7DMin() float64 {
+	if x != nil {
+		return x.PriceRange_7DMin
+	}
+	return 0
+}
+
+func (x *GetPoolDetailResponse) GetPriceRange_7DMax() float64 {
+	if x != nil {
+		return x.PriceRange_7DMax
+	}
+	return 0
+}
+
+func (x *GetPoolDetailResponse) GetPriceRange_30DMin() float64 {
+	if x != nil {
+		return x.PriceRange_30DMin
+	}
+	return 0
+}
+
+func (x *GetPoolDetailResponse) GetPriceRange_30DMax() float64 {
+	if x != nil {
+		return x.PriceRange_30DMax
+	}
+	return 0
+}
+
 type PushTokenInfoResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	ChainId       int64                  `protobuf:"varint,1,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`
@@ -770,7 +1155,7 @@ type PushTokenInfoResponse struct {
 
 func (x *PushTokenInfoResponse) Reset() {
 	*x = PushTokenInfoResponse{}
-	mi := &file_market_proto_msgTypes[7]
+	mi := &file_market_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -782,7 +1167,7 @@ func (x *PushTokenInfoResponse) String() string {
 func (*PushTokenInfoResponse) ProtoMessage() {}
 
 func (x *PushTokenInfoResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_market_proto_msgTypes[7]
+	mi := &file_market_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -795,7 +1180,7 @@ func (x *PushTokenInfoResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PushTokenInfoResponse.ProtoReflect.Descriptor instead.
 func (*PushTokenInfoResponse) Descriptor() ([]byte, []int) {
-	return file_market_proto_rawDescGZIP(), []int{7}
+	return file_market_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *PushTokenInfoResponse) GetChainId() int64 {
@@ -857,7 +1242,7 @@ type GetPairInfoByTokenRequest struct {
 
 func (x *GetPairInfoByTokenRequest) Reset() {
 	*x = GetPairInfoByTokenRequest{}
-	mi := &file_market_proto_msgTypes[8]
+	mi := &file_market_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -869,7 +1254,7 @@ func (x *GetPairInfoByTokenRequest) String() string {
 func (*GetPairInfoByTokenRequest) ProtoMessage() {}
 
 func (x *GetPairInfoByTokenRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_market_proto_msgTypes[8]
+	mi := &file_market_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -882,7 +1267,7 @@ func (x *GetPairInfoByTokenRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetPairInfoByTokenRequest.ProtoReflect.Descriptor instead.
 func (*GetPairInfoByTokenRequest) Descriptor() ([]byte, []int) {
-	return file_market_proto_rawDescGZIP(), []int{8}
+	return file_market_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *GetPairInfoByTokenRequest) GetChainId() int64 {
@@ -931,7 +1316,7 @@ type GetPairInfoByTokenResponse struct {
 
 func (x *GetPairInfoByTokenResponse) Reset() {
 	*x = GetPairInfoByTokenResponse{}
-	mi := &file_market_proto_msgTypes[9]
+	mi := &file_market_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -943,7 +1328,7 @@ func (x *GetPairInfoByTokenResponse) String() string {
 func (*GetPairInfoByTokenResponse) ProtoMessage() {}
 
 func (x *GetPairInfoByTokenResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_market_proto_msgTypes[9]
+	mi := &file_market_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -956,7 +1341,7 @@ func (x *GetPairInfoByTokenResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetPairInfoByTokenResponse.ProtoReflect.Descriptor instead.
 func (*GetPairInfoByTokenResponse) Descriptor() ([]byte, []int) {
-	return file_market_proto_rawDescGZIP(), []int{9}
+	return file_market_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *GetPairInfoByTokenResponse) GetChainId() int64 {
@@ -1137,7 +1522,7 @@ type GetNativeTokenPriceRequest struct {
 
 func (x *GetNativeTokenPriceRequest) Reset() {
 	*x = GetNativeTokenPriceRequest{}
-	mi := &file_market_proto_msgTypes[10]
+	mi := &file_market_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1149,7 +1534,7 @@ func (x *GetNativeTokenPriceRequest) String() string {
 func (*GetNativeTokenPriceRequest) ProtoMessage() {}
 
 func (x *GetNativeTokenPriceRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_market_proto_msgTypes[10]
+	mi := &file_market_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1162,7 +1547,7 @@ func (x *GetNativeTokenPriceRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetNativeTokenPriceRequest.ProtoReflect.Descriptor instead.
 func (*GetNativeTokenPriceRequest) Descriptor() ([]byte, []int) {
-	return file_market_proto_rawDescGZIP(), []int{10}
+	return file_market_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *GetNativeTokenPriceRequest) GetChainId() int64 {
@@ -1188,7 +1573,7 @@ type GetNativeTokenPriceResponse struct {
 
 func (x *GetNativeTokenPriceResponse) Reset() {
 	*x = GetNativeTokenPriceResponse{}
-	mi := &file_market_proto_msgTypes[11]
+	mi := &file_market_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1200,7 +1585,7 @@ func (x *GetNativeTokenPriceResponse) String() string {
 func (*GetNativeTokenPriceResponse) ProtoMessage() {}
 
 func (x *GetNativeTokenPriceResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_market_proto_msgTypes[11]
+	mi := &file_market_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1213,7 +1598,7 @@ func (x *GetNativeTokenPriceResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetNativeTokenPriceResponse.ProtoReflect.Descriptor instead.
 func (*GetNativeTokenPriceResponse) Descriptor() ([]byte, []int) {
-	return file_market_proto_rawDescGZIP(), []int{11}
+	return file_market_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *GetNativeTokenPriceResponse) GetBaseTokenPriceUsd() float64 {
@@ -1233,7 +1618,7 @@ type GetTokenInfoRequest struct {
 
 func (x *GetTokenInfoRequest) Reset() {
 	*x = GetTokenInfoRequest{}
-	mi := &file_market_proto_msgTypes[12]
+	mi := &file_market_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1245,7 +1630,7 @@ func (x *GetTokenInfoRequest) String() string {
 func (*GetTokenInfoRequest) ProtoMessage() {}
 
 func (x *GetTokenInfoRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_market_proto_msgTypes[12]
+	mi := &file_market_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1258,7 +1643,7 @@ func (x *GetTokenInfoRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetTokenInfoRequest.ProtoReflect.Descriptor instead.
 func (*GetTokenInfoRequest) Descriptor() ([]byte, []int) {
-	return file_market_proto_rawDescGZIP(), []int{12}
+	return file_market_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *GetTokenInfoRequest) GetChainId() int64 {
@@ -1311,7 +1696,7 @@ type GetTokenInfoResponse struct {
 
 func (x *GetTokenInfoResponse) Reset() {
 	*x = GetTokenInfoResponse{}
-	mi := &file_market_proto_msgTypes[13]
+	mi := &file_market_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1323,7 +1708,7 @@ func (x *GetTokenInfoResponse) String() string {
 func (*GetTokenInfoResponse) ProtoMessage() {}
 
 func (x *GetTokenInfoResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_market_proto_msgTypes[13]
+	mi := &file_market_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1336,7 +1721,7 @@ func (x *GetTokenInfoResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetTokenInfoResponse.ProtoReflect.Descriptor instead.
 func (*GetTokenInfoResponse) Descriptor() ([]byte, []int) {
-	return file_market_proto_rawDescGZIP(), []int{13}
+	return file_market_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *GetTokenInfoResponse) GetChainId() int64 {
@@ -1535,6 +1920,1066 @@ func (x *GetTokenInfoResponse) GetProgram() string {
 	return ""
 }
 
+// Quote CPMM swap for Raydium-style constant product pools
+type QuoteCpmmRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ChainId       int64                  `protobuf:"varint,1,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`
+	PoolState     string                 `protobuf:"bytes,2,opt,name=pool_state,json=poolState,proto3" json:"pool_state,omitempty"`
+	InputMint     string                 `protobuf:"bytes,3,opt,name=input_mint,json=inputMint,proto3" json:"input_mint,omitempty"`
+	OutputMint    string                 `protobuf:"bytes,4,opt,name=output_mint,json=outputMint,proto3" json:"output_mint,omitempty"`
+	AmountIn      string                 `protobuf:"bytes,5,opt,name=amount_in,json=amountIn,proto3" json:"amount_in,omitempty"`           // optional: exact-in amount
+	AmountOut     string                 `protobuf:"bytes,6,opt,name=amount_out,json=amountOut,proto3" json:"amount_out,omitempty"`        // optional: exact-out desired amount
+	SlippageBps   int64                  `protobuf:"varint,7,opt,name=slippage_bps,json=slippageBps,proto3" json:"slippage_bps,omitempty"` // e.g. 100 = 1%
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *QuoteCpmmRequest) Reset() {
+	*x = QuoteCpmmRequest{}
+	mi := &file_market_proto_msgTypes[16]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *QuoteCpmmRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*QuoteCpmmRequest) ProtoMessage() {}
+
+func (x *QuoteCpmmRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_market_proto_msgTypes[16]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use QuoteCpmmRequest.ProtoReflect.Descriptor instead.
+func (*QuoteCpmmRequest) Descriptor() ([]byte, []int) {
+	return file_market_proto_rawDescGZIP(), []int{16}
+}
+
+func (x *QuoteCpmmRequest) GetChainId() int64 {
+	if x != nil {
+		return x.ChainId
+	}
+	return 0
+}
+
+func (x *QuoteCpmmRequest) GetPoolState() string {
+	if x != nil {
+		return x.PoolState
+	}
+	return ""
+}
+
+func (x *QuoteCpmmRequest) GetInputMint() string {
+	if x != nil {
+		return x.InputMint
+	}
+	return ""
+}
+
+func (x *QuoteCpmmRequest) GetOutputMint() string {
+	if x != nil {
+		return x.OutputMint
+	}
+	return ""
+}
+
+func (x *QuoteCpmmRequest) GetAmountIn() string {
+	if x != nil {
+		return x.AmountIn
+	}
+	return ""
+}
+
+func (x *QuoteCpmmRequest) GetAmountOut() string {
+	if x != nil {
+		return x.AmountOut
+	}
+	return ""
+}
+
+func (x *QuoteCpmmRequest) GetSlippageBps() int64 {
+	if x != nil {
+		return x.SlippageBps
+	}
+	return 0
+}
+
+type QuoteCpmmResponse struct {
+	state            protoimpl.MessageState `protogen:"open.v1"`
+	PayMint          string                 `protobuf:"bytes,1,opt,name=pay_mint,json=payMint,proto3" json:"pay_mint,omitempty"`
+	ReceiveMint      string                 `protobuf:"bytes,2,opt,name=receive_mint,json=receiveMint,proto3" json:"receive_mint,omitempty"`
+	PayAmount        string                 `protobuf:"bytes,3,opt,name=pay_amount,json=payAmount,proto3" json:"pay_amount,omitempty"`
+	ReceiveAmount    string                 `protobuf:"bytes,4,opt,name=receive_amount,json=receiveAmount,proto3" json:"receive_amount,omitempty"`
+	MinReceiveAmount string                 `protobuf:"bytes,5,opt,name=min_receive_amount,json=minReceiveAmount,proto3" json:"min_receive_amount,omitempty"`
+	PriceImpactPct   string                 `protobuf:"bytes,6,opt,name=price_impact_pct,json=priceImpactPct,proto3" json:"price_impact_pct,omitempty"`
+	FeeRatePct       string                 `protobuf:"bytes,7,opt,name=fee_rate_pct,json=feeRatePct,proto3" json:"fee_rate_pct,omitempty"`
+	Price            float64                `protobuf:"fixed64,8,opt,name=price,proto3" json:"price,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
+func (x *QuoteCpmmResponse) Reset() {
+	*x = QuoteCpmmResponse{}
+	mi := &file_market_proto_msgTypes[17]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *QuoteCpmmResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*QuoteCpmmResponse) ProtoMessage() {}
+
+func (x *QuoteCpmmResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_market_proto_msgTypes[17]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use QuoteCpmmResponse.ProtoReflect.Descriptor instead.
+func (*QuoteCpmmResponse) Descriptor() ([]byte, []int) {
+	return file_market_proto_rawDescGZIP(), []int{17}
+}
+
+func (x *QuoteCpmmResponse) GetPayMint() string {
+	if x != nil {
+		return x.PayMint
+	}
+	return ""
+}
+
+func (x *QuoteCpmmResponse) GetReceiveMint() string {
+	if x != nil {
+		return x.ReceiveMint
+	}
+	return ""
+}
+
+func (x *QuoteCpmmResponse) GetPayAmount() string {
+	if x != nil {
+		return x.PayAmount
+	}
+	return ""
+}
+
+func (x *QuoteCpmmResponse) GetReceiveAmount() string {
+	if x != nil {
+		return x.ReceiveAmount
+	}
+	return ""
+}
+
+func (x *QuoteCpmmResponse) GetMinReceiveAmount() string {
+	if x != nil {
+		return x.MinReceiveAmount
+	}
+	return ""
+}
+
+func (x *QuoteCpmmResponse) GetPriceImpactPct() string {
+	if x != nil {
+		return x.PriceImpactPct
+	}
+	return ""
+}
+
+func (x *QuoteCpmmResponse) GetFeeRatePct() string {
+	if x != nil {
+		return x.FeeRatePct
+	}
+	return ""
+}
+
+func (x *QuoteCpmmResponse) GetPrice() float64 {
+	if x != nil {
+		return x.Price
+	}
+	return 0
+}
+
+// Quote CLMM swap for Raydium-style concentrated liquidity pools
+type QuoteClmmRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ChainId       int64                  `protobuf:"varint,1,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`
+	PoolState     string                 `protobuf:"bytes,2,opt,name=pool_state,json=poolState,proto3" json:"pool_state,omitempty"`
+	InputMint     string                 `protobuf:"bytes,3,opt,name=input_mint,json=inputMint,proto3" json:"input_mint,omitempty"`
+	OutputMint    string                 `protobuf:"bytes,4,opt,name=output_mint,json=outputMint,proto3" json:"output_mint,omitempty"`
+	AmountIn      string                 `protobuf:"bytes,5,opt,name=amount_in,json=amountIn,proto3" json:"amount_in,omitempty"`           // optional: exact-in amount
+	AmountOut     string                 `protobuf:"bytes,6,opt,name=amount_out,json=amountOut,proto3" json:"amount_out,omitempty"`        // optional: exact-out desired amount
+	SlippageBps   int64                  `protobuf:"varint,7,opt,name=slippage_bps,json=slippageBps,proto3" json:"slippage_bps,omitempty"` // e.g. 100 = 1%
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *QuoteClmmRequest) Reset() {
+	*x = QuoteClmmRequest{}
+	mi := &file_market_proto_msgTypes[18]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *QuoteClmmRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*QuoteClmmRequest) ProtoMessage() {}
+
+func (x *QuoteClmmRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_market_proto_msgTypes[18]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use QuoteClmmRequest.ProtoReflect.Descriptor instead.
+func (*QuoteClmmRequest) Descriptor() ([]byte, []int) {
+	return file_market_proto_rawDescGZIP(), []int{18}
+}
+
+func (x *QuoteClmmRequest) GetChainId() int64 {
+	if x != nil {
+		return x.ChainId
+	}
+	return 0
+}
+
+func (x *QuoteClmmRequest) GetPoolState() string {
+	if x != nil {
+		return x.PoolState
+	}
+	return ""
+}
+
+func (x *QuoteClmmRequest) GetInputMint() string {
+	if x != nil {
+		return x.InputMint
+	}
+	return ""
+}
+
+func (x *QuoteClmmRequest) GetOutputMint() string {
+	if x != nil {
+		return x.OutputMint
+	}
+	return ""
+}
+
+func (x *QuoteClmmRequest) GetAmountIn() string {
+	if x != nil {
+		return x.AmountIn
+	}
+	return ""
+}
+
+func (x *QuoteClmmRequest) GetAmountOut() string {
+	if x != nil {
+		return x.AmountOut
+	}
+	return ""
+}
+
+func (x *QuoteClmmRequest) GetSlippageBps() int64 {
+	if x != nil {
+		return x.SlippageBps
+	}
+	return 0
+}
+
+type QuoteClmmResponse struct {
+	state            protoimpl.MessageState `protogen:"open.v1"`
+	PayMint          string                 `protobuf:"bytes,1,opt,name=pay_mint,json=payMint,proto3" json:"pay_mint,omitempty"`
+	ReceiveMint      string                 `protobuf:"bytes,2,opt,name=receive_mint,json=receiveMint,proto3" json:"receive_mint,omitempty"`
+	PayAmount        string                 `protobuf:"bytes,3,opt,name=pay_amount,json=payAmount,proto3" json:"pay_amount,omitempty"`
+	ReceiveAmount    string                 `protobuf:"bytes,4,opt,name=receive_amount,json=receiveAmount,proto3" json:"receive_amount,omitempty"`
+	MinReceiveAmount string                 `protobuf:"bytes,5,opt,name=min_receive_amount,json=minReceiveAmount,proto3" json:"min_receive_amount,omitempty"`
+	PriceImpactPct   string                 `protobuf:"bytes,6,opt,name=price_impact_pct,json=priceImpactPct,proto3" json:"price_impact_pct,omitempty"`
+	FeeRatePct       string                 `protobuf:"bytes,7,opt,name=fee_rate_pct,json=feeRatePct,proto3" json:"fee_rate_pct,omitempty"`
+	Price            float64                `protobuf:"fixed64,8,opt,name=price,proto3" json:"price,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
+func (x *QuoteClmmResponse) Reset() {
+	*x = QuoteClmmResponse{}
+	mi := &file_market_proto_msgTypes[19]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *QuoteClmmResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*QuoteClmmResponse) ProtoMessage() {}
+
+func (x *QuoteClmmResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_market_proto_msgTypes[19]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use QuoteClmmResponse.ProtoReflect.Descriptor instead.
+func (*QuoteClmmResponse) Descriptor() ([]byte, []int) {
+	return file_market_proto_rawDescGZIP(), []int{19}
+}
+
+func (x *QuoteClmmResponse) GetPayMint() string {
+	if x != nil {
+		return x.PayMint
+	}
+	return ""
+}
+
+func (x *QuoteClmmResponse) GetReceiveMint() string {
+	if x != nil {
+		return x.ReceiveMint
+	}
+	return ""
+}
+
+func (x *QuoteClmmResponse) GetPayAmount() string {
+	if x != nil {
+		return x.PayAmount
+	}
+	return ""
+}
+
+func (x *QuoteClmmResponse) GetReceiveAmount() string {
+	if x != nil {
+		return x.ReceiveAmount
+	}
+	return ""
+}
+
+func (x *QuoteClmmResponse) GetMinReceiveAmount() string {
+	if x != nil {
+		return x.MinReceiveAmount
+	}
+	return ""
+}
+
+func (x *QuoteClmmResponse) GetPriceImpactPct() string {
+	if x != nil {
+		return x.PriceImpactPct
+	}
+	return ""
+}
+
+func (x *QuoteClmmResponse) GetFeeRatePct() string {
+	if x != nil {
+		return x.FeeRatePct
+	}
+	return ""
+}
+
+func (x *QuoteClmmResponse) GetPrice() float64 {
+	if x != nil {
+		return x.Price
+	}
+	return 0
+}
+
+// GetClmmPoolDepthData - Get CLMM pool depth data
+type GetClmmPoolDepthDataRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ChainId       int64                  `protobuf:"varint,1,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`
+	PoolState     string                 `protobuf:"bytes,2,opt,name=pool_state,json=poolState,proto3" json:"pool_state,omitempty"` // Pool state address (required)
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetClmmPoolDepthDataRequest) Reset() {
+	*x = GetClmmPoolDepthDataRequest{}
+	mi := &file_market_proto_msgTypes[20]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetClmmPoolDepthDataRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetClmmPoolDepthDataRequest) ProtoMessage() {}
+
+func (x *GetClmmPoolDepthDataRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_market_proto_msgTypes[20]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetClmmPoolDepthDataRequest.ProtoReflect.Descriptor instead.
+func (*GetClmmPoolDepthDataRequest) Descriptor() ([]byte, []int) {
+	return file_market_proto_rawDescGZIP(), []int{20}
+}
+
+func (x *GetClmmPoolDepthDataRequest) GetChainId() int64 {
+	if x != nil {
+		return x.ChainId
+	}
+	return 0
+}
+
+func (x *GetClmmPoolDepthDataRequest) GetPoolState() string {
+	if x != nil {
+		return x.PoolState
+	}
+	return ""
+}
+
+type GetClmmPoolDepthDataResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Count         int64                  `protobuf:"varint,1,opt,name=count,proto3" json:"count,omitempty"`                                      // Total count of liquidity data points
+	Line          []*DepthDataPoint      `protobuf:"bytes,2,rep,name=line,proto3" json:"line,omitempty"`                                         // Array of liquidity data points
+	TimeRangeMin  float64                `protobuf:"fixed64,3,opt,name=time_range_min,json=timeRangeMin,proto3" json:"time_range_min,omitempty"` // Minimum price in time range (from trade history)
+	TimeRangeMax  float64                `protobuf:"fixed64,4,opt,name=time_range_max,json=timeRangeMax,proto3" json:"time_range_max,omitempty"` // Maximum price in time range (from trade history)
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetClmmPoolDepthDataResponse) Reset() {
+	*x = GetClmmPoolDepthDataResponse{}
+	mi := &file_market_proto_msgTypes[21]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetClmmPoolDepthDataResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetClmmPoolDepthDataResponse) ProtoMessage() {}
+
+func (x *GetClmmPoolDepthDataResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_market_proto_msgTypes[21]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetClmmPoolDepthDataResponse.ProtoReflect.Descriptor instead.
+func (*GetClmmPoolDepthDataResponse) Descriptor() ([]byte, []int) {
+	return file_market_proto_rawDescGZIP(), []int{21}
+}
+
+func (x *GetClmmPoolDepthDataResponse) GetCount() int64 {
+	if x != nil {
+		return x.Count
+	}
+	return 0
+}
+
+func (x *GetClmmPoolDepthDataResponse) GetLine() []*DepthDataPoint {
+	if x != nil {
+		return x.Line
+	}
+	return nil
+}
+
+func (x *GetClmmPoolDepthDataResponse) GetTimeRangeMin() float64 {
+	if x != nil {
+		return x.TimeRangeMin
+	}
+	return 0
+}
+
+func (x *GetClmmPoolDepthDataResponse) GetTimeRangeMax() float64 {
+	if x != nil {
+		return x.TimeRangeMax
+	}
+	return 0
+}
+
+type DepthDataPoint struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Price         float64                `protobuf:"fixed64,1,opt,name=price,proto3" json:"price,omitempty"`       // Price at this tick
+	Liquidity     string                 `protobuf:"bytes,2,opt,name=liquidity,proto3" json:"liquidity,omitempty"` // Liquidity at this tick (as string to preserve precision)
+	Tick          int32                  `protobuf:"varint,3,opt,name=tick,proto3" json:"tick,omitempty"`          // Tick index
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DepthDataPoint) Reset() {
+	*x = DepthDataPoint{}
+	mi := &file_market_proto_msgTypes[22]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DepthDataPoint) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DepthDataPoint) ProtoMessage() {}
+
+func (x *DepthDataPoint) ProtoReflect() protoreflect.Message {
+	mi := &file_market_proto_msgTypes[22]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DepthDataPoint.ProtoReflect.Descriptor instead.
+func (*DepthDataPoint) Descriptor() ([]byte, []int) {
+	return file_market_proto_rawDescGZIP(), []int{22}
+}
+
+func (x *DepthDataPoint) GetPrice() float64 {
+	if x != nil {
+		return x.Price
+	}
+	return 0
+}
+
+func (x *DepthDataPoint) GetLiquidity() string {
+	if x != nil {
+		return x.Liquidity
+	}
+	return ""
+}
+
+func (x *DepthDataPoint) GetTick() int32 {
+	if x != nil {
+		return x.Tick
+	}
+	return 0
+}
+
+// GetUserPositions - Get user's liquidity positions
+type GetUserPositionsRequest struct {
+	state             protoimpl.MessageState `protogen:"open.v1"`
+	ChainId           int64                  `protobuf:"varint,1,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`                                // Chain ID, default 100000 (Solana)
+	UserWalletAddress string                 `protobuf:"bytes,2,opt,name=user_wallet_address,json=userWalletAddress,proto3" json:"user_wallet_address,omitempty"` // User wallet address (required)
+	PoolType          string                 `protobuf:"bytes,3,opt,name=pool_type,json=poolType,proto3" json:"pool_type,omitempty"`                              // Pool type: "all" | "cpmm" | "clmm" (optional, default "all")
+	PageNo            int32                  `protobuf:"varint,4,opt,name=page_no,json=pageNo,proto3" json:"page_no,omitempty"`                                   // Page number (optional, default 1)
+	PageSize          int32                  `protobuf:"varint,5,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`                             // Page size (optional, default 100)
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
+}
+
+func (x *GetUserPositionsRequest) Reset() {
+	*x = GetUserPositionsRequest{}
+	mi := &file_market_proto_msgTypes[23]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetUserPositionsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetUserPositionsRequest) ProtoMessage() {}
+
+func (x *GetUserPositionsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_market_proto_msgTypes[23]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetUserPositionsRequest.ProtoReflect.Descriptor instead.
+func (*GetUserPositionsRequest) Descriptor() ([]byte, []int) {
+	return file_market_proto_rawDescGZIP(), []int{23}
+}
+
+func (x *GetUserPositionsRequest) GetChainId() int64 {
+	if x != nil {
+		return x.ChainId
+	}
+	return 0
+}
+
+func (x *GetUserPositionsRequest) GetUserWalletAddress() string {
+	if x != nil {
+		return x.UserWalletAddress
+	}
+	return ""
+}
+
+func (x *GetUserPositionsRequest) GetPoolType() string {
+	if x != nil {
+		return x.PoolType
+	}
+	return ""
+}
+
+func (x *GetUserPositionsRequest) GetPageNo() int32 {
+	if x != nil {
+		return x.PageNo
+	}
+	return 0
+}
+
+func (x *GetUserPositionsRequest) GetPageSize() int32 {
+	if x != nil {
+		return x.PageSize
+	}
+	return 0
+}
+
+type GetUserPositionsResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Items         []*PositionItem        `protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`                        // Position list
+	Total         int32                  `protobuf:"varint,2,opt,name=total,proto3" json:"total,omitempty"`                       // Total count
+	PageNo        int32                  `protobuf:"varint,3,opt,name=page_no,json=pageNo,proto3" json:"page_no,omitempty"`       // Current page number
+	PageSize      int32                  `protobuf:"varint,4,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"` // Page size
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetUserPositionsResponse) Reset() {
+	*x = GetUserPositionsResponse{}
+	mi := &file_market_proto_msgTypes[24]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetUserPositionsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetUserPositionsResponse) ProtoMessage() {}
+
+func (x *GetUserPositionsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_market_proto_msgTypes[24]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetUserPositionsResponse.ProtoReflect.Descriptor instead.
+func (*GetUserPositionsResponse) Descriptor() ([]byte, []int) {
+	return file_market_proto_rawDescGZIP(), []int{24}
+}
+
+func (x *GetUserPositionsResponse) GetItems() []*PositionItem {
+	if x != nil {
+		return x.Items
+	}
+	return nil
+}
+
+func (x *GetUserPositionsResponse) GetTotal() int32 {
+	if x != nil {
+		return x.Total
+	}
+	return 0
+}
+
+func (x *GetUserPositionsResponse) GetPageNo() int32 {
+	if x != nil {
+		return x.PageNo
+	}
+	return 0
+}
+
+func (x *GetUserPositionsResponse) GetPageSize() int32 {
+	if x != nil {
+		return x.PageSize
+	}
+	return 0
+}
+
+type PositionItem struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Basic info
+	ChainId           int64  `protobuf:"varint,1,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`
+	UserWalletAddress string `protobuf:"bytes,2,opt,name=user_wallet_address,json=userWalletAddress,proto3" json:"user_wallet_address,omitempty"`
+	PoolState         string `protobuf:"bytes,3,opt,name=pool_state,json=poolState,proto3" json:"pool_state,omitempty"`        // Pool state address
+	PoolVersion       int32  `protobuf:"varint,4,opt,name=pool_version,json=poolVersion,proto3" json:"pool_version,omitempty"` // Pool version: 1=v1 CLMM, 2=v2 CLMM, 3=CPMM
+	// CLMM position info
+	PositionNftMint    string `protobuf:"bytes,5,opt,name=position_nft_mint,json=positionNftMint,proto3" json:"position_nft_mint,omitempty"`          // Position NFT Mint address (CLMM only)
+	PositionNftAccount string `protobuf:"bytes,6,opt,name=position_nft_account,json=positionNftAccount,proto3" json:"position_nft_account,omitempty"` // Position NFT account address (CLMM only)
+	PersonalPosition   string `protobuf:"bytes,7,opt,name=personal_position,json=personalPosition,proto3" json:"personal_position,omitempty"`         // Personal position state account (CLMM only)
+	TickLowerIndex     int32  `protobuf:"varint,8,opt,name=tick_lower_index,json=tickLowerIndex,proto3" json:"tick_lower_index,omitempty"`            // Lower tick index (CLMM only)
+	TickUpperIndex     int32  `protobuf:"varint,9,opt,name=tick_upper_index,json=tickUpperIndex,proto3" json:"tick_upper_index,omitempty"`            // Upper tick index (CLMM only)
+	Liquidity          string `protobuf:"bytes,10,opt,name=liquidity,proto3" json:"liquidity,omitempty"`                                              // Liquidity amount (CLMM only, Uint128 string)
+	// Token info
+	Token0Mint     string `protobuf:"bytes,11,opt,name=token0_mint,json=token0Mint,proto3" json:"token0_mint,omitempty"`              // Token0 Mint address
+	Token1Mint     string `protobuf:"bytes,12,opt,name=token1_mint,json=token1Mint,proto3" json:"token1_mint,omitempty"`              // Token1 Mint address
+	Token0Symbol   string `protobuf:"bytes,13,opt,name=token0_symbol,json=token0Symbol,proto3" json:"token0_symbol,omitempty"`        // Token0 symbol
+	Token1Symbol   string `protobuf:"bytes,14,opt,name=token1_symbol,json=token1Symbol,proto3" json:"token1_symbol,omitempty"`        // Token1 symbol
+	Token0Name     string `protobuf:"bytes,15,opt,name=token0_name,json=token0Name,proto3" json:"token0_name,omitempty"`              // Token0 name
+	Token1Name     string `protobuf:"bytes,16,opt,name=token1_name,json=token1Name,proto3" json:"token1_name,omitempty"`              // Token1 name
+	Token0Decimals int32  `protobuf:"varint,17,opt,name=token0_decimals,json=token0Decimals,proto3" json:"token0_decimals,omitempty"` // Token0 decimals
+	Token1Decimals int32  `protobuf:"varint,18,opt,name=token1_decimals,json=token1Decimals,proto3" json:"token1_decimals,omitempty"` // Token1 decimals
+	Token0Icon     string `protobuf:"bytes,19,opt,name=token0_icon,json=token0Icon,proto3" json:"token0_icon,omitempty"`              // Token0 icon
+	Token1Icon     string `protobuf:"bytes,20,opt,name=token1_icon,json=token1Icon,proto3" json:"token1_icon,omitempty"`              // Token1 icon
+	// Position value info
+	PositionValue float64 `protobuf:"fixed64,21,opt,name=position_value,json=positionValue,proto3" json:"position_value,omitempty"` // Total position value (USD)
+	Token0Amount  float64 `protobuf:"fixed64,22,opt,name=token0_amount,json=token0Amount,proto3" json:"token0_amount,omitempty"`    // Token0 amount
+	Token1Amount  float64 `protobuf:"fixed64,23,opt,name=token1_amount,json=token1Amount,proto3" json:"token1_amount,omitempty"`    // Token1 amount
+	UnclaimedFees float64 `protobuf:"fixed64,24,opt,name=unclaimed_fees,json=unclaimedFees,proto3" json:"unclaimed_fees,omitempty"` // Unclaimed fees (USD)
+	// CLMM price range info
+	PriceMin     float64 `protobuf:"fixed64,25,opt,name=price_min,json=priceMin,proto3" json:"price_min,omitempty"`             // Min price (CLMM only)
+	PriceMax     float64 `protobuf:"fixed64,26,opt,name=price_max,json=priceMax,proto3" json:"price_max,omitempty"`             // Max price (CLMM only)
+	CurrentPrice float64 `protobuf:"fixed64,27,opt,name=current_price,json=currentPrice,proto3" json:"current_price,omitempty"` // Current price (CLMM only)
+	IsInRange    bool    `protobuf:"varint,28,opt,name=is_in_range,json=isInRange,proto3" json:"is_in_range,omitempty"`         // Is in price range (CLMM only)
+	// CPMM position info
+	LpBalance float64 `protobuf:"fixed64,29,opt,name=lp_balance,json=lpBalance,proto3" json:"lp_balance,omitempty"` // LP Token balance (CPMM only)
+	LpValue   float64 `protobuf:"fixed64,30,opt,name=lp_value,json=lpValue,proto3" json:"lp_value,omitempty"`       // LP Token value (USD, CPMM only)
+	// Pool info
+	PoolLiquidityUsd float64 `protobuf:"fixed64,31,opt,name=pool_liquidity_usd,json=poolLiquidityUsd,proto3" json:"pool_liquidity_usd,omitempty"` // Pool total liquidity (USD)
+	PoolVolume_24H   float64 `protobuf:"fixed64,32,opt,name=pool_volume_24h,json=poolVolume24h,proto3" json:"pool_volume_24h,omitempty"`          // Pool 24h volume (USD)
+	PoolApr          float64 `protobuf:"fixed64,33,opt,name=pool_apr,json=poolApr,proto3" json:"pool_apr,omitempty"`                              // Pool APR
+	FeeTier          int64   `protobuf:"varint,34,opt,name=fee_tier,json=feeTier,proto3" json:"fee_tier,omitempty"`                               // Fee tier (basis points)
+	// Metadata
+	TxHash        string `protobuf:"bytes,35,opt,name=tx_hash,json=txHash,proto3" json:"tx_hash,omitempty"`           // Transaction hash that created the position
+	BlockTime     int64  `protobuf:"varint,36,opt,name=block_time,json=blockTime,proto3" json:"block_time,omitempty"` // Creation timestamp
+	CreatedAt     int64  `protobuf:"varint,37,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"` // Database creation time
+	UpdatedAt     int64  `protobuf:"varint,38,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"` // Database update time
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PositionItem) Reset() {
+	*x = PositionItem{}
+	mi := &file_market_proto_msgTypes[25]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PositionItem) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PositionItem) ProtoMessage() {}
+
+func (x *PositionItem) ProtoReflect() protoreflect.Message {
+	mi := &file_market_proto_msgTypes[25]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PositionItem.ProtoReflect.Descriptor instead.
+func (*PositionItem) Descriptor() ([]byte, []int) {
+	return file_market_proto_rawDescGZIP(), []int{25}
+}
+
+func (x *PositionItem) GetChainId() int64 {
+	if x != nil {
+		return x.ChainId
+	}
+	return 0
+}
+
+func (x *PositionItem) GetUserWalletAddress() string {
+	if x != nil {
+		return x.UserWalletAddress
+	}
+	return ""
+}
+
+func (x *PositionItem) GetPoolState() string {
+	if x != nil {
+		return x.PoolState
+	}
+	return ""
+}
+
+func (x *PositionItem) GetPoolVersion() int32 {
+	if x != nil {
+		return x.PoolVersion
+	}
+	return 0
+}
+
+func (x *PositionItem) GetPositionNftMint() string {
+	if x != nil {
+		return x.PositionNftMint
+	}
+	return ""
+}
+
+func (x *PositionItem) GetPositionNftAccount() string {
+	if x != nil {
+		return x.PositionNftAccount
+	}
+	return ""
+}
+
+func (x *PositionItem) GetPersonalPosition() string {
+	if x != nil {
+		return x.PersonalPosition
+	}
+	return ""
+}
+
+func (x *PositionItem) GetTickLowerIndex() int32 {
+	if x != nil {
+		return x.TickLowerIndex
+	}
+	return 0
+}
+
+func (x *PositionItem) GetTickUpperIndex() int32 {
+	if x != nil {
+		return x.TickUpperIndex
+	}
+	return 0
+}
+
+func (x *PositionItem) GetLiquidity() string {
+	if x != nil {
+		return x.Liquidity
+	}
+	return ""
+}
+
+func (x *PositionItem) GetToken0Mint() string {
+	if x != nil {
+		return x.Token0Mint
+	}
+	return ""
+}
+
+func (x *PositionItem) GetToken1Mint() string {
+	if x != nil {
+		return x.Token1Mint
+	}
+	return ""
+}
+
+func (x *PositionItem) GetToken0Symbol() string {
+	if x != nil {
+		return x.Token0Symbol
+	}
+	return ""
+}
+
+func (x *PositionItem) GetToken1Symbol() string {
+	if x != nil {
+		return x.Token1Symbol
+	}
+	return ""
+}
+
+func (x *PositionItem) GetToken0Name() string {
+	if x != nil {
+		return x.Token0Name
+	}
+	return ""
+}
+
+func (x *PositionItem) GetToken1Name() string {
+	if x != nil {
+		return x.Token1Name
+	}
+	return ""
+}
+
+func (x *PositionItem) GetToken0Decimals() int32 {
+	if x != nil {
+		return x.Token0Decimals
+	}
+	return 0
+}
+
+func (x *PositionItem) GetToken1Decimals() int32 {
+	if x != nil {
+		return x.Token1Decimals
+	}
+	return 0
+}
+
+func (x *PositionItem) GetToken0Icon() string {
+	if x != nil {
+		return x.Token0Icon
+	}
+	return ""
+}
+
+func (x *PositionItem) GetToken1Icon() string {
+	if x != nil {
+		return x.Token1Icon
+	}
+	return ""
+}
+
+func (x *PositionItem) GetPositionValue() float64 {
+	if x != nil {
+		return x.PositionValue
+	}
+	return 0
+}
+
+func (x *PositionItem) GetToken0Amount() float64 {
+	if x != nil {
+		return x.Token0Amount
+	}
+	return 0
+}
+
+func (x *PositionItem) GetToken1Amount() float64 {
+	if x != nil {
+		return x.Token1Amount
+	}
+	return 0
+}
+
+func (x *PositionItem) GetUnclaimedFees() float64 {
+	if x != nil {
+		return x.UnclaimedFees
+	}
+	return 0
+}
+
+func (x *PositionItem) GetPriceMin() float64 {
+	if x != nil {
+		return x.PriceMin
+	}
+	return 0
+}
+
+func (x *PositionItem) GetPriceMax() float64 {
+	if x != nil {
+		return x.PriceMax
+	}
+	return 0
+}
+
+func (x *PositionItem) GetCurrentPrice() float64 {
+	if x != nil {
+		return x.CurrentPrice
+	}
+	return 0
+}
+
+func (x *PositionItem) GetIsInRange() bool {
+	if x != nil {
+		return x.IsInRange
+	}
+	return false
+}
+
+func (x *PositionItem) GetLpBalance() float64 {
+	if x != nil {
+		return x.LpBalance
+	}
+	return 0
+}
+
+func (x *PositionItem) GetLpValue() float64 {
+	if x != nil {
+		return x.LpValue
+	}
+	return 0
+}
+
+func (x *PositionItem) GetPoolLiquidityUsd() float64 {
+	if x != nil {
+		return x.PoolLiquidityUsd
+	}
+	return 0
+}
+
+func (x *PositionItem) GetPoolVolume_24H() float64 {
+	if x != nil {
+		return x.PoolVolume_24H
+	}
+	return 0
+}
+
+func (x *PositionItem) GetPoolApr() float64 {
+	if x != nil {
+		return x.PoolApr
+	}
+	return 0
+}
+
+func (x *PositionItem) GetFeeTier() int64 {
+	if x != nil {
+		return x.FeeTier
+	}
+	return 0
+}
+
+func (x *PositionItem) GetTxHash() string {
+	if x != nil {
+		return x.TxHash
+	}
+	return ""
+}
+
+func (x *PositionItem) GetBlockTime() int64 {
+	if x != nil {
+		return x.BlockTime
+	}
+	return 0
+}
+
+func (x *PositionItem) GetCreatedAt() int64 {
+	if x != nil {
+		return x.CreatedAt
+	}
+	return 0
+}
+
+func (x *PositionItem) GetUpdatedAt() int64 {
+	if x != nil {
+		return x.UpdatedAt
+	}
+	return 0
+}
+
 var File_market_proto protoreflect.FileDescriptor
 
 const file_market_proto_rawDesc = "" +
@@ -1626,7 +3071,53 @@ const file_market_proto_rawDesc = "" +
 	"\tchange_24\x18\v \x01(\x01R\bchange24\x12\x17\n" +
 	"\atxs_24h\x18\f \x01(\x03R\x06txs24h\x12\x1f\n" +
 	"\vpump_status\x18\r \x01(\x05R\n" +
-	"pumpStatus\"\xe0\x01\n" +
+	"pumpStatus\"\xa3\x01\n" +
+	"\x14GetPoolDetailRequest\x12\x19\n" +
+	"\bchain_id\x18\x01 \x01(\x03R\achainId\x12\x1d\n" +
+	"\n" +
+	"pool_state\x18\x02 \x01(\tR\tpoolState\x12!\n" +
+	"\fpool_version\x18\x03 \x01(\x05R\vpoolVersion\x12.\n" +
+	"\x13user_wallet_address\x18\x04 \x01(\tR\x11userWalletAddress\"\xd0\n" +
+	"\n" +
+	"\x15GetPoolDetailResponse\x12\x19\n" +
+	"\bchain_id\x18\x01 \x01(\x03R\achainId\x12\x1d\n" +
+	"\n" +
+	"pool_state\x18\x02 \x01(\tR\tpoolState\x12(\n" +
+	"\x10input_vault_mint\x18\x03 \x01(\tR\x0einputVaultMint\x12*\n" +
+	"\x11output_vault_mint\x18\x04 \x01(\tR\x0foutputVaultMint\x12,\n" +
+	"\x12input_token_symbol\x18\x05 \x01(\tR\x10inputTokenSymbol\x12.\n" +
+	"\x13output_token_symbol\x18\x06 \x01(\tR\x11outputTokenSymbol\x12(\n" +
+	"\x10input_token_icon\x18\a \x01(\tR\x0einputTokenIcon\x12*\n" +
+	"\x11output_token_icon\x18\b \x01(\tR\x0foutputTokenIcon\x12$\n" +
+	"\x0etrade_fee_rate\x18\t \x01(\x03R\ftradeFeeRate\x12\x1f\n" +
+	"\vlaunch_time\x18\n" +
+	" \x01(\x03R\n" +
+	"launchTime\x12#\n" +
+	"\rliquidity_usd\x18\v \x01(\x01R\fliquidityUsd\x12\x17\n" +
+	"\atxs_24h\x18\f \x01(\rR\x06txs24h\x12\x17\n" +
+	"\avol_24h\x18\r \x01(\x01R\x06vol24h\x12\x10\n" +
+	"\x03apr\x18\x0e \x01(\x01R\x03apr\x12!\n" +
+	"\fpool_version\x18\x0f \x01(\x05R\vpoolVersion\x12%\n" +
+	"\x0elocked_percent\x18\x10 \x01(\x01R\rlockedPercent\x12!\n" +
+	"\finput_amount\x18\x11 \x01(\x01R\vinputAmount\x12#\n" +
+	"\routput_amount\x18\x12 \x01(\x01R\foutputAmount\x12!\n" +
+	"\fbase_reserve\x18\x13 \x01(\x01R\vbaseReserve\x12#\n" +
+	"\rquote_reserve\x18\x14 \x01(\x01R\fquoteReserve\x12#\n" +
+	"\rinput_reserve\x18\x15 \x01(\x01R\finputReserve\x12%\n" +
+	"\x0eoutput_reserve\x18\x16 \x01(\x01R\routputReserve\x12\x14\n" +
+	"\x05price\x18\x17 \x01(\x01R\x05price\x12$\n" +
+	"\x0equote_per_base\x18\x18 \x01(\x01R\fquotePerBase\x12!\n" +
+	"\fmarket_price\x18\x19 \x01(\x01R\vmarketPrice\x12*\n" +
+	"\x11user_pooled_input\x18\x1a \x01(\x01R\x0fuserPooledInput\x12,\n" +
+	"\x12user_pooled_output\x18\x1b \x01(\x01R\x10userPooledOutput\x12$\n" +
+	"\x0euser_staked_lp\x18\x1c \x01(\x01R\fuserStakedLp\x12(\n" +
+	"\x10user_unstaked_lp\x18\x1d \x01(\x01R\x0euserUnstakedLp\x12-\n" +
+	"\x13price_range_24h_min\x18\x1e \x01(\x01R\x10priceRange24hMin\x12-\n" +
+	"\x13price_range_24h_max\x18\x1f \x01(\x01R\x10priceRange24hMax\x12+\n" +
+	"\x12price_range_7d_min\x18  \x01(\x01R\x0fpriceRange7dMin\x12+\n" +
+	"\x12price_range_7d_max\x18! \x01(\x01R\x0fpriceRange7dMax\x12-\n" +
+	"\x13price_range_30d_min\x18\" \x01(\x01R\x10priceRange30dMin\x12-\n" +
+	"\x13price_range_30d_max\x18# \x01(\x01R\x10priceRange30dMax\"\xe0\x01\n" +
 	"\x15PushTokenInfoResponse\x12\x19\n" +
 	"\bchain_id\x18\x01 \x01(\x03R\achainId\x12#\n" +
 	"\rtoken_address\x18\x02 \x01(\tR\ftokenAddress\x12\x17\n" +
@@ -1707,14 +3198,141 @@ const file_market_proto_rawDesc = "" +
 	"\btelegram\x18\x19 \x01(\tR\btelegram\x12\x1e\n" +
 	"\vis_check_ca\x18\x1a \x01(\x03R\tisCheckCa\x12\x1e\n" +
 	"\vcheck_ca_at\x18\x1b \x01(\x03R\tcheckCaAt\x12\x18\n" +
-	"\aprogram\x18\x1c \x01(\tR\aprogram2\x89\x04\n" +
+	"\aprogram\x18\x1c \x01(\tR\aprogram\"\xeb\x01\n" +
+	"\x10QuoteCpmmRequest\x12\x19\n" +
+	"\bchain_id\x18\x01 \x01(\x03R\achainId\x12\x1d\n" +
+	"\n" +
+	"pool_state\x18\x02 \x01(\tR\tpoolState\x12\x1d\n" +
+	"\n" +
+	"input_mint\x18\x03 \x01(\tR\tinputMint\x12\x1f\n" +
+	"\voutput_mint\x18\x04 \x01(\tR\n" +
+	"outputMint\x12\x1b\n" +
+	"\tamount_in\x18\x05 \x01(\tR\bamountIn\x12\x1d\n" +
+	"\n" +
+	"amount_out\x18\x06 \x01(\tR\tamountOut\x12!\n" +
+	"\fslippage_bps\x18\a \x01(\x03R\vslippageBps\"\xa7\x02\n" +
+	"\x11QuoteCpmmResponse\x12\x19\n" +
+	"\bpay_mint\x18\x01 \x01(\tR\apayMint\x12!\n" +
+	"\freceive_mint\x18\x02 \x01(\tR\vreceiveMint\x12\x1d\n" +
+	"\n" +
+	"pay_amount\x18\x03 \x01(\tR\tpayAmount\x12%\n" +
+	"\x0ereceive_amount\x18\x04 \x01(\tR\rreceiveAmount\x12,\n" +
+	"\x12min_receive_amount\x18\x05 \x01(\tR\x10minReceiveAmount\x12(\n" +
+	"\x10price_impact_pct\x18\x06 \x01(\tR\x0epriceImpactPct\x12 \n" +
+	"\ffee_rate_pct\x18\a \x01(\tR\n" +
+	"feeRatePct\x12\x14\n" +
+	"\x05price\x18\b \x01(\x01R\x05price\"\xeb\x01\n" +
+	"\x10QuoteClmmRequest\x12\x19\n" +
+	"\bchain_id\x18\x01 \x01(\x03R\achainId\x12\x1d\n" +
+	"\n" +
+	"pool_state\x18\x02 \x01(\tR\tpoolState\x12\x1d\n" +
+	"\n" +
+	"input_mint\x18\x03 \x01(\tR\tinputMint\x12\x1f\n" +
+	"\voutput_mint\x18\x04 \x01(\tR\n" +
+	"outputMint\x12\x1b\n" +
+	"\tamount_in\x18\x05 \x01(\tR\bamountIn\x12\x1d\n" +
+	"\n" +
+	"amount_out\x18\x06 \x01(\tR\tamountOut\x12!\n" +
+	"\fslippage_bps\x18\a \x01(\x03R\vslippageBps\"\xa7\x02\n" +
+	"\x11QuoteClmmResponse\x12\x19\n" +
+	"\bpay_mint\x18\x01 \x01(\tR\apayMint\x12!\n" +
+	"\freceive_mint\x18\x02 \x01(\tR\vreceiveMint\x12\x1d\n" +
+	"\n" +
+	"pay_amount\x18\x03 \x01(\tR\tpayAmount\x12%\n" +
+	"\x0ereceive_amount\x18\x04 \x01(\tR\rreceiveAmount\x12,\n" +
+	"\x12min_receive_amount\x18\x05 \x01(\tR\x10minReceiveAmount\x12(\n" +
+	"\x10price_impact_pct\x18\x06 \x01(\tR\x0epriceImpactPct\x12 \n" +
+	"\ffee_rate_pct\x18\a \x01(\tR\n" +
+	"feeRatePct\x12\x14\n" +
+	"\x05price\x18\b \x01(\x01R\x05price\"W\n" +
+	"\x1bGetClmmPoolDepthDataRequest\x12\x19\n" +
+	"\bchain_id\x18\x01 \x01(\x03R\achainId\x12\x1d\n" +
+	"\n" +
+	"pool_state\x18\x02 \x01(\tR\tpoolState\"\xac\x01\n" +
+	"\x1cGetClmmPoolDepthDataResponse\x12\x14\n" +
+	"\x05count\x18\x01 \x01(\x03R\x05count\x12*\n" +
+	"\x04line\x18\x02 \x03(\v2\x16.market.DepthDataPointR\x04line\x12$\n" +
+	"\x0etime_range_min\x18\x03 \x01(\x01R\ftimeRangeMin\x12$\n" +
+	"\x0etime_range_max\x18\x04 \x01(\x01R\ftimeRangeMax\"X\n" +
+	"\x0eDepthDataPoint\x12\x14\n" +
+	"\x05price\x18\x01 \x01(\x01R\x05price\x12\x1c\n" +
+	"\tliquidity\x18\x02 \x01(\tR\tliquidity\x12\x12\n" +
+	"\x04tick\x18\x03 \x01(\x05R\x04tick\"\xb7\x01\n" +
+	"\x17GetUserPositionsRequest\x12\x19\n" +
+	"\bchain_id\x18\x01 \x01(\x03R\achainId\x12.\n" +
+	"\x13user_wallet_address\x18\x02 \x01(\tR\x11userWalletAddress\x12\x1b\n" +
+	"\tpool_type\x18\x03 \x01(\tR\bpoolType\x12\x17\n" +
+	"\apage_no\x18\x04 \x01(\x05R\x06pageNo\x12\x1b\n" +
+	"\tpage_size\x18\x05 \x01(\x05R\bpageSize\"\x92\x01\n" +
+	"\x18GetUserPositionsResponse\x12*\n" +
+	"\x05items\x18\x01 \x03(\v2\x14.market.PositionItemR\x05items\x12\x14\n" +
+	"\x05total\x18\x02 \x01(\x05R\x05total\x12\x17\n" +
+	"\apage_no\x18\x03 \x01(\x05R\x06pageNo\x12\x1b\n" +
+	"\tpage_size\x18\x04 \x01(\x05R\bpageSize\"\xcd\n" +
+	"\n" +
+	"\fPositionItem\x12\x19\n" +
+	"\bchain_id\x18\x01 \x01(\x03R\achainId\x12.\n" +
+	"\x13user_wallet_address\x18\x02 \x01(\tR\x11userWalletAddress\x12\x1d\n" +
+	"\n" +
+	"pool_state\x18\x03 \x01(\tR\tpoolState\x12!\n" +
+	"\fpool_version\x18\x04 \x01(\x05R\vpoolVersion\x12*\n" +
+	"\x11position_nft_mint\x18\x05 \x01(\tR\x0fpositionNftMint\x120\n" +
+	"\x14position_nft_account\x18\x06 \x01(\tR\x12positionNftAccount\x12+\n" +
+	"\x11personal_position\x18\a \x01(\tR\x10personalPosition\x12(\n" +
+	"\x10tick_lower_index\x18\b \x01(\x05R\x0etickLowerIndex\x12(\n" +
+	"\x10tick_upper_index\x18\t \x01(\x05R\x0etickUpperIndex\x12\x1c\n" +
+	"\tliquidity\x18\n" +
+	" \x01(\tR\tliquidity\x12\x1f\n" +
+	"\vtoken0_mint\x18\v \x01(\tR\n" +
+	"token0Mint\x12\x1f\n" +
+	"\vtoken1_mint\x18\f \x01(\tR\n" +
+	"token1Mint\x12#\n" +
+	"\rtoken0_symbol\x18\r \x01(\tR\ftoken0Symbol\x12#\n" +
+	"\rtoken1_symbol\x18\x0e \x01(\tR\ftoken1Symbol\x12\x1f\n" +
+	"\vtoken0_name\x18\x0f \x01(\tR\n" +
+	"token0Name\x12\x1f\n" +
+	"\vtoken1_name\x18\x10 \x01(\tR\n" +
+	"token1Name\x12'\n" +
+	"\x0ftoken0_decimals\x18\x11 \x01(\x05R\x0etoken0Decimals\x12'\n" +
+	"\x0ftoken1_decimals\x18\x12 \x01(\x05R\x0etoken1Decimals\x12\x1f\n" +
+	"\vtoken0_icon\x18\x13 \x01(\tR\n" +
+	"token0Icon\x12\x1f\n" +
+	"\vtoken1_icon\x18\x14 \x01(\tR\n" +
+	"token1Icon\x12%\n" +
+	"\x0eposition_value\x18\x15 \x01(\x01R\rpositionValue\x12#\n" +
+	"\rtoken0_amount\x18\x16 \x01(\x01R\ftoken0Amount\x12#\n" +
+	"\rtoken1_amount\x18\x17 \x01(\x01R\ftoken1Amount\x12%\n" +
+	"\x0eunclaimed_fees\x18\x18 \x01(\x01R\runclaimedFees\x12\x1b\n" +
+	"\tprice_min\x18\x19 \x01(\x01R\bpriceMin\x12\x1b\n" +
+	"\tprice_max\x18\x1a \x01(\x01R\bpriceMax\x12#\n" +
+	"\rcurrent_price\x18\x1b \x01(\x01R\fcurrentPrice\x12\x1e\n" +
+	"\vis_in_range\x18\x1c \x01(\bR\tisInRange\x12\x1d\n" +
+	"\n" +
+	"lp_balance\x18\x1d \x01(\x01R\tlpBalance\x12\x19\n" +
+	"\blp_value\x18\x1e \x01(\x01R\alpValue\x12,\n" +
+	"\x12pool_liquidity_usd\x18\x1f \x01(\x01R\x10poolLiquidityUsd\x12&\n" +
+	"\x0fpool_volume_24h\x18  \x01(\x01R\rpoolVolume24h\x12\x19\n" +
+	"\bpool_apr\x18! \x01(\x01R\apoolApr\x12\x19\n" +
+	"\bfee_tier\x18\" \x01(\x03R\afeeTier\x12\x17\n" +
+	"\atx_hash\x18# \x01(\tR\x06txHash\x12\x1d\n" +
+	"\n" +
+	"block_time\x18$ \x01(\x03R\tblockTime\x12\x1d\n" +
+	"\n" +
+	"created_at\x18% \x01(\x03R\tcreatedAt\x12\x1d\n" +
+	"\n" +
+	"updated_at\x18& \x01(\x03R\tupdatedAt2\x95\a\n" +
 	"\x06Market\x12U\n" +
 	"\x10GetPumpTokenList\x12\x1f.market.GetPumpTokenListRequest\x1a .market.GetPumpTokenListResponse\x12R\n" +
 	"\x0fGetClmmPoolList\x12\x1e.market.GetClmmPoolListRequest\x1a\x1f.market.GetClmmPoolListResponse\x12L\n" +
+	"\rGetPoolDetail\x12\x1c.market.GetPoolDetailRequest\x1a\x1d.market.GetPoolDetailResponse\x12L\n" +
 	"\rPushTokenInfo\x12\x1c.market.PushTokenInfoRequest\x1a\x1d.market.PushTokenInfoResponse\x12[\n" +
 	"\x12GetPairInfoByToken\x12!.market.GetPairInfoByTokenRequest\x1a\".market.GetPairInfoByTokenResponse\x12^\n" +
 	"\x13GetNativeTokenPrice\x12\".market.GetNativeTokenPriceRequest\x1a#.market.GetNativeTokenPriceResponse\x12I\n" +
-	"\fGetTokenInfo\x12\x1b.market.GetTokenInfoRequest\x1a\x1c.market.GetTokenInfoResponseB\n" +
+	"\fGetTokenInfo\x12\x1b.market.GetTokenInfoRequest\x1a\x1c.market.GetTokenInfoResponse\x12@\n" +
+	"\tQuoteCpmm\x12\x18.market.QuoteCpmmRequest\x1a\x19.market.QuoteCpmmResponse\x12@\n" +
+	"\tQuoteClmm\x12\x18.market.QuoteClmmRequest\x1a\x19.market.QuoteClmmResponse\x12a\n" +
+	"\x14GetClmmPoolDepthData\x12#.market.GetClmmPoolDepthDataRequest\x1a$.market.GetClmmPoolDepthDataResponse\x12U\n" +
+	"\x10GetUserPositions\x12\x1f.market.GetUserPositionsRequest\x1a .market.GetUserPositionsResponseB\n" +
 	"Z\b./marketb\x06proto3"
 
 var (
@@ -1729,43 +3347,67 @@ func file_market_proto_rawDescGZIP() []byte {
 	return file_market_proto_rawDescData
 }
 
-var file_market_proto_msgTypes = make([]protoimpl.MessageInfo, 14)
+var file_market_proto_msgTypes = make([]protoimpl.MessageInfo, 26)
 var file_market_proto_goTypes = []any{
-	(*GetPumpTokenListRequest)(nil),     // 0: market.GetPumpTokenListRequest
-	(*GetPumpTokenListResponse)(nil),    // 1: market.GetPumpTokenListResponse
-	(*PumpTokenItem)(nil),               // 2: market.PumpTokenItem
-	(*GetClmmPoolListRequest)(nil),      // 3: market.GetClmmPoolListRequest
-	(*GetClmmPoolListResponse)(nil),     // 4: market.GetClmmPoolListResponse
-	(*ClmmPoolItem)(nil),                // 5: market.ClmmPoolItem
-	(*PushTokenInfoRequest)(nil),        // 6: market.PushTokenInfoRequest
-	(*PushTokenInfoResponse)(nil),       // 7: market.PushTokenInfoResponse
-	(*GetPairInfoByTokenRequest)(nil),   // 8: market.GetPairInfoByTokenRequest
-	(*GetPairInfoByTokenResponse)(nil),  // 9: market.GetPairInfoByTokenResponse
-	(*GetNativeTokenPriceRequest)(nil),  // 10: market.GetNativeTokenPriceRequest
-	(*GetNativeTokenPriceResponse)(nil), // 11: market.GetNativeTokenPriceResponse
-	(*GetTokenInfoRequest)(nil),         // 12: market.GetTokenInfoRequest
-	(*GetTokenInfoResponse)(nil),        // 13: market.GetTokenInfoResponse
+	(*GetPumpTokenListRequest)(nil),      // 0: market.GetPumpTokenListRequest
+	(*GetPumpTokenListResponse)(nil),     // 1: market.GetPumpTokenListResponse
+	(*PumpTokenItem)(nil),                // 2: market.PumpTokenItem
+	(*GetClmmPoolListRequest)(nil),       // 3: market.GetClmmPoolListRequest
+	(*GetClmmPoolListResponse)(nil),      // 4: market.GetClmmPoolListResponse
+	(*ClmmPoolItem)(nil),                 // 5: market.ClmmPoolItem
+	(*PushTokenInfoRequest)(nil),         // 6: market.PushTokenInfoRequest
+	(*GetPoolDetailRequest)(nil),         // 7: market.GetPoolDetailRequest
+	(*GetPoolDetailResponse)(nil),        // 8: market.GetPoolDetailResponse
+	(*PushTokenInfoResponse)(nil),        // 9: market.PushTokenInfoResponse
+	(*GetPairInfoByTokenRequest)(nil),    // 10: market.GetPairInfoByTokenRequest
+	(*GetPairInfoByTokenResponse)(nil),   // 11: market.GetPairInfoByTokenResponse
+	(*GetNativeTokenPriceRequest)(nil),   // 12: market.GetNativeTokenPriceRequest
+	(*GetNativeTokenPriceResponse)(nil),  // 13: market.GetNativeTokenPriceResponse
+	(*GetTokenInfoRequest)(nil),          // 14: market.GetTokenInfoRequest
+	(*GetTokenInfoResponse)(nil),         // 15: market.GetTokenInfoResponse
+	(*QuoteCpmmRequest)(nil),             // 16: market.QuoteCpmmRequest
+	(*QuoteCpmmResponse)(nil),            // 17: market.QuoteCpmmResponse
+	(*QuoteClmmRequest)(nil),             // 18: market.QuoteClmmRequest
+	(*QuoteClmmResponse)(nil),            // 19: market.QuoteClmmResponse
+	(*GetClmmPoolDepthDataRequest)(nil),  // 20: market.GetClmmPoolDepthDataRequest
+	(*GetClmmPoolDepthDataResponse)(nil), // 21: market.GetClmmPoolDepthDataResponse
+	(*DepthDataPoint)(nil),               // 22: market.DepthDataPoint
+	(*GetUserPositionsRequest)(nil),      // 23: market.GetUserPositionsRequest
+	(*GetUserPositionsResponse)(nil),     // 24: market.GetUserPositionsResponse
+	(*PositionItem)(nil),                 // 25: market.PositionItem
 }
 var file_market_proto_depIdxs = []int32{
 	2,  // 0: market.GetPumpTokenListResponse.list:type_name -> market.PumpTokenItem
 	5,  // 1: market.GetClmmPoolListResponse.list:type_name -> market.ClmmPoolItem
-	0,  // 2: market.Market.GetPumpTokenList:input_type -> market.GetPumpTokenListRequest
-	3,  // 3: market.Market.GetClmmPoolList:input_type -> market.GetClmmPoolListRequest
-	6,  // 4: market.Market.PushTokenInfo:input_type -> market.PushTokenInfoRequest
-	8,  // 5: market.Market.GetPairInfoByToken:input_type -> market.GetPairInfoByTokenRequest
-	10, // 6: market.Market.GetNativeTokenPrice:input_type -> market.GetNativeTokenPriceRequest
-	12, // 7: market.Market.GetTokenInfo:input_type -> market.GetTokenInfoRequest
-	1,  // 8: market.Market.GetPumpTokenList:output_type -> market.GetPumpTokenListResponse
-	4,  // 9: market.Market.GetClmmPoolList:output_type -> market.GetClmmPoolListResponse
-	7,  // 10: market.Market.PushTokenInfo:output_type -> market.PushTokenInfoResponse
-	9,  // 11: market.Market.GetPairInfoByToken:output_type -> market.GetPairInfoByTokenResponse
-	11, // 12: market.Market.GetNativeTokenPrice:output_type -> market.GetNativeTokenPriceResponse
-	13, // 13: market.Market.GetTokenInfo:output_type -> market.GetTokenInfoResponse
-	8,  // [8:14] is the sub-list for method output_type
-	2,  // [2:8] is the sub-list for method input_type
-	2,  // [2:2] is the sub-list for extension type_name
-	2,  // [2:2] is the sub-list for extension extendee
-	0,  // [0:2] is the sub-list for field type_name
+	22, // 2: market.GetClmmPoolDepthDataResponse.line:type_name -> market.DepthDataPoint
+	25, // 3: market.GetUserPositionsResponse.items:type_name -> market.PositionItem
+	0,  // 4: market.Market.GetPumpTokenList:input_type -> market.GetPumpTokenListRequest
+	3,  // 5: market.Market.GetClmmPoolList:input_type -> market.GetClmmPoolListRequest
+	7,  // 6: market.Market.GetPoolDetail:input_type -> market.GetPoolDetailRequest
+	6,  // 7: market.Market.PushTokenInfo:input_type -> market.PushTokenInfoRequest
+	10, // 8: market.Market.GetPairInfoByToken:input_type -> market.GetPairInfoByTokenRequest
+	12, // 9: market.Market.GetNativeTokenPrice:input_type -> market.GetNativeTokenPriceRequest
+	14, // 10: market.Market.GetTokenInfo:input_type -> market.GetTokenInfoRequest
+	16, // 11: market.Market.QuoteCpmm:input_type -> market.QuoteCpmmRequest
+	18, // 12: market.Market.QuoteClmm:input_type -> market.QuoteClmmRequest
+	20, // 13: market.Market.GetClmmPoolDepthData:input_type -> market.GetClmmPoolDepthDataRequest
+	23, // 14: market.Market.GetUserPositions:input_type -> market.GetUserPositionsRequest
+	1,  // 15: market.Market.GetPumpTokenList:output_type -> market.GetPumpTokenListResponse
+	4,  // 16: market.Market.GetClmmPoolList:output_type -> market.GetClmmPoolListResponse
+	8,  // 17: market.Market.GetPoolDetail:output_type -> market.GetPoolDetailResponse
+	9,  // 18: market.Market.PushTokenInfo:output_type -> market.PushTokenInfoResponse
+	11, // 19: market.Market.GetPairInfoByToken:output_type -> market.GetPairInfoByTokenResponse
+	13, // 20: market.Market.GetNativeTokenPrice:output_type -> market.GetNativeTokenPriceResponse
+	15, // 21: market.Market.GetTokenInfo:output_type -> market.GetTokenInfoResponse
+	17, // 22: market.Market.QuoteCpmm:output_type -> market.QuoteCpmmResponse
+	19, // 23: market.Market.QuoteClmm:output_type -> market.QuoteClmmResponse
+	21, // 24: market.Market.GetClmmPoolDepthData:output_type -> market.GetClmmPoolDepthDataResponse
+	24, // 25: market.Market.GetUserPositions:output_type -> market.GetUserPositionsResponse
+	15, // [15:26] is the sub-list for method output_type
+	4,  // [4:15] is the sub-list for method input_type
+	4,  // [4:4] is the sub-list for extension type_name
+	4,  // [4:4] is the sub-list for extension extendee
+	0,  // [0:4] is the sub-list for field type_name
 }
 
 func init() { file_market_proto_init() }
@@ -1779,7 +3421,7 @@ func file_market_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_market_proto_rawDesc), len(file_market_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   14,
+			NumMessages:   26,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

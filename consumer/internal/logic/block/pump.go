@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
+	"math"
 	"strings"
 
 	"github.com/blocto/solana-go-sdk/common"
@@ -348,20 +349,21 @@ func buildPumpTrade(dtx *DecodedTx, accounts pumpSwapAccounts, tokenInfo *TokenA
 	// 设置交易对信息
 	baseToken := util.GetBaseToken(SolChainIdInt)
 	trade.PairInfo = types.Pair{
-		ChainId:                SolChainId,
-		Addr:                   accounts.pair,
-		BaseTokenAddr:          baseToken.Address,
-		BaseTokenDecimal:       uint8(baseToken.Decimal),
-		BaseTokenSymbol:        baseToken.Symbol,
-		TokenAddr:              tokenAddress,
-		TokenSymbol:            tokenInfo.TokenSymbol, // 使用从数据库获取的 token symbol
-		TokenDecimal:           tokenDecimal,
-		BlockTime:              dtx.BlockDb.BlockTime.Unix(),
-		BlockNum:               dtx.BlockDb.Slot,
-		Name:                   constants.PumpFun,
-		InitTokenAmount:        float64(VirtualInitPumpTokenAmount),
-		InitBaseTokenAmount:    InitSolTokenAmount,
-		TokenTotalSupply:       float64(VirtualInitPumpTokenAmount),
+		ChainId:          SolChainId,
+		Addr:             accounts.pair,
+		BaseTokenAddr:    baseToken.Address,
+		BaseTokenDecimal: uint8(baseToken.Decimal),
+		BaseTokenSymbol:  baseToken.Symbol,
+		TokenAddr:        tokenAddress,
+		TokenSymbol:      tokenInfo.TokenSymbol, // 使用从数据库获取的 token symbol
+		TokenDecimal:     tokenDecimal,
+		BlockTime:        dtx.BlockDb.BlockTime.Unix(),
+		BlockNum:         dtx.BlockDb.Slot,
+		Name:             constants.PumpFun,
+		// 这里使用初始虚拟储备（或默认值），避免每次成交将初始值重置为“当前值”导致进度恒为 0。
+		InitTokenAmount:        math.Max(trade.PumpVirtualTokenReserves, float64(VirtualInitPumpTokenAmount)),
+		InitBaseTokenAmount:    math.Max(trade.PumpVirtualBaseTokenReserves, defaultPumpVirtualBaseToken),
+		TokenTotalSupply:       math.Max(trade.PumpVirtualTokenReserves, float64(VirtualInitPumpTokenAmount)),
 		CurrentBaseTokenAmount: trade.CurrentBaseTokenInPoolAmount,
 		CurrentTokenAmount:     trade.CurrentTokenInPoolAmount,
 	}
@@ -420,9 +422,18 @@ func calculatePumpProgress(trade *types.TradeWithPair) {
 		return
 	}
 
-	initTokenAmount := float64(InitPumpTokenAmount)
+	// Use per-pair initial virtual token reserves from chain data to align with pump.fun official progress.
+	initTokenAmount := trade.PairInfo.InitTokenAmount
+	// Prefer total supply (from create event or default constant) to avoid being overwritten by "current" reserves.
+	if trade.PairInfo.TokenTotalSupply > initTokenAmount {
+		initTokenAmount = trade.PairInfo.TokenTotalSupply
+	}
+	// Ensure init is never smaller than the current virtual reserves.
+	if trade.PumpVirtualTokenReserves > initTokenAmount {
+		initTokenAmount = trade.PumpVirtualTokenReserves
+	}
 	if initTokenAmount <= 0 {
-		initTokenAmount = float64(InitPumpTokenAmount)
+		initTokenAmount = float64(VirtualInitPumpTokenAmount)
 	}
 
 	currentToken := trade.CurrentTokenInPoolAmount

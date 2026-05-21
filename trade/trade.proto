@@ -1,0 +1,390 @@
+syntax = "proto3";
+
+package trade;
+option go_package="./trade";
+
+message CreateMarketOrderRequest {
+  int32 chain_id = 1;
+  string token_ca = 2;
+  SwapType swap_type = 3;
+  string amount_in = 4;
+  bool double_out = 5;
+  bool is_one_click = 6;
+  string user_wallet_address = 7;
+  uint32 slippage_bps = 8;
+}
+
+message CreateMarketOrderResponse {
+  string tx_hash = 1;
+}
+
+enum SwapType {
+  SwapTypeAll = 0;
+  Buy = 1;
+  Sell = 2;
+}
+
+enum TradeType{
+  TradeTypeNull = 0;
+  Market = 1; // Market order
+  Limit = 2; // Limit order
+  OneClick = 3; // One-click buy
+  TokenCapLimit = 4; // Market-cap limit order
+  TrailingStop = 5;  // Trailing stop order
+}
+
+enum OrderStatus {
+  OrderStatusAll = 0;
+  Waiting = 1;
+  Proc = 2;
+  OnChain = 3;
+  Fail = 4;
+  Suc = 5;
+  Cancel = 6;
+  FailTimeout = 7;
+}
+
+service Trade {
+  rpc CreateMarketOrder(CreateMarketOrderRequest) returns(CreateMarketOrderResponse);
+  // Create a PumpFun token: backend builds unsigned tx for client signing
+  rpc CreatePumpToken(CreatePumpTokenRequest) returns(CreatePumpTokenResponse);
+  // IPFS helpers: upload file and token metadata
+  rpc UploadIpfsFile(UploadIpfsFileRequest) returns(UploadIpfsFileResponse);
+  rpc UploadTokenMetadata(UploadMetadataRequest) returns(UploadMetadataResponse);
+  // Frontend reports tx result for Pump create
+  rpc ReportPumpCreateResult(ReportPumpCreateResultRequest) returns(ReportPumpCreateResultResponse);
+  // Quote Pump buy/sell outcomes for SOL or TOKEN inputs
+  rpc QuotePumpTrade(QuotePumpTradeRequest) returns(QuotePumpTradeResponse);
+  // Liquidity configuration endpoints
+  rpc GetCpmmTokens(GetCpmmTokensRequest) returns(GetCpmmTokensResponse);
+  rpc GetCpmmFeeTiers(GetCpmmFeeTiersRequest) returns(GetCpmmFeeTiersResponse);
+  rpc CreateCpmmPool(CreateCpmmPoolRequest) returns(CreateCpmmPoolResponse);
+   // Build unsigned tx for adding liquidity to CPMM pool
+  rpc AddCpmmLiquidity(AddCpmmLiquidityRequest) returns(AddCpmmLiquidityResponse);
+  // Build unsigned tx for removing liquidity from CPMM pool
+  rpc RemoveCpmmLiquidity(RemoveCpmmLiquidityRequest) returns(RemoveCpmmLiquidityResponse);
+  // Build unsigned tx for swapping inside a CPMM pool
+  rpc SwapCpmm(SwapCpmmRequest) returns(SwapCpmmResponse);
+  // Build unsigned tx for swapping inside a CLMM pool
+  rpc SwapClmm(SwapClmmRequest) returns(SwapClmmResponse);
+  // Build unsigned tx for creating a CLMM pool
+  rpc CreateClmmPool(CreateClmmPoolRequest) returns(CreateClmmPoolResponse);
+  // Build unsigned tx for opening a position in CLMM pool
+  rpc OpenPosition(OpenPositionRequest) returns(OpenPositionResponse);
+  // Build unsigned tx for increasing liquidity in CLMM position
+  rpc IncreaseClmmLiquidity(IncreaseClmmLiquidityRequest) returns(IncreaseClmmLiquidityResponse);
+  // Build unsigned tx for decreasing liquidity in CLMM position
+  rpc DecreaseClmmLiquidity(DecreaseClmmLiquidityRequest) returns(DecreaseClmmLiquidityResponse);
+}
+// Request to create a PumpFun token; backend returns unsigned transaction (base64)
+message CreatePumpTokenRequest {
+  int32 chain_id = 1; // 100000 for Solana
+  string name = 2; // token name
+  string symbol = 3; // token symbol
+  string uri = 4; // token metadata URI
+  string mint = 5; // new mint public key (client-generated)
+  string user_wallet_address = 6; // creator/fee payer
+  // optional social fields (used when backend builds metadata)
+  string website = 7;
+  string twitter = 8;
+  string telegram = 9;
+  string image_uri = 10; // optional, if provided backend will embed in metadata
+  string description = 11; // optional description
+  string image_content_base64 = 12; // optional, backend will upload image then set image_uri
+}
+
+message CreatePumpTokenResponse {
+  string tx = 1; // base64-encoded unsigned transaction
+}
+
+// IPFS file upload (base64-encoded content via JSON-friendly field)
+message UploadIpfsFileRequest {
+  string filename = 1;
+  string content_base64 = 2; // base64 of file bytes
+}
+message UploadIpfsFileResponse {
+  string cid = 1;
+  string uri = 2; // ipfs://CID
+  string url = 3; // gateway URL
+}
+
+// Token metadata upload
+message UploadMetadataRequest {
+  string name = 1;
+  string symbol = 2;
+  string description = 3;
+  string image_uri = 4; // ipfs:// or https://
+  string website = 5;
+  string twitter = 6;
+  string telegram = 7;
+  string image_content_base64 = 8; // optional, when provided server uploads image then sets image_uri
+}
+message UploadMetadataResponse {
+  string cid = 1;
+  string uri = 2;
+  string url = 3;
+  string image_uri = 4;
+}
+
+// Client reports the result of submitting the create token tx
+message ReportPumpCreateResultRequest {
+  int32 chain_id = 1;
+  string mint = 2;
+  string user_wallet_address = 3;
+  string tx_signature = 4;
+  bool success = 5;
+  string error_message = 6;
+}
+message ReportPumpCreateResultResponse {
+  string status = 1;
+  string pair_addr = 2;
+  string token_address = 3;
+}
+
+enum QuoteAsset {
+  QuoteAssetUnknown = 0;
+  QuoteAssetSol = 1;
+  QuoteAssetToken = 2;
+}
+
+message QuotePumpTradeRequest {
+  int32 chain_id = 1;
+  string token_mint = 2;
+  SwapType swap_type = 3;
+  QuoteAsset input_asset = 4;
+  string amount = 5;
+  uint32 slippage_bps = 6;
+  uint32 token_decimal = 7;
+}
+
+message QuotePumpTradeResponse {
+  QuoteAsset pay_asset = 1;
+  QuoteAsset receive_asset = 2;
+  string pay_amount = 3;
+  string pay_amount_with_slippage = 4;
+  string receive_amount = 5;
+  string min_receive_amount = 6;
+  string price_impact_pct = 7;
+  uint32 token_decimal = 8;
+  uint32 sol_decimal = 9;
+}
+
+message GetCpmmTokensRequest {
+  int32 chain_id = 1;
+  repeated string statuses = 2;
+  uint32 page_no = 3;
+  uint32 page_size = 4;
+  int64 updated_after_unix = 5;
+  string pool_type = 6;
+}
+
+message CpmmTokenItem {
+  string mint = 1;
+  string symbol = 2;
+  string name = 3;
+  int32 decimals = 4;
+  string logo = 5;
+  string status = 6;
+  int64 chain_id = 7;
+  repeated string tags = 8;
+  string updated_at_iso = 9;
+  int64 updated_at_unix = 10;
+}
+
+message GetCpmmTokensResponse {
+  repeated CpmmTokenItem tokens = 1;
+  uint32 page_no = 2;
+  uint32 page_size = 3;
+  int64 total = 4;
+}
+
+message GetCpmmFeeTiersRequest {
+  string pool_type = 1;
+}
+
+message CpmmFeeTierItem {
+  string pool_type = 1;
+  int32 value_bps = 2;
+  string label = 3;
+  string description = 4;
+  int32 tick_spacing = 5;
+  int32 priority_order = 6;
+  string version = 7;
+  string updated_at_iso = 8;
+  int64 updated_at_unix = 9;
+  string program_address = 10;
+  int32 config_index = 11;
+  string address = 12;
+}
+
+message GetCpmmFeeTiersResponse {
+  repeated CpmmFeeTierItem tiers = 1;
+  string version = 2;
+}
+
+message CreateCpmmPoolRequest {
+  int32 chain_id = 1;
+  string pool_type = 2;
+  string base_token_mint = 3;
+  string quote_token_mint = 4;
+  string base_amount = 5;
+  string quote_amount = 6;
+  string initial_price = 7;
+  int32 config_index = 8;
+  int64 start_time = 9;
+  string user_wallet_address = 10;
+}
+
+message CreateCpmmPoolResponse {
+  string tx_hash = 1;
+  string tx_type = 2;
+  string tx_base64 = 3;
+  int64 expires_at = 4;
+}
+
+
+message AddCpmmLiquidityRequest {
+  int32 chain_id = 1;
+  string pool_state = 2;
+  string token0_amount = 3; // amount matching pool token0 (lexicographic lower mint)
+  string token1_amount = 4; // amount matching pool token1 (lexicographic higher mint)
+  uint32 slippage_bps = 5;
+  string user_wallet_address = 6;
+}
+
+message AddCpmmLiquidityResponse {
+  string tx_type = 1;
+  string tx_base64 = 2;
+  int64 expires_at = 3;
+}
+
+message RemoveCpmmLiquidityRequest {
+  int32 chain_id = 1;
+  string pool_state = 2;
+  string lp_amount = 3; // LP amount to burn
+  string min_token0_amount = 4; // optional min out token0
+  string min_token1_amount = 5; // optional min out token1
+  string user_wallet_address = 6;
+}
+
+message RemoveCpmmLiquidityResponse {
+  string tx_type = 1;
+  string tx_base64 = 2;
+  int64 expires_at = 3;
+}
+
+message SwapCpmmRequest {
+  int32 chain_id = 1;
+  string pool_state = 2;
+  string input_mint = 3; // pay token mint
+  string output_mint = 4; // receive token mint
+  string amount_in = 5; // ui amount of input token
+  uint32 slippage_bps = 6; // allowed slippage in bps
+  string user_wallet_address = 7; // wallet that signs and pays tx
+}
+
+message SwapCpmmResponse {
+  string tx_type = 1;
+  string tx_base64 = 2;
+  int64 expires_at = 3;
+}
+
+
+message SwapClmmRequest {
+  int32 chain_id = 1;
+  string pool_state = 2;
+  string input_mint = 3; // pay token mint
+  string output_mint = 4; // receive token mint
+  string amount_in = 5; // ui amount of input token
+  uint32 slippage_bps = 6; // allowed slippage in bps
+  string user_wallet_address = 7; // wallet that signs and pays tx
+}
+
+message SwapClmmResponse {
+  string tx_type = 1;
+  string tx_base64 = 2;
+  int64 expires_at = 3;
+}
+
+message CreateClmmPoolRequest {
+  int32 chain_id = 1;
+  string pool_type = 2; // default: CLMM
+  string base_token_mint = 3;
+  string quote_token_mint = 4;
+  string initial_price = 5; // quote per base token price
+  int32 fee_tier_bps = 6; // optional: pick config by fee tier when config_index not provided
+  int32 config_index = 7;
+  int64 start_time = 8;
+  string user_wallet_address = 9;
+  string price_mode = 10; // token0 or token1 from frontend; optional hint to flip price
+  string price_min = 11; // optional lower price bound for initial liquidity
+  string price_max = 12; // optional upper price bound for initial liquidity
+  string amount_0 = 13; // token0 amount (matches lexicographic lower mint after ordering)
+  string amount_1 = 14; // token1 amount (matches lexicographic higher mint after ordering)
+  string range_mode = 15; // optional: full/custom
+  uint32 slippage_bps = 16; // optional: max slippage for init liquidity
+}
+
+message CreateClmmPoolResponse {
+  string tx_hash = 1;
+  string tx_type = 2;
+  string tx_base64 = 3;
+  int64 expires_at = 4;
+}
+
+message OpenPositionRequest {
+  int32 chain_id = 1;
+  string pool_state = 2;
+  string token0_amount = 3; // amount matching pool token0 (lexicographic lower mint)
+  string token1_amount = 4; // amount matching pool token1 (lexicographic higher mint)
+  string price_min = 5; // optional lower price bound
+  string price_max = 6; // optional upper price bound
+  uint32 slippage_bps = 7;
+  string user_wallet_address = 8;
+}
+
+message OpenPositionResponse {
+  string tx_type = 1;
+  string tx_base64 = 2;
+  int64 expires_at = 3;
+}
+
+
+// Increase CLMM liquidity
+message IncreaseClmmLiquidityRequest {
+  int32 chain_id = 1;                    // Chain ID, default 100000
+  string position_nft_mint = 2;          // Position NFT Mint address (required)
+  string pool_state = 3;                // Pool state address (required)
+  string token0_amount = 4;             // Token0 amount (required, string format)
+  string token1_amount = 5;             // Token1 amount (required, string format)
+  string price_min = 6;                 // Min price (optional, for adjusting range)
+  string price_max = 7;                 // Max price (optional, for adjusting range)
+  uint32 slippage_bps = 8;              // Slippage (basis points, e.g. 50 = 0.5%)
+  string user_wallet_address = 9;       // User wallet address (required)
+}
+
+message IncreaseClmmLiquidityResponse {
+  string tx_type = 1;                    // Transaction type, e.g. "versioned" or "legacy"
+  string tx_base64 = 2;                  // Base64-encoded unsigned transaction
+  int64 expires_at = 3;                  // Transaction expiration timestamp (Unix seconds)
+}
+
+// Decrease CLMM liquidity
+message DecreaseClmmLiquidityRequest {
+  int32 chain_id = 1;                    // Chain ID, default 100000
+  string position_nft_mint = 2;          // Position NFT Mint address (required)
+  string pool_state = 3;                // Pool state address (required)
+  string liquidity = 4;                  // Liquidity amount to decrease (optional, Uint128 string)
+  string amount0_min = 5;               // Min Token0 amount (slippage protection, optional)
+  string amount1_min = 6;               // Min Token1 amount (slippage protection, optional)
+  uint32 slippage_bps = 7;              // Slippage (basis points)
+  string user_wallet_address = 8;       // User wallet address (required)
+}
+
+message DecreaseClmmLiquidityResponse {
+  string tx_type = 1;                    // Transaction type
+  string tx_base64 = 2;                  // Base64-encoded unsigned transaction
+  int64 expires_at = 3;                  // Transaction expiration timestamp
+}
+
+

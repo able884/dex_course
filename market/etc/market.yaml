@@ -9,16 +9,20 @@ Mysql:
   Master:
     Username: root
     Password: "123456"
-    Path: localhost
+    Path: 172.17.112.1
     Port: 3306
     Dbname: rc_dex_study
     MaxOpenConns: 500
     MaxIdleConns: 200
 
 Redis:
-  Host: 127.0.0.1:6379
-  # Pass: 123456
+  Host: 172.17.112.1:6379
+  Pass: "123456"
   Type: node
   Key: dexs
   PingTimeout: 10s
   Tls: false
+
+RpcServerConf:
+  ListenOn: 0.0.0.0:8090
+  Timeout: 600000

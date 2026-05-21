@@ -43,6 +43,9 @@ func main() {
 
 	group.Add(s)
 
+	// 自动迁移 Pump 池子到自建 Raydium CPMM
+	group.Add(block.NewPumpMigrationWorker(ctx))
+
 	{
 		// 添加消息队列
 		slotChan := make(chan uint64, 50)

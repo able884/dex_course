@@ -1,5 +1,12 @@
 const STORAGE_KEY = 'cpmm-liquidity-cache';
 const MAX_AGE_MS = 60 * 1000;
+const DEFAULT_POOL_TYPE = 'CPMM';
+
+const normalizePoolType = (val) => {
+  if (typeof val !== 'string') return DEFAULT_POOL_TYPE;
+  const trimmed = val.trim();
+  return trimmed ? trimmed.toUpperCase() : DEFAULT_POOL_TYPE;
+};
 
 const safeSession = () => {
   if (typeof window === 'undefined' || !window.sessionStorage) {
@@ -29,31 +36,45 @@ const writeCache = (payload) => {
   }
 };
 
-export const getCachedTokens = () => {
+export const getCachedTokens = (poolType = DEFAULT_POOL_TYPE) => {
+  const typeKey = normalizePoolType(poolType);
   const cache = readCache();
   if (!cache.tokens || !cache.tokensUpdatedAt) return null;
-  if (Date.now() - cache.tokensUpdatedAt > MAX_AGE_MS) return null;
-  return cache.tokens;
+  const updatedAt = cache.tokensUpdatedAt[typeKey];
+  const tokens = cache.tokens[typeKey];
+  if (!updatedAt || !tokens) return null;
+  if (Date.now() - updatedAt > MAX_AGE_MS) return null;
+  return tokens;
 };
 
-export const getCachedFeeTiers = () => {
+export const getCachedFeeTiers = (poolType = DEFAULT_POOL_TYPE) => {
+  const typeKey = normalizePoolType(poolType);
   const cache = readCache();
   if (!cache.feeTiers || !cache.feesUpdatedAt) return null;
-  if (Date.now() - cache.feesUpdatedAt > MAX_AGE_MS) return null;
-  return cache.feeTiers;
+  const updatedAt = cache.feesUpdatedAt[typeKey];
+  const tiers = cache.feeTiers[typeKey];
+  if (!updatedAt || !tiers) return null;
+  if (Date.now() - updatedAt > MAX_AGE_MS) return null;
+  return tiers;
 };
 
-export const setCachedTokens = (tokens) => {
+export const setCachedTokens = (tokens, poolType = DEFAULT_POOL_TYPE) => {
+  const typeKey = normalizePoolType(poolType);
   const cache = readCache();
-  cache.tokens = tokens;
-  cache.tokensUpdatedAt = Date.now();
+  cache.tokens = cache.tokens || {};
+  cache.tokensUpdatedAt = cache.tokensUpdatedAt || {};
+  cache.tokens[typeKey] = tokens;
+  cache.tokensUpdatedAt[typeKey] = Date.now();
   writeCache(cache);
 };
 
-export const setCachedFeeTiers = (tiers) => {
+export const setCachedFeeTiers = (tiers, poolType = DEFAULT_POOL_TYPE) => {
+  const typeKey = normalizePoolType(poolType);
   const cache = readCache();
-  cache.feeTiers = tiers;
-  cache.feesUpdatedAt = Date.now();
+  cache.feeTiers = cache.feeTiers || {};
+  cache.feesUpdatedAt = cache.feesUpdatedAt || {};
+  cache.feeTiers[typeKey] = tiers;
+  cache.feesUpdatedAt[typeKey] = Date.now();
   writeCache(cache);
 };
 

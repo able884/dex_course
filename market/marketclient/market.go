@@ -14,28 +14,46 @@ import (
 )
 
 type (
-	ClmmPoolItem                = market.ClmmPoolItem
-	GetClmmPoolListRequest      = market.GetClmmPoolListRequest
-	GetClmmPoolListResponse     = market.GetClmmPoolListResponse
-	GetNativeTokenPriceRequest  = market.GetNativeTokenPriceRequest
-	GetNativeTokenPriceResponse = market.GetNativeTokenPriceResponse
-	GetPairInfoByTokenRequest   = market.GetPairInfoByTokenRequest
-	GetPairInfoByTokenResponse  = market.GetPairInfoByTokenResponse
-	GetPumpTokenListRequest     = market.GetPumpTokenListRequest
-	GetPumpTokenListResponse    = market.GetPumpTokenListResponse
-	GetTokenInfoRequest         = market.GetTokenInfoRequest
-	GetTokenInfoResponse        = market.GetTokenInfoResponse
-	PumpTokenItem               = market.PumpTokenItem
-	PushTokenInfoRequest        = market.PushTokenInfoRequest
-	PushTokenInfoResponse       = market.PushTokenInfoResponse
+	ClmmPoolItem                 = market.ClmmPoolItem
+	DepthDataPoint               = market.DepthDataPoint
+	GetClmmPoolDepthDataRequest  = market.GetClmmPoolDepthDataRequest
+	GetClmmPoolDepthDataResponse = market.GetClmmPoolDepthDataResponse
+	GetClmmPoolListRequest       = market.GetClmmPoolListRequest
+	GetClmmPoolListResponse      = market.GetClmmPoolListResponse
+	GetNativeTokenPriceRequest   = market.GetNativeTokenPriceRequest
+	GetNativeTokenPriceResponse  = market.GetNativeTokenPriceResponse
+	GetPairInfoByTokenRequest    = market.GetPairInfoByTokenRequest
+	GetPairInfoByTokenResponse   = market.GetPairInfoByTokenResponse
+	GetPoolDetailRequest         = market.GetPoolDetailRequest
+	GetPoolDetailResponse        = market.GetPoolDetailResponse
+	GetPumpTokenListRequest      = market.GetPumpTokenListRequest
+	GetPumpTokenListResponse     = market.GetPumpTokenListResponse
+	GetTokenInfoRequest          = market.GetTokenInfoRequest
+	GetTokenInfoResponse         = market.GetTokenInfoResponse
+	GetUserPositionsRequest      = market.GetUserPositionsRequest
+	GetUserPositionsResponse     = market.GetUserPositionsResponse
+	PositionItem                 = market.PositionItem
+	PumpTokenItem                = market.PumpTokenItem
+	PushTokenInfoRequest         = market.PushTokenInfoRequest
+	PushTokenInfoResponse        = market.PushTokenInfoResponse
+	QuoteClmmRequest             = market.QuoteClmmRequest
+	QuoteClmmResponse            = market.QuoteClmmResponse
+	QuoteCpmmRequest             = market.QuoteCpmmRequest
+	QuoteCpmmResponse            = market.QuoteCpmmResponse
 
 	Market interface {
 		GetPumpTokenList(ctx context.Context, in *GetPumpTokenListRequest, opts ...grpc.CallOption) (*GetPumpTokenListResponse, error)
 		GetClmmPoolList(ctx context.Context, in *GetClmmPoolListRequest, opts ...grpc.CallOption) (*GetClmmPoolListResponse, error)
+		GetPoolDetail(ctx context.Context, in *GetPoolDetailRequest, opts ...grpc.CallOption) (*GetPoolDetailResponse, error)
 		PushTokenInfo(ctx context.Context, in *PushTokenInfoRequest, opts ...grpc.CallOption) (*PushTokenInfoResponse, error)
 		GetPairInfoByToken(ctx context.Context, in *GetPairInfoByTokenRequest, opts ...grpc.CallOption) (*GetPairInfoByTokenResponse, error)
 		GetNativeTokenPrice(ctx context.Context, in *GetNativeTokenPriceRequest, opts ...grpc.CallOption) (*GetNativeTokenPriceResponse, error)
 		GetTokenInfo(ctx context.Context, in *GetTokenInfoRequest, opts ...grpc.CallOption) (*GetTokenInfoResponse, error)
+		QuoteCpmm(ctx context.Context, in *QuoteCpmmRequest, opts ...grpc.CallOption) (*QuoteCpmmResponse, error)
+		QuoteClmm(ctx context.Context, in *QuoteClmmRequest, opts ...grpc.CallOption) (*QuoteClmmResponse, error)
+		GetClmmPoolDepthData(ctx context.Context, in *GetClmmPoolDepthDataRequest, opts ...grpc.CallOption) (*GetClmmPoolDepthDataResponse, error)
+		// Get user's liquidity positions
+		GetUserPositions(ctx context.Context, in *GetUserPositionsRequest, opts ...grpc.CallOption) (*GetUserPositionsResponse, error)
 	}
 
 	defaultMarket struct {
@@ -59,6 +77,11 @@ func (m *defaultMarket) GetClmmPoolList(ctx context.Context, in *GetClmmPoolList
 	return client.GetClmmPoolList(ctx, in, opts...)
 }
 
+func (m *defaultMarket) GetPoolDetail(ctx context.Context, in *GetPoolDetailRequest, opts ...grpc.CallOption) (*GetPoolDetailResponse, error) {
+	client := market.NewMarketClient(m.cli.Conn())
+	return client.GetPoolDetail(ctx, in, opts...)
+}
+
 func (m *defaultMarket) PushTokenInfo(ctx context.Context, in *PushTokenInfoRequest, opts ...grpc.CallOption) (*PushTokenInfoResponse, error) {
 	client := market.NewMarketClient(m.cli.Conn())
 	return client.PushTokenInfo(ctx, in, opts...)
@@ -77,4 +100,25 @@ func (m *defaultMarket) GetNativeTokenPrice(ctx context.Context, in *GetNativeTo
 func (m *defaultMarket) GetTokenInfo(ctx context.Context, in *GetTokenInfoRequest, opts ...grpc.CallOption) (*GetTokenInfoResponse, error) {
 	client := market.NewMarketClient(m.cli.Conn())
 	return client.GetTokenInfo(ctx, in, opts...)
+}
+
+func (m *defaultMarket) QuoteCpmm(ctx context.Context, in *QuoteCpmmRequest, opts ...grpc.CallOption) (*QuoteCpmmResponse, error) {
+	client := market.NewMarketClient(m.cli.Conn())
+	return client.QuoteCpmm(ctx, in, opts...)
+}
+
+func (m *defaultMarket) QuoteClmm(ctx context.Context, in *QuoteClmmRequest, opts ...grpc.CallOption) (*QuoteClmmResponse, error) {
+	client := market.NewMarketClient(m.cli.Conn())
+	return client.QuoteClmm(ctx, in, opts...)
+}
+
+func (m *defaultMarket) GetClmmPoolDepthData(ctx context.Context, in *GetClmmPoolDepthDataRequest, opts ...grpc.CallOption) (*GetClmmPoolDepthDataResponse, error) {
+	client := market.NewMarketClient(m.cli.Conn())
+	return client.GetClmmPoolDepthData(ctx, in, opts...)
+}
+
+// Get user's liquidity positions
+func (m *defaultMarket) GetUserPositions(ctx context.Context, in *GetUserPositionsRequest, opts ...grpc.CallOption) (*GetUserPositionsResponse, error) {
+	client := market.NewMarketClient(m.cli.Conn())
+	return client.GetUserPositions(ctx, in, opts...)
 }

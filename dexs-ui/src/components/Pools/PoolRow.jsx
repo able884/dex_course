@@ -6,7 +6,7 @@ import { formatCurrencyUSD, formatPercent } from '../../utils/format';
 // Left-aligned fee badge
 const FeeChip = ({ value }) => (
   <span className="inline-flex items-center justify-start self-start text-left px-2 py-0.5 rounded bg-muted text-xs text-foreground/80">
-    {typeof value === 'number' ? `${value.toFixed(2)}%` : '—'}
+    {typeof value === 'number' ? `${value.toFixed(2)}%` : '--'}
   </span>
 );
 
@@ -42,7 +42,7 @@ const PoolRow = ({ pool, onCharts, onSwap, onDeposit }) => {
       <td className="px-3 py-2 text-right text-sm">
         <div className="flex items-center justify-end gap-2">
           <Button size="sm" variant="secondary" onClick={() => onCharts && onCharts(pool)}>Charts</Button>
-          <Button size="sm" variant="secondary" onClick={() => onSwap && onSwap(tokenA, tokenB)}>Swap</Button>
+          <Button size="sm" variant="secondary" onClick={() => onSwap && onSwap(pool)}>Swap</Button>
           <Button size="sm" onClick={() => onDeposit && onDeposit(pool)}>Deposit</Button>
         </div>
       </td>
@@ -51,4 +51,3 @@ const PoolRow = ({ pool, onCharts, onSwap, onDeposit }) => {
 };
 
 export default PoolRow;
-

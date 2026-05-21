@@ -4,15 +4,20 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math"
 	"strings"
 	"time"
 
 	set "github.com/duke-git/lancet/v2/datastructure/set"
 	"github.com/duke-git/lancet/v2/slice"
+	"github.com/ethereum/go-ethereum/log"
+	bin "github.com/gagliardetto/binary"
 	"github.com/zeromicro/go-zero/core/threading"
 	"richcode.cc/dex/model/solmodel"
 	constants "richcode.cc/dex/pkg/constants"
+	"richcode.cc/dex/pkg/raydium/clmm/idl/generated/amm_v3"
 	"richcode.cc/dex/pkg/sol"
+	"richcode.cc/dex/pkg/transfer"
 	"richcode.cc/dex/pkg/types"
 )
 
@@ -301,7 +306,24 @@ func (s *BlockService) SavePumpSwapPoolInfo(ctx context.Context, pair *types.Tra
 func (s *BlockService) SaveTokenAccounts(ctx context.Context, trades []*types.TradeWithPair, tokenAccountMap map[string]*TokenAccount) {
 	var tokenAccounts []*solmodel.SolTokenAccount
 
+	pairOwners := make(map[string]struct{})
+	for _, trade := range trades {
+		if trade == nil || len(trade.PairAddr) == 0 {
+			continue
+		}
+		pairOwners[strings.ToLower(trade.PairAddr)] = struct{}{}
+	}
+
+	processedAccounts := make(map[string]struct{})
+
 	for _, tokenAccount := range tokenAccountMap {
+		if tokenAccount == nil {
+			continue
+		}
+		ownerNormalized := strings.ToLower(tokenAccount.Owner)
+		if _, ok := pairOwners[ownerNormalized]; ok {
+			continue
+		}
 
 		status := 0
 		if tokenAccount.Closed {
@@ -311,6 +333,13 @@ func (s *BlockService) SaveTokenAccounts(ctx context.Context, trades []*types.Tr
 		if tokenAccount.TokenAddress == constants.TokenStrWrapSol {
 			continue
 		}
+
+		accountKey := fmt.Sprintf("%s_%s", ownerNormalized, strings.ToLower(tokenAccount.TokenAccountAddress))
+		if _, ok := processedAccounts[accountKey]; ok {
+			continue
+		}
+		processedAccounts[accountKey] = struct{}{}
+
 		solTokenAccount := &solmodel.SolTokenAccount{
 			OwnerAddress:        tokenAccount.Owner,
 			Status:              int64(status),
@@ -323,17 +352,6 @@ func (s *BlockService) SaveTokenAccounts(ctx context.Context, trades []*types.Tr
 		}
 		tokenAccounts = append(tokenAccounts, solTokenAccount)
 	}
-
-	// remove dup
-	slice.Reverse(tokenAccounts)
-	tokenAccounts = slice.UniqueByComparator[*solmodel.SolTokenAccount](tokenAccounts, func(item *solmodel.SolTokenAccount, other *solmodel.SolTokenAccount) bool {
-		if item.OwnerAddress == other.OwnerAddress && item.TokenAccountAddress == other.TokenAccountAddress {
-			s.Errorf("SaveTokenAccounts:UniqueByComparator dup token address: %v, account1: %v, account2: %v", item.TokenAddress, item.Balance, other.Balance)
-			return true
-		}
-		return false
-	})
-	slice.Reverse(tokenAccounts)
 
 	m := make(map[string]time.Time)
 	countMap := make(map[string]int)
@@ -358,8 +376,712 @@ func (s *BlockService) SaveTokenAccounts(ctx context.Context, trades []*types.Tr
 		return false
 	})
 
-	err := s.sc.SolTokenAccountModel.BatchInsertTokenAccounts(ctx, tokenAccounts)
+	// 检查每个账户是否已存在，存在则更新，不存在则插入
+	log.Info("本次保存TOKEN_ACCOUNT数量:", len(tokenAccounts))
+	err := s.sc.SolTokenAccountModel.BatchUpsertTokenAccounts(ctx, tokenAccounts)
 	if err != nil {
-		s.Error("tokenAccountModel.BatchSave err:", err)
+		s.Error("tokenAccountModel.BatchUpsertTokenAccounts err:", err)
+		return
+	}
+
+	// 保存成功后，将数据缓存到Redis，设置24小时过期时间
+	s.cacheTokenAccountsToRedis(ctx, tokenAccounts)
+}
+
+// cacheTokenAccountsToRedis 将TokenAccount数据缓存到Redis，设置24小时过期时间
+func (s *BlockService) cacheTokenAccountsToRedis(ctx context.Context, tokenAccounts []*solmodel.SolTokenAccount) {
+	if s.sc.Redis == nil {
+		s.Infof("cacheTokenAccountsToRedis: Redis is not configured, skipping cache")
+		return
+	}
+
+	// 设置24小时过期时间
+	expireTime := 24 * time.Hour
+
+	for _, account := range tokenAccounts {
+		// 使用 owner_address 作为缓存key
+		cacheKey := s.getTokenAccountCacheKey(account.OwnerAddress, account.TokenAccountAddress)
+
+		// 将账户信息序列化为JSON字符串
+		accountData, err := transfer.Struct2String(account)
+		if err != nil {
+			s.Errorf("cacheTokenAccountsToRedis: failed to serialize account, owner: %s, err: %v", account.OwnerAddress, err)
+			continue
+		}
+
+		// 存入Redis
+		err = s.sc.Redis.Setex(cacheKey, accountData, int(expireTime.Seconds()))
+		if err != nil {
+			s.Errorf("cacheTokenAccountsToRedis: failed to cache account, owner: %s, err: %v", account.OwnerAddress, err)
+		} else {
+			s.Infof("cacheTokenAccountsToRedis: cached account, owner: %s, key: %s", account.OwnerAddress, cacheKey)
+		}
+	}
+}
+
+// getTokenAccountCacheKey 生成TokenAccount的Redis缓存key
+func (s *BlockService) getTokenAccountCacheKey(ownerAddress, tokenAccountAddress string) string {
+	return fmt.Sprintf("token_account:%s:%s", ownerAddress, tokenAccountAddress)
+}
+
+// checkTokenAccountExistsWithCache 检查TokenAccount是否存在，先查Redis缓存，查不到再查数据库
+func (s *BlockService) checkTokenAccountExistsWithCache(ctx context.Context, ownerAddress, tokenAccountAddress string) (exists bool, account *solmodel.SolTokenAccount) {
+	if s.sc.Redis != nil {
+		cacheKey := s.getTokenAccountCacheKey(ownerAddress, tokenAccountAddress)
+		accountData, err := s.sc.Redis.Get(cacheKey)
+
+		if err == nil && accountData != "" {
+			// 缓存命中
+			cachedAccount, err := transfer.String2Struct[solmodel.SolTokenAccount](accountData)
+			if err == nil {
+				s.Infof("checkTokenAccountExistsWithCache: cache hit for owner: %s", ownerAddress)
+				return true, &cachedAccount
+			}
+			s.Errorf("checkTokenAccountExistsWithCache: failed to deserialize cached account, owner: %s, err: %v", ownerAddress, err)
+		}
+	}
+
+	return false, nil
+}
+
+func (s *BlockService) SaveRaydiumCLMMPoolInfo(ctx context.Context, pair *types.TradeWithPair) (err error) {
+	// Add panic recovery
+	defer func() {
+		if r := recover(); r != nil {
+			var txHash string
+			if pair != nil {
+				txHash = pair.TxHash
+			} else {
+				txHash = "unknown"
+			}
+			s.Errorf("SaveRaydiumCLMMPoolInfo: panic occurred: %v, tx hash: %v", r, txHash)
+			err = fmt.Errorf("SaveRaydiumCLMMPoolInfo: panic occurred: %v", r)
+		}
+	}()
+
+	if pair.SwapName != constants.RaydiumConcentratedLiquidity {
+		s.Infof("SaveRaydiumCLMMPoolInfo: Skipping - not a CLMM pool. SwapName: %s", pair.SwapName)
+		return nil
+	}
+
+	if pair.ClmmPoolInfoV1 == nil && pair.ClmmPoolInfoV2 == nil {
+		s.Infof("SaveRaydiumCLMMPoolInfo: v1 and v2 are nil, Skipping - no CLMM pool info. SwapName: %s", pair.SwapName)
+		return nil
+	}
+
+	if pair.ClmmPoolInfoV1 != nil {
+		// Get pool state string safely
+		var poolStateStr string
+		func() {
+			defer func() {
+				if r := recover(); r != nil {
+					s.Errorf("SaveRaydiumCLMMPoolInfo: panic getting poolState string: %v, tx hash: %v", r, pair.TxHash)
+					poolStateStr = ""
+				}
+			}()
+			poolStateStr = pair.ClmmPoolInfoV1.PoolState.PubKey.String()
+		}()
+
+		if poolStateStr == "" {
+			return fmt.Errorf("SaveRaydiumCLMMPoolInfo: failed to get pool state string")
+		}
+
+		// Process remaining accounts safely
+		var remainingAccountsStr string
+		func() {
+			defer func() {
+				if r := recover(); r != nil {
+					s.Errorf("SaveRaydiumCLMMPoolInfo: panic processing remaining accounts: %v, tx hash: %v", r, pair.TxHash)
+					remainingAccountsStr = "[]"
+				}
+			}()
+
+			remainingAccounts := make([]string, 0)
+			for _, account := range pair.ClmmPoolInfoV1.RemainingAccounts {
+				remainingAccounts = append(remainingAccounts, account.PubKey.String())
+			}
+			remainingAccountsStr, _ = transfer.Struct2String(remainingAccounts)
+		}()
+
+		now := time.Now()
+
+		// Find existing pool
+		dbPool, err := s.sc.SolRaydiumCLMMPoolV1Model.FindOneByPoolState(ctx, poolStateStr)
+
+		fmt.Println("pair.ClmmPoolInfoV1.TickArray is:", pair.ClmmPoolInfoV1.TickArray)
+		if pair.ClmmPoolInfoV1 != nil && dbPool != nil {
+			dbPool.TickArray = pair.ClmmPoolInfoV1.TickArray.String()
+		}
+
+		// Instead, always use the JSON array string
+		if dbPool != nil {
+			dbPool.RemainingAccounts = remainingAccountsStr
+		}
+
+		switch {
+		case err == nil:
+			// Update existing pool
+			if dbPool != nil {
+				dbPool.UpdatedAt = now
+				func() {
+					defer func() {
+						if r := recover(); r != nil {
+							s.Errorf("SaveRaydiumCLMMPoolInfo: panic in Update: %v, tx hash: %v", r, pair.TxHash)
+						}
+					}()
+					_ = s.sc.SolRaydiumCLMMPoolV1Model.Update(ctx, dbPool)
+				}()
+				s.Infof("SaveRaydiumCLMMPoolInfo:FindOneByPoolState v1 update success, id: %v, hash: %v", poolStateStr, pair.TxHash)
+			}
+			return nil
+		case errors.Is(err, solmodel.ErrNotFound) || strings.Contains(err.Error(), "record not found") || err.Error() == "sql: no rows in result set":
+			// Create new pool record
+			var ammConfigStr, inputVaultStr, outputVaultStr, observationStateStr, tokenProgramStr, tokenProgram2022Str, memoProgramStr, inputVaultMintStr, outputVaultMintStr, tickArrayStr string
+
+			// Safely get all the PubKey strings
+			func() {
+				defer func() {
+					if r := recover(); r != nil {
+						s.Errorf("SaveRaydiumCLMMPoolInfo: panic getting ClmmPoolInfoV1 PubKey strings: %v, tx hash: %v", r, pair.TxHash)
+					}
+				}()
+				ammConfigStr = pair.ClmmPoolInfoV1.AmmConfig.String()
+				inputVaultStr = pair.ClmmPoolInfoV1.InputVault.PubKey.String()
+				outputVaultStr = pair.ClmmPoolInfoV1.OutputVault.PubKey.String()
+				observationStateStr = pair.ClmmPoolInfoV1.ObservationState.PubKey.String()
+				tokenProgramStr = pair.ClmmPoolInfoV1.TokenProgram.String()
+				tokenProgram2022Str = pair.ClmmPoolInfoV1.TokenProgram2022.String()
+				memoProgramStr = pair.ClmmPoolInfoV1.MemoProgram.String()
+				inputVaultMintStr = pair.ClmmPoolInfoV1.InputVaultMint.String()
+				outputVaultMintStr = pair.ClmmPoolInfoV1.OutputVaultMint.String()
+				tickArrayStr = pair.ClmmPoolInfoV1.TickArray.String()
+
+				s.Infof("SaveRaydiumCLMMPoolInfo: ClmmPoolInfoV1 details - InputVaultMint: %s, OutputVaultMint: %s, PoolState: %s",
+					inputVaultMintStr, outputVaultMintStr, poolStateStr)
+			}()
+
+			info := &solmodel.ClmmPoolInfoV1{
+				AmmConfig:         ammConfigStr,
+				PoolState:         poolStateStr,
+				InputVault:        inputVaultStr,
+				OutputVault:       outputVaultStr,
+				ObservationState:  observationStateStr,
+				TokenProgram:      tokenProgramStr,
+				TokenProgram2022:  tokenProgram2022Str,
+				MemoProgram:       memoProgramStr,
+				InputVaultMint:    inputVaultMintStr,
+				OutputVaultMint:   outputVaultMintStr,
+				TickArray:         tickArrayStr,
+				RemainingAccounts: remainingAccountsStr,
+				TxHash:            pair.TxHash,
+				TradeFeeRate:      int64(pair.ClmmPoolInfoV1.TradeFeeRate),
+				CreatedAt:         now,
+				UpdatedAt:         now,
+			}
+
+			// Safely insert record
+			func() {
+				defer func() {
+					if r := recover(); r != nil {
+						err = fmt.Errorf("SaveRaydiumCLMMPoolInfo: panic in Insert: %v", r)
+					}
+				}()
+				err = s.sc.SolRaydiumCLMMPoolV1Model.Insert(ctx, info)
+			}()
+
+			if err != nil {
+				if !strings.Contains(err.Error(), "Duplicate entry") {
+					s.Errorf("SaveRaydiumCLMMPoolInfo: Failed to insert CLMM V1 pool: %v, txHash: %s, poolState: %s",
+						err, pair.TxHash, poolStateStr)
+					return fmt.Errorf("SaveRaydiumCLMMPoolInfo:SolRaydiumCLMMPoolV1Model.Insert %#v err:%v", info, err)
+				}
+				s.Infof("SaveRaydiumCLMMPoolInfo: Duplicate CLMM V1 pool entry, skipping: %s", poolStateStr)
+				return nil
+			}
+			s.Infof("SaveRaydiumCLMMPoolInfo: Successfully inserted CLMM V1 pool: %s, txHash: %s, InputMint: %s, OutputMint: %s",
+				poolStateStr, pair.TxHash, info.InputVaultMint, info.OutputVaultMint)
+		default:
+			s.Errorf("SaveRaydiumCLMMPoolInfo: Failed to find CLMM V1 pool: %v, txHash: %s, poolState: %s",
+				err, pair.TxHash, poolStateStr)
+			return fmt.Errorf("SaveRaydiumCLMMPoolInfo:SolRaydiumCLMMPoolV1Model.FindOneByPoolState err:%w", err)
+		}
+	}
+
+	if pair.ClmmPoolInfoV2 != nil {
+		// Safely print ClmmPoolInfoV2 without causing panics
+		func() {
+			defer func() {
+				if r := recover(); r != nil {
+					s.Errorf("SaveRaydiumCLMMPoolInfo: panic printing ClmmPoolInfoV2: %v, tx hash: %v", r, pair.TxHash)
+				}
+			}()
+			s.Infof("SaveRaydiumCLMMPoolInfo: Processing CLMM V2 pool for txHash: %s", pair.TxHash)
+		}()
+
+		// Get pool state string safely
+		var poolStateStr string
+		func() {
+			defer func() {
+				if r := recover(); r != nil {
+					s.Errorf("SaveRaydiumCLMMPoolInfo: panic getting poolState string: %v, tx hash: %v", r, pair.TxHash)
+					poolStateStr = ""
+				}
+			}()
+			poolStateStr = pair.ClmmPoolInfoV2.PoolState.PubKey.String()
+		}()
+
+		if poolStateStr == "" {
+			s.Errorf("SaveRaydiumCLMMPoolInfo: Failed - empty poolState for CLMM V2, txHash: %s", pair.TxHash)
+			return fmt.Errorf("SaveRaydiumCLMMPoolInfo: failed to get pool state string")
+		}
+
+		// Process remaining accounts safely
+		var remainingAccountsStr string
+		func() {
+			defer func() {
+				if r := recover(); r != nil {
+					s.Errorf("SaveRaydiumCLMMPoolInfo: panic processing remaining accounts: %v, tx hash: %v", r, pair.TxHash)
+					remainingAccountsStr = "[]"
+				}
+			}()
+
+			remainingAccounts := make([]string, 0)
+			for _, account := range pair.ClmmPoolInfoV2.RemainingAccounts {
+				remainingAccounts = append(remainingAccounts, account.PubKey.String())
+			}
+			remainingAccountsStr, _ = transfer.Struct2String(remainingAccounts)
+		}()
+
+		now := time.Now()
+
+		// Find existing pool
+		dbPool, err := s.sc.SolRaydiumCLMMPoolV2Model.FindOneByPoolState(ctx, poolStateStr)
+
+		switch {
+		case err == nil:
+			// Update existing pool
+			if dbPool != nil {
+				dbPool.UpdatedAt = now
+				func() {
+					defer func() {
+						if r := recover(); r != nil {
+							s.Errorf("SaveRaydiumCLMMPoolInfo: panic in Update: %v, tx hash: %v", r, pair.TxHash)
+						}
+					}()
+					_ = s.sc.SolRaydiumCLMMPoolV2Model.Update(ctx, dbPool)
+				}()
+				s.Infof("SaveRaydiumCLMMPoolInfo:FindOneByPoolState v2 update success, id: %v, hash: %v", poolStateStr, pair.TxHash)
+			}
+			return nil
+		case errors.Is(err, solmodel.ErrNotFound) || strings.Contains(err.Error(), "record not found") || err.Error() == "sql: no rows in result set":
+			// Create new pool record
+			var ammConfigStr, inputVaultStr, outputVaultStr, observationStateStr, tokenProgramStr, tokenProgram2022Str, memoProgramStr, inputVaultMintStr, outputVaultMintStr string
+
+			// Safely get all the PubKey strings
+			func() {
+				defer func() {
+					if r := recover(); r != nil {
+						s.Errorf("SaveRaydiumCLMMPoolInfo: panic getting ClmmPoolInfoV2 PubKey strings: %v, tx hash: %v", r, pair.TxHash)
+					}
+				}()
+				ammConfigStr = pair.ClmmPoolInfoV2.AmmConfig.String()
+				inputVaultStr = pair.ClmmPoolInfoV2.InputVault.PubKey.String()
+				outputVaultStr = pair.ClmmPoolInfoV2.OutputVault.PubKey.String()
+				observationStateStr = pair.ClmmPoolInfoV2.ObservationState.PubKey.String()
+				tokenProgramStr = pair.ClmmPoolInfoV2.TokenProgram.String()
+				tokenProgram2022Str = pair.ClmmPoolInfoV2.TokenProgram2022.String()
+				memoProgramStr = pair.ClmmPoolInfoV2.MemoProgram.String()
+				inputVaultMintStr = pair.ClmmPoolInfoV2.InputVaultMint.String()
+				outputVaultMintStr = pair.ClmmPoolInfoV2.OutputVaultMint.String()
+
+				s.Infof("SaveRaydiumCLMMPoolInfo: ClmmPoolInfoV2 details - InputVaultMint: %s, OutputVaultMint: %s, PoolState: %s",
+					inputVaultMintStr, outputVaultMintStr, poolStateStr)
+			}()
+
+			info := &solmodel.ClmmPoolInfoV2{
+				AmmConfig:         ammConfigStr,
+				PoolState:         poolStateStr,
+				InputVault:        inputVaultStr,
+				OutputVault:       outputVaultStr,
+				ObservationState:  observationStateStr,
+				TokenProgram:      tokenProgramStr,
+				TokenProgram2022:  tokenProgram2022Str,
+				MemoProgram:       memoProgramStr,
+				InputVaultMint:    inputVaultMintStr,
+				OutputVaultMint:   outputVaultMintStr,
+				RemainingAccounts: remainingAccountsStr,
+				TxHash:            pair.TxHash,
+				TradeFeeRate:      int64(pair.ClmmPoolInfoV2.TradeFeeRate),
+				CreatedAt:         now,
+				UpdatedAt:         now,
+			}
+
+			// Safely insert record
+			func() {
+				defer func() {
+					if r := recover(); r != nil {
+						err = fmt.Errorf("SaveRaydiumCLMMPoolInfo: panic in Insert: %v", r)
+					}
+				}()
+				err = s.sc.SolRaydiumCLMMPoolV2Model.Insert(ctx, info)
+			}()
+
+			if err != nil {
+				if !strings.Contains(err.Error(), "Duplicate entry") {
+					s.Errorf("SaveRaydiumCLMMPoolInfo: Failed to insert CLMM V2 pool: %v, txHash: %s, poolState: %s",
+						err, pair.TxHash, poolStateStr)
+					return fmt.Errorf("SaveRaydiumCLMMPoolInfo:SolRaydiumCLMMPoolV2Model.Insert %#v err:%v", info, err)
+				}
+				s.Infof("SaveRaydiumCLMMPoolInfo: Duplicate CLMM V2 pool entry, skipping: %s", poolStateStr)
+				return nil
+			}
+			s.Infof("SaveRaydiumCLMMPoolInfo: Successfully inserted CLMM V2 pool: %s, txHash: %s, InputMint: %s, OutputMint: %s",
+				poolStateStr, pair.TxHash, info.InputVaultMint, info.OutputVaultMint)
+		default:
+			s.Errorf("SaveRaydiumCLMMPoolInfo: Failed to find CLMM V2 pool: %v, txHash: %s, poolState: %s",
+				err, pair.TxHash, poolStateStr)
+			return fmt.Errorf("SaveRaydiumCLMMPoolInfo:SolRaydiumCLMMPoolV2Model.FindOneByPoolState err:%w", err)
+		}
+	}
+
+	return nil
+}
+
+// SaveClmmPosition 保存 CLMM 持仓信息
+func (s *BlockService) SaveClmmPosition(ctx context.Context, trade *types.TradeWithPair) error {
+	// 只处理 open_position 类型的交易
+	if trade == nil || trade.Type != "open_position" {
+		return nil
+	}
+
+	// 检查是否有 CLMMOpenPositionInfo
+	if trade.CLMMOpenPositionInfo == nil {
+		s.Infof("SaveClmmPosition: CLMMOpenPositionInfo is nil, skipping. txHash: %s", trade.TxHash)
+		return nil
+	}
+
+	info := trade.CLMMOpenPositionInfo
+
+	// 检查是否已存在该持仓（通过 position_nft_mint）
+	existing, err := s.sc.ClmmPositionModel.FindOneByPositionNftMint(ctx, info.PositionNftMint)
+	if err == nil && existing != nil {
+		// 持仓已存在，跳过
+		s.Infof("SaveClmmPosition: Position already exists, skipping. positionNftMint: %s, txHash: %s", info.PositionNftMint, trade.TxHash)
+		return nil
+	}
+
+	// 准备流动性字符串
+	liquidityStr := "0"
+	if info.Liquidity != nil {
+		// Uint128 转换为字符串，格式为 "hi,lo"
+		liquidityStr = fmt.Sprintf("%d,%d", info.Liquidity.Hi, info.Liquidity.Lo)
+	}
+
+	if liquidityStr == "0" || (info.Liquidity != nil && info.Liquidity.Hi == 0 && info.Liquidity.Lo == 0) {
+		if info.PersonalPosition != "" {
+			// 从链上获取 PersonalPositionState 账户中的流动性
+			personalPositionState, err := s.fetchPersonalPositionStateByAddress(ctx, info.PersonalPosition)
+			if err == nil && personalPositionState != nil {
+				// 从 PersonalPositionState 中获取流动性
+				liquidityStr = fmt.Sprintf("%d,%d", personalPositionState.Liquidity.Hi, personalPositionState.Liquidity.Lo)
+				s.Infof("SaveClmmPosition: Fetched liquidity from chain. positionNftMint: %s, liquidity: %s", info.PositionNftMint, liquidityStr)
+			} else {
+				s.Infof("SaveClmmPosition: Failed to fetch liquidity from chain (will retry later). positionNftMint: %s, personalPosition: %s, err: %v",
+					info.PositionNftMint, info.PersonalPosition, err)
+			}
+		}
+	}
+
+	// 准备 tick 索引值
+	tickLowerIndex := int32(0)
+	tickUpperIndex := int32(0)
+	tickArrayLowerStartIndex := int32(0)
+	tickArrayUpperStartIndex := int32(0)
+	if info.TickLowerIndex != nil {
+		tickLowerIndex = *info.TickLowerIndex
+	}
+	if info.TickUpperIndex != nil {
+		tickUpperIndex = *info.TickUpperIndex
+	}
+	if info.TickArrayLowerStartIndex != nil {
+		tickArrayLowerStartIndex = *info.TickArrayLowerStartIndex
+	}
+	if info.TickArrayUpperStartIndex != nil {
+		tickArrayUpperStartIndex = *info.TickArrayUpperStartIndex
+	}
+
+	// 准备金额值
+	amount0Max := int64(0)
+	amount1Max := int64(0)
+	if info.Amount0Max != nil {
+		amount0Max = int64(*info.Amount0Max)
+	}
+	if info.Amount1Max != nil {
+		amount1Max = int64(*info.Amount1Max)
+	}
+
+	// 获取区块时间
+	blockTime := time.Unix(trade.BlockTime, 0)
+
+	// 创建持仓记录
+	position := &solmodel.ClmmPosition{
+		ChainId:                  int64(trade.ChainIdInt),
+		UserWalletAddress:        info.Payer,
+		PoolState:                info.PoolState,
+		PositionNftMint:          info.PositionNftMint,
+		PositionNftAccount:       info.PositionNftAccount,
+		PersonalPosition:         info.PersonalPosition,
+		TickLowerIndex:           tickLowerIndex,
+		TickUpperIndex:           tickUpperIndex,
+		TickArrayLowerStartIndex: tickArrayLowerStartIndex,
+		TickArrayUpperStartIndex: tickArrayUpperStartIndex,
+		Liquidity:                liquidityStr,
+		Amount0Max:               amount0Max,
+		Amount1Max:               amount1Max,
+		TokenAccount0:            info.TokenAccount0,
+		TokenAccount1:            info.TokenAccount1,
+		TokenVault0:              info.TokenVault0,
+		TokenVault1:              info.TokenVault1,
+		TxHash:                   trade.TxHash,
+		Slot:                     trade.Slot,
+		BlockTime:                blockTime,
+		BlockTimeStamp:           trade.BlockTime,
+		CreatedAt:                time.Now(),
+		UpdatedAt:                time.Now(),
+	}
+
+	// 保存到数据库
+	err = s.sc.ClmmPositionModel.Insert(ctx, position)
+	if err != nil {
+		if strings.Contains(err.Error(), "Duplicate entry") {
+			s.Infof("SaveClmmPosition: Duplicate position entry, skipping. positionNftMint: %s, txHash: %s", info.PositionNftMint, trade.TxHash)
+			return nil
+		}
+		s.Errorf("SaveClmmPosition: Failed to insert position: %v, txHash: %s, positionNftMint: %s", err, trade.TxHash, info.PositionNftMint)
+		return fmt.Errorf("SaveClmmPosition: ClmmPositionModel.Insert err: %w", err)
+	}
+
+	s.Infof("SaveClmmPosition: Successfully saved position. positionNftMint: %s, userWallet: %s, poolState: %s, txHash: %s",
+		info.PositionNftMint, info.Payer, info.PoolState, trade.TxHash)
+
+	return nil
+}
+
+// fetchPersonalPositionStateByAddress 从链上获取 PersonalPositionState（通过地址）
+func (s *BlockService) fetchPersonalPositionStateByAddress(ctx context.Context, personalPositionAddr string) (*amm_v3.PersonalPositionStateAccount, error) {
+	cli := s.sc.GetSolClient()
+	if cli == nil {
+		return nil, errors.New("solana rpc client not configured")
+	}
+
+	if personalPositionAddr == "" {
+		return nil, errors.New("personal_position address is empty")
+	}
+
+	ctxWithTimeout, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
+	// 从链上获取账户数据
+	accountInfo, err := cli.GetAccountInfo(ctxWithTimeout, personalPositionAddr)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get personal position account: %w", err)
+	}
+	if len(accountInfo.Data) == 0 {
+		return nil, errors.New("personal position account not found or empty")
+	}
+
+	data := accountInfo.Data
+	dec := bin.NewBorshDecoder(data)
+	var personalPositionState amm_v3.PersonalPositionStateAccount
+	if err := personalPositionState.UnmarshalWithDecoder(dec); err != nil {
+		return nil, fmt.Errorf("failed to decode personal position state: %w", err)
+	}
+
+	return &personalPositionState, nil
+}
+
+func (s *BlockService) SaveRaydiumCPMMPoolInfo(ctx context.Context, trade *types.TradeWithPair) error {
+	if trade == nil || trade.SwapName != constants.RaydiumCPMM {
+		return nil
+	}
+	if s.sc == nil || s.sc.SolRaydiumCPMMPoolModel == nil {
+		return errors.New("cpmm pool model not initialized")
+	}
+
+	poolState := trade.PairAddr
+	info := trade.CpmmPoolInfo
+	existing, findErr := s.sc.SolRaydiumCPMMPoolModel.FindOneByPoolState(ctx, poolState)
+	switch {
+	case findErr == nil && existing != nil:
+		info = mergeCpmmPoolInfo(existing, info)
+	case errors.Is(findErr, solmodel.ErrNotFound):
+		if info == nil {
+			return fmt.Errorf("cpmm pool info is nil for new pool %s", poolState)
+		}
+	default:
+		if findErr != nil {
+			return fmt.Errorf("SaveRaydiumCPMMPoolInfo: find pool err: %w", findErr)
+		}
+	}
+
+	if info == nil {
+		return nil
+	}
+
+	s.applyCpmmMetrics(trade, info)
+	if existing != nil && existing.Id > 0 {
+		info.Id = existing.Id
+		if !existing.CreatedAt.IsZero() {
+			info.CreatedAt = existing.CreatedAt
+		}
+		return s.sc.SolRaydiumCPMMPoolModel.Update(ctx, info)
+	}
+	return s.sc.SolRaydiumCPMMPoolModel.Insert(ctx, info)
+}
+
+func mergeCpmmPoolInfo(existing *solmodel.CpmmPoolInfo, incoming *solmodel.CpmmPoolInfo) *solmodel.CpmmPoolInfo {
+	if existing == nil {
+		return incoming
+	}
+	if incoming == nil {
+		return existing
+	}
+	if incoming.AmmConfig == "" {
+		incoming.AmmConfig = existing.AmmConfig
+	}
+	if incoming.PoolState == "" {
+		incoming.PoolState = existing.PoolState
+	}
+	if incoming.InputVault == "" {
+		incoming.InputVault = existing.InputVault
+	}
+	if incoming.OutputVault == "" {
+		incoming.OutputVault = existing.OutputVault
+	}
+	if incoming.Authority == "" {
+		incoming.Authority = existing.Authority
+	}
+	if incoming.InputTokenProgram == "" {
+		incoming.InputTokenProgram = existing.InputTokenProgram
+	}
+	if incoming.OutputTokenProgram == "" {
+		incoming.OutputTokenProgram = existing.OutputTokenProgram
+	}
+	if incoming.InputTokenMint == "" {
+		incoming.InputTokenMint = existing.InputTokenMint
+	}
+	if incoming.OutputTokenMint == "" {
+		incoming.OutputTokenMint = existing.OutputTokenMint
+	}
+	if incoming.TradeFeeRate == 0 {
+		incoming.TradeFeeRate = existing.TradeFeeRate
+	}
+	if incoming.ObservationState == "" {
+		incoming.ObservationState = existing.ObservationState
+	}
+	if incoming.TxHash == "" {
+		incoming.TxHash = existing.TxHash
+	}
+	if incoming.LpMint == "" {
+		incoming.LpMint = existing.LpMint
+	}
+	incoming.Volume24h = existing.Volume24h
+	incoming.Fees24h = existing.Fees24h
+	incoming.Apr24h = existing.Apr24h
+	incoming.Liquidity = existing.Liquidity
+	return incoming
+}
+
+func (s *BlockService) applyCpmmMetrics(trade *types.TradeWithPair, info *solmodel.CpmmPoolInfo) {
+	if trade == nil || info == nil {
+		return
+	}
+	blockTime := time.Unix(trade.BlockTime, 0)
+	if blockTime.Sub(info.UpdatedAt) > 24*time.Hour {
+		info.Volume24h = 0
+		info.Fees24h = 0
+	}
+
+	if trade.Type == types.TradeTypeBuy || trade.Type == types.TradeTypeSell {
+		volumeUSD := trade.TotalUSD
+		info.Volume24h += volumeUSD
+		if info.TradeFeeRate > 0 && volumeUSD > 0 {
+			info.Fees24h += volumeUSD * float64(info.TradeFeeRate) / 1_000_000
+		}
+	}
+
+	if trade.CurrentBaseTokenInPoolAmount > 0 || trade.CurrentTokenInPoolAmount > 0 {
+		basePrice := trade.BaseTokenPriceUSD
+		tokenPrice := trade.TokenPriceUSD
+
+		// Derive missing price from pool ratio when one side has a known USD price.
+		if basePrice > 0 && tokenPrice == 0 && trade.CurrentTokenInPoolAmount > 0 {
+			tokenPrice = basePrice * (trade.CurrentBaseTokenInPoolAmount / trade.CurrentTokenInPoolAmount)
+		} else if tokenPrice > 0 && basePrice == 0 && trade.CurrentBaseTokenInPoolAmount > 0 {
+			basePrice = tokenPrice * (trade.CurrentTokenInPoolAmount / trade.CurrentBaseTokenInPoolAmount)
+		}
+
+		liq := trade.CurrentBaseTokenInPoolAmount*basePrice + trade.CurrentTokenInPoolAmount*tokenPrice
+		if liq > 0 {
+			info.Liquidity = liq
+		} else {
+			// Fallback to CPMM liquidity metric sqrt(x*y) when USD prices are unavailable.
+			if trade.CurrentBaseTokenInPoolAmount > 0 && trade.CurrentTokenInPoolAmount > 0 {
+				liq = math.Sqrt(trade.CurrentBaseTokenInPoolAmount * trade.CurrentTokenInPoolAmount)
+				if liq > 0 {
+					info.Liquidity = liq
+				}
+			}
+		}
+		s.Infof("cpmm metrics: pair=%s baseAmt=%.6f tokenAmt=%.6f basePrice=%.6f tokenPrice=%.6f liq=%.6f tx=%s",
+			trade.PairAddr, trade.CurrentBaseTokenInPoolAmount, trade.CurrentTokenInPoolAmount, basePrice, tokenPrice, info.Liquidity, trade.TxHash)
+	}
+	if info.Liquidity > 0 && info.Fees24h > 0 {
+		info.Apr24h = info.Fees24h * 365 / info.Liquidity * 100
+	}
+	info.UpdatedAt = blockTime
+}
+
+// fillPairTokenSymbols 填充单个交易对的 base token 和 quote token symbol
+// 仅在保存 Pair 信息时调用，避免不必要的查询
+func (s *BlockService) fillPairTokenSymbols(ctx context.Context, trade *types.TradeWithPair) {
+	if trade == nil {
+		return
+	}
+
+	solClient := s.sc.GetSolClient()
+
+	// 填充 base token symbol (如果为空)
+	if trade.PairInfo.BaseTokenAddr != "" && trade.PairInfo.BaseTokenSymbol == "" {
+		baseTokenAddr := trade.PairInfo.BaseTokenAddr
+
+		// 优先从数据库获取
+		tokenDB, err := s.sc.TokenModel.FindOneByChainIdAddress(ctx, SolChainIdInt, baseTokenAddr)
+		if err == nil && tokenDB != nil && tokenDB.Symbol != "" {
+			trade.PairInfo.BaseTokenSymbol = tokenDB.Symbol
+		} else {
+			// 数据库没有，从 RPC 获取
+			tokenInfo, rpcErr := sol.GetTokenInfo(solClient, ctx, baseTokenAddr)
+			if rpcErr == nil && tokenInfo != nil && tokenInfo.Data.Symbol != "" {
+				trade.PairInfo.BaseTokenSymbol = tokenInfo.Data.Symbol
+			}
+		}
+	}
+
+	// 填充 quote token symbol (如果为空)
+	if trade.PairInfo.TokenAddr != "" && trade.PairInfo.TokenSymbol == "" && trade.PairInfo.TokenAddr != constants.TokenStrWrapSol {
+		tokenAddr := trade.PairInfo.TokenAddr
+
+		// 优先从数据库获取
+		tokenDB, err := s.sc.TokenModel.FindOneByChainIdAddress(ctx, SolChainIdInt, tokenAddr)
+		if err == nil && tokenDB != nil && tokenDB.Symbol != "" {
+			trade.PairInfo.TokenSymbol = tokenDB.Symbol
+		} else {
+			// 数据库没有，从 RPC 获取
+			tokenInfo, rpcErr := sol.GetTokenInfo(solClient, ctx, tokenAddr)
+			if rpcErr == nil && tokenInfo != nil && tokenInfo.Data.Symbol != "" {
+				trade.PairInfo.TokenSymbol = tokenInfo.Data.Symbol
+			}
+		}
 	}
 }

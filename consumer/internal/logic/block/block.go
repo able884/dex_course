@@ -8,12 +8,14 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"richcode.cc/dex/consumer/internal/svc"
 	"richcode.cc/dex/model/solmodel"
 	constants "richcode.cc/dex/pkg/constants"
 	"richcode.cc/dex/pkg/raydium/clmm"
+	"richcode.cc/dex/pkg/raydium/cpmm"
 	"richcode.cc/dex/pkg/types"
 
 	"richcode.cc/dex/consumer/internal/config"
@@ -25,9 +27,11 @@ import (
 	solTypes "github.com/blocto/solana-go-sdk/types"
 	"github.com/duke-git/lancet/v2/slice"
 	"github.com/gorilla/websocket"
+	"github.com/klen-ygs/gorm-zero/gormc"
 	"github.com/mr-tron/base58"
 	"github.com/panjf2000/ants/v2"
 	"github.com/zeromicro/go-zero/core/logx"
+	"github.com/zeromicro/go-zero/core/stores/redis"
 	"github.com/zeromicro/go-zero/core/threading"
 )
 
@@ -49,6 +53,15 @@ type BlockService struct {
 	ctx         context.Context     // 上下文，用于控制服务生命周期
 	cancel      func(err error)     // 取消函数，用于停止服务
 	name        string              // 服务名称（与 Name 字段重复，可考虑移除）
+	batchQueue  *pairBatchQueue
+
+	metadataCache           metadataCache
+	metadataTTL             time.Duration
+	metadataFailureCooldown time.Duration
+	metadataReqMu           sync.Mutex
+	metadataReq             map[string]*metadataCacheResult
+
+	priceRangeCache *PriceRangeCache
 }
 
 // Stop 停止区块处理服务
@@ -82,17 +95,58 @@ func (s *BlockService) Start() {
 func NewBlockService(sc *svc.ServiceContext, name string, slotChan chan uint64, index int) *BlockService {
 	ctx, cancel := context.WithCancelCause(context.Background())
 	pool, _ := ants.NewPool(5)
+
+	concurrency := sc.BlockPipelineSettings.PairBatchConcurrency
+	if concurrency <= 0 {
+		concurrency = 1
+	}
+	metadataTTL := time.Duration(sc.BlockPipelineSettings.MetadataCacheTTLHours) * time.Hour
+	if metadataTTL <= 0 {
+		metadataTTL = 24 * time.Hour
+	}
+	metadataCooldown := 10 * time.Minute
+	var cache metadataCache
+	if sc.MetadataCache != nil {
+		cache = &redisMetadataCache{client: sc.MetadataCache}
+	}
+
+	// 初始化价格范围缓存
+	priceRangeCache := NewPriceRangeCache(sc.Redis, constants.SolChainIdInt)
+	if err := priceRangeCache.LoadFromRedis(ctx); err != nil {
+		logx.Errorf("NewBlockService: failed to load price ranges from redis: %v", err)
+	}
+
+	// 启动定期清理任务
+	go func() {
+		ticker := time.NewTicker(1 * time.Hour) // 每小时清理一次
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+				priceRangeCache.CleanExpiredRanges(ctx)
+			}
+		}
+	}()
+
 	solService := &BlockService{
 		c: client.New(rpc.WithEndpoint(config.FindChainRpcByChainId(constants.SolChainIdInt)), rpc.WithHTTPClient(&http.Client{
 			Timeout: 5 * time.Second,
 		})),
-		sc:         sc,
-		Logger:     logx.WithContext(context.Background()).WithFields(logx.Field("service", fmt.Sprintf("%s-%v", name, index))),
-		slotChan:   slotChan,
-		workerPool: pool,
-		ctx:        ctx,
-		cancel:     cancel,
-		name:       name,
+		sc:                      sc,
+		Logger:                  logx.WithContext(context.Background()).WithFields(logx.Field("service", fmt.Sprintf("%s-%v", name, index))),
+		slotChan:                slotChan,
+		workerPool:              pool,
+		ctx:                     ctx,
+		cancel:                  cancel,
+		name:                    name,
+		batchQueue:              newPairBatchQueue(concurrency),
+		metadataCache:           cache,
+		metadataTTL:             metadataTTL,
+		metadataFailureCooldown: metadataCooldown,
+		metadataReq:             make(map[string]*metadataCacheResult),
+		priceRangeCache:         priceRangeCache,
 	}
 	return solService
 }
@@ -339,15 +393,210 @@ func (s *BlockService) ProcessBlock(ctx context.Context, slot int64) {
 		})
 	})
 
+	// Raydium clm
+	group.RunSafe(func() {
+		slice.ForEach(trades, func(_ int, trade *types.TradeWithPair) {
+			if trade.SwapName == constants.RaydiumConcentratedLiquidity || trade.SwapName == "RaydiumClmm" {
+				s.Infof("CLMM Processing: Found CLMM trade with type: %s, txHash: %s, pair: %s",
+					trade.Type, trade.TxHash, trade.PairAddr)
+
+				// 更新价格范围缓存（仅对买卖交易）
+				if (trade.Type == types.TradeTypeBuy || trade.Type == types.TradeTypeSell) && trade.TokenPriceUSD > 0 && s.priceRangeCache != nil {
+					blockTime := time.Unix(trade.BlockTime, 0)
+					s.priceRangeCache.UpdatePrice(ctx, trade.PairAddr, trade.TokenPriceUSD, blockTime)
+				}
+
+				// Save all CLMM trades, not just buy/sell
+				if err = s.SaveRaydiumCLMMPoolInfo(ctx, trade); err != nil {
+					s.Errorf("processBlock:%v saveRaydiumCLMMPoolInfo err: %v, trade.Type: %s", slot, err, trade.Type)
+				} else {
+					s.Infof("CLMM Success: Saved pool info for txHash: %s, trade.Type: %s", trade.TxHash, trade.Type)
+				}
+
+				// 保存 CLMM 持仓信息（仅对 open_position 类型）
+				if trade.Type == "open_position" {
+					if err = s.SaveClmmPosition(ctx, trade); err != nil {
+						s.Errorf("processBlock:%v SaveClmmPosition err: %v, txHash: %s", slot, err, trade.TxHash)
+					} else {
+						s.Infof("CLMM Position Success: Saved position for txHash: %s", trade.TxHash)
+						// 创建持仓后，更新持仓价值和手续费
+						if trade.CLMMOpenPositionInfo != nil {
+							_ = s.UpdateClmmPositionValueAndFees(ctx, trade.CLMMOpenPositionInfo.PositionNftMint, trade.PairAddr)
+						}
+					}
+				}
+
+				// 更新持仓价值和手续费（对于影响持仓的指令）
+				if trade.Type == types.TradeRaydiumConcentratedLiquidityIncreaseLiquidity ||
+					trade.Type == types.TradeRaydiumConcentratedLiquidityDecreaseLiquidity {
+					// 从 CLMMOpenPositionInfo 中获取 position_nft_mint
+					if trade.CLMMOpenPositionInfo != nil && trade.CLMMOpenPositionInfo.PositionNftMint != "" {
+						_ = s.UpdateClmmPositionValueAndFees(ctx, trade.CLMMOpenPositionInfo.PositionNftMint, trade.PairAddr)
+					}
+				} else if trade.Type == types.TradeTypeBuy || trade.Type == types.TradeTypeSell {
+					// Swap 交易会影响池子中所有持仓的手续费
+					// 为了性能，异步批量更新该池子的所有持仓
+					go func(poolState string) {
+						positions, err := s.sc.ClmmPositionModel.FindByUserWalletAndPool(context.Background(), "", poolState)
+						if err == nil {
+							for _, pos := range positions {
+								_ = s.UpdateClmmPositionValueAndFees(context.Background(), pos.PositionNftMint, pos.PoolState)
+							}
+						}
+					}(trade.PairAddr)
+				}
+			}
+		})
+	})
+
+	// Raydium cpmm
+	group.RunSafe(func() {
+		slice.ForEach(trades, func(_ int, trade *types.TradeWithPair) {
+			if trade.SwapName == constants.RaydiumCPMM {
+				if err = s.SaveRaydiumCPMMPoolInfo(ctx, trade); err != nil {
+					s.Errorf("processBlock:%v SaveRaydiumCPMMPoolInfo err: %v", slot, err)
+				}
+			}
+		})
+	})
+
 	// 等待所有并发任务完成
 	group.Wait()
 
 	// Step7: 保存区块记录到数据库，标记处理完成
 	// 此时所有数据都已保存，区块状态为已处理（BlockProcessed）
-	err = s.sc.BlockModel.Insert(ctx, block)
+	err = s.saveOrUpdateBlock(ctx, block)
 	if err != nil {
 		s.Error("insert block error", err)
 	}
+}
+
+func (s *BlockService) saveOrUpdateBlock(ctx context.Context, block *solmodel.Block) error {
+	if block == nil {
+		return errors.New("block is nil")
+	}
+
+	existing, err := s.sc.BlockModel.FindOneBySlot(ctx, block.Slot)
+	switch {
+	case err == nil && existing != nil:
+		block.Id = existing.Id
+		if !existing.CreatedAt.IsZero() {
+			block.CreatedAt = existing.CreatedAt
+		}
+		block.DeletedAt = existing.DeletedAt
+		return s.sc.BlockModel.Update(ctx, block)
+	case errors.Is(err, gormc.ErrNotFound) || errors.Is(err, solmodel.ErrNotFound):
+		return s.sc.BlockModel.Insert(ctx, block)
+	case err != nil:
+		return err
+	default:
+		return s.sc.BlockModel.Insert(ctx, block)
+	}
+}
+
+type pairBatchJob struct {
+	pair string
+	work func()
+}
+
+type pairBatchQueue struct {
+	jobs      chan pairBatchJob
+	pairLocks sync.Map
+	once      sync.Once
+}
+
+func newPairBatchQueue(concurrency int) *pairBatchQueue {
+	if concurrency <= 0 {
+		concurrency = 1
+	}
+	queue := &pairBatchQueue{
+		jobs: make(chan pairBatchJob, concurrency*2),
+	}
+	for i := 0; i < concurrency; i++ {
+		go queue.worker()
+	}
+	return queue
+}
+
+func (q *pairBatchQueue) enqueue(pair string, fn func()) {
+	q.jobs <- pairBatchJob{
+		pair: pair,
+		work: fn,
+	}
+}
+
+func (q *pairBatchQueue) stop() {
+	q.once.Do(func() {
+		close(q.jobs)
+	})
+}
+
+func (q *pairBatchQueue) worker() {
+	for job := range q.jobs {
+		lock := q.getLock(job.pair)
+		lock.Lock()
+		job.work()
+		lock.Unlock()
+	}
+}
+
+func (q *pairBatchQueue) getLock(pair string) *sync.Mutex {
+	lock, _ := q.pairLocks.LoadOrStore(pair, &sync.Mutex{})
+	return lock.(*sync.Mutex)
+}
+
+type metadataCache interface {
+	Get(ctx context.Context, key string) (string, error)
+	Set(ctx context.Context, key, value string, ttl time.Duration) error
+}
+
+type metadataCacheResult struct {
+	payload *tokenMetadataCachePayload
+	err     error
+}
+
+func (s *BlockService) resetMetadataAggregator(slot uint64) {
+	s.metadataReqMu.Lock()
+	defer s.metadataReqMu.Unlock()
+	s.metadataReq = make(map[string]*metadataCacheResult)
+}
+
+func (s *BlockService) metadataCacheGet(key string) (*metadataCacheResult, bool) {
+	s.metadataReqMu.Lock()
+	defer s.metadataReqMu.Unlock()
+	res, ok := s.metadataReq[key]
+	return res, ok
+}
+
+func (s *BlockService) metadataCacheSetResult(key string, res *metadataCacheResult) {
+	s.metadataReqMu.Lock()
+	defer s.metadataReqMu.Unlock()
+	if s.metadataReq == nil {
+		s.metadataReq = make(map[string]*metadataCacheResult)
+	}
+	s.metadataReq[key] = res
+}
+
+type redisMetadataCache struct {
+	client *redis.Redis
+}
+
+func (r *redisMetadataCache) Get(ctx context.Context, key string) (string, error) {
+	if r == nil || r.client == nil {
+		return "", errors.New("metadata cache not configured")
+	}
+	return r.client.Get(key)
+}
+
+func (r *redisMetadataCache) Set(ctx context.Context, key, value string, ttl time.Duration) error {
+	if r == nil || r.client == nil {
+		return errors.New("metadata cache not configured")
+	}
+	seconds := int(ttl.Seconds())
+	if seconds <= 0 {
+		return r.client.Set(key, value)
+	}
+	return r.client.Setex(key, value, seconds)
 }
 
 // DecodeTx 解码单个交易，提取其中的成交信息
@@ -474,25 +723,53 @@ func DecodeInstruction(ctx context.Context, sc *svc.ServiceContext, dtx *Decoded
 		}
 		logx.Infof("find token2022 tx: %v, pairInfo: %#v", dtx.TxHash, trade.PairInfo)
 		return trade, err
+	case clmm.ProgramClMMDevNet.String():
+		return DecodeRaydiumCLMMInstruction(ctx, sc, dtx, instruction, innerInstructions)
 	case clmm.ProgramRaydiumConcentratedLiquidity.String():
-		decoder := &ConcentratedLiquidityDecoder{
-			ctx:                 ctx,
-			svcCtx:              sc,
-			dtx:                 dtx,
-			compiledInstruction: instruction,
-			innerInstruction:    innerInstructions,
-		}
-		trade, err = decoder.DecodeRaydiumConcentratedLiquidityInstruction()
-		if err != nil {
-			logx.Errorf("error find inner clmm tx: %v, err : %v", dtx.TxHash, err)
-			return nil, err
-		}
-		logx.Infof("find inner clmm tx: %v, pairInfo: %#v", dtx.TxHash, trade.PairInfo)
-		return trade, nil
+		return DecodeRaydiumCLMMInstruction(ctx, sc, dtx, instruction, innerInstructions)
+	case cpmm.ProgramRaydiumCPMMProgramDevNet.String():
+		return DecodeRaydiumCPMMInstruction(ctx, sc, dtx, instruction, innerInstructions)
+	case cpmm.ProgramRaydiumCPMMProgram.String():
+		return DecodeRaydiumCPMMInstruction(ctx, sc, dtx, instruction, innerInstructions)
 	default:
 		// 未知程序，返回错误（这是正常的，不是所有程序都需要处理）
 		return nil, ErrUnknowProgram
 	}
+}
+
+// / 解析Raydium CLMM 指令
+func DecodeRaydiumCLMMInstruction(ctx context.Context, sc *svc.ServiceContext, dtx *DecodedTx, instruction *solTypes.CompiledInstruction, innerInstructions *client.InnerInstruction) (trade *types.TradeWithPair, err error) {
+	decoder := &ConcentratedLiquidityDecoder{
+		ctx:                 ctx,
+		svcCtx:              sc,
+		dtx:                 dtx,
+		compiledInstruction: instruction,
+		innerInstruction:    innerInstructions,
+	}
+	trade, err = decoder.DecodeRaydiumConcentratedLiquidityInstruction()
+	if err != nil {
+		logx.Errorf("error find inner clmm tx: %v, err : %v", dtx.TxHash, err)
+		return nil, err
+	}
+	logx.Infof("find inner clmm tx: %v, pairInfo: %#v", dtx.TxHash, trade.PairInfo)
+	return trade, nil
+}
+
+// / 解析Raydium CPMM 指令
+func DecodeRaydiumCPMMInstruction(ctx context.Context, sc *svc.ServiceContext, dtx *DecodedTx, instruction *solTypes.CompiledInstruction, innerInstructions *client.InnerInstruction) (trade *types.TradeWithPair, err error) {
+	decoder := &CpmmDecoder{
+		ctx:                 ctx,
+		svcCtx:              sc,
+		dtx:                 dtx,
+		compiledInstruction: instruction,
+		innerInstruction:    innerInstructions,
+	}
+	trade, err = decoder.DecodeRaydiumCPMMInstruction()
+	if err != nil {
+		logx.Errorf("error decoding cpmm tx: %v, err : %v", dtx.TxHash, err)
+		return nil, err
+	}
+	return trade, nil
 }
 
 // : 起始索引
@@ -745,6 +1022,7 @@ func DecodeInitAccountInstruction(tx *client.BlockTransaction, tokenAccountMap m
 		return
 	}
 	var mint, tokenAccount, owner string
+	// 解析初始化指令，data[0] 是指令类型，根据不同的指令类型解析账户信息
 	switch token.Instruction(instruction.Data[0]) {
 	// init account
 	case token.InstructionInitializeAccount:

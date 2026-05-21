@@ -1,0 +1,9 @@
+Name: message
+Host: 0.0.0.0
+Port: 8110
+
+Redis:
+  Host: 172.17.112.1
+  Port: 6379
+  Password: "123456"
+  DB: 0

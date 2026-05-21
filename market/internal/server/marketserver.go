@@ -33,6 +33,11 @@ func (s *MarketServer) GetClmmPoolList(ctx context.Context, in *market.GetClmmPo
 	return l.GetClmmPoolList(in)
 }
 
+func (s *MarketServer) GetPoolDetail(ctx context.Context, in *market.GetPoolDetailRequest) (*market.GetPoolDetailResponse, error) {
+	l := logic.NewGetPoolDetailLogic(ctx, s.svcCtx)
+	return l.GetPoolDetail(in)
+}
+
 func (s *MarketServer) PushTokenInfo(ctx context.Context, in *market.PushTokenInfoRequest) (*market.PushTokenInfoResponse, error) {
 	l := logic.NewPushTokenInfoLogic(ctx, s.svcCtx)
 	return l.PushTokenInfo(in)
@@ -51,4 +56,25 @@ func (s *MarketServer) GetNativeTokenPrice(ctx context.Context, in *market.GetNa
 func (s *MarketServer) GetTokenInfo(ctx context.Context, in *market.GetTokenInfoRequest) (*market.GetTokenInfoResponse, error) {
 	l := logic.NewGetTokenInfoLogic(ctx, s.svcCtx)
 	return l.GetTokenInfo(in)
+}
+
+func (s *MarketServer) QuoteCpmm(ctx context.Context, in *market.QuoteCpmmRequest) (*market.QuoteCpmmResponse, error) {
+	l := logic.NewQuoteCpmmLogic(ctx, s.svcCtx)
+	return l.QuoteCpmm(in)
+}
+
+func (s *MarketServer) QuoteClmm(ctx context.Context, in *market.QuoteClmmRequest) (*market.QuoteClmmResponse, error) {
+	l := logic.NewQuoteClmmLogic(ctx, s.svcCtx)
+	return l.QuoteClmm(in)
+}
+
+func (s *MarketServer) GetClmmPoolDepthData(ctx context.Context, in *market.GetClmmPoolDepthDataRequest) (*market.GetClmmPoolDepthDataResponse, error) {
+	l := logic.NewGetClmmPoolDepthDataLogic(ctx, s.svcCtx)
+	return l.GetClmmPoolDepthData(in)
+}
+
+// Get user's liquidity positions
+func (s *MarketServer) GetUserPositions(ctx context.Context, in *market.GetUserPositionsRequest) (*market.GetUserPositionsResponse, error) {
+	l := logic.NewGetUserPositionsLogic(ctx, s.svcCtx)
+	return l.GetUserPositions(in)
 }

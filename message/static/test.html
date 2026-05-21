@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebSocket 测试页面</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 14px;
+        }
+
+        .controls {
+            padding: 30px;
+            border-bottom: 1px solid #e0e0e0;
+            background: #f8f9fa;
+        }
+
+        .control-group {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .control-group label {
+            font-weight: 600;
+            color: #333;
+            min-width: 100px;
+        }
+
+        .control-group input {
+            flex: 1;
+            padding: 10px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        .control-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-connect {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .btn-connect:hover {
+            background: #45a049;
+        }
+
+        .btn-disconnect {
+            background: #f44336;
+            color: white;
+        }
+
+        .btn-disconnect:hover {
+            background: #da190b;
+        }
+
+        .btn-clear {
+            background: #ff9800;
+            color: white;
+        }
+
+        .btn-clear:hover {
+            background: #e68900;
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .status {
+            padding: 30px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .status-item {
+            display: flex;
+            margin-bottom: 12px;
+            align-items: center;
+        }
+
+        .status-item strong {
+            min-width: 120px;
+            color: #555;
+        }
+
+        .status-badge {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .status-connected {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .status-disconnected {
+            background: #9e9e9e;
+            color: white;
+        }
+
+        .console {
+            padding: 30px;
+        }
+
+        .console h2 {
+            margin-bottom: 15px;
+            color: #333;
+            font-size: 20px;
+        }
+
+        .console-output {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 20px;
+            border-radius: 8px;
+            height: 500px;
+            overflow-y: auto;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+
+        .console-output::-webkit-scrollbar {
+            width: 10px;
+        }
+
+        .console-output::-webkit-scrollbar-track {
+            background: #2d2d2d;
+        }
+
+        .console-output::-webkit-scrollbar-thumb {
+            background: #555;
+            border-radius: 5px;
+        }
+
+        .console-output::-webkit-scrollbar-thumb:hover {
+            background: #777;
+        }
+
+        .log-entry {
+            margin-bottom: 8px;
+            padding: 8px;
+            border-left: 3px solid transparent;
+            word-wrap: break-word;
+        }
+
+        .log-info {
+            border-left-color: #2196F3;
+            color: #61dafb;
+        }
+
+        .log-success {
+            border-left-color: #4CAF50;
+            color: #98fb98;
+        }
+
+        .log-error {
+            border-left-color: #f44336;
+            color: #ff6b6b;
+        }
+
+        .log-warning {
+            border-left-color: #ff9800;
+            color: #ffd54f;
+        }
+
+        .log-data {
+            border-left-color: #9c27b0;
+            color: #ce93d8;
+        }
+
+        .timestamp {
+            color: #888;
+            margin-right: 10px;
+        }
+
+        .stats {
+            padding: 20px 30px;
+            background: #f8f9fa;
+            display: flex;
+            gap: 30px;
+            justify-content: space-around;
+            flex-wrap: wrap;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 32px;
+            font-weight: 700;
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 14px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔌 WebSocket 测试工具</h1>
+            <p>用于测试代币消息推送服务</p>
+        </div>
+
+        <div class="controls">
+            <div class="control-group">
+                <label for="wsUrl">WebSocket地址:</label>
+                <input type="text" id="wsUrl" value="ws://localhost:8110/ws/tokens">
+            </div>
+            <div class="control-group">
+                <label for="chainId">Chain ID:</label>
+                <input type="text" id="chainId" value="100000">
+            </div>
+            <div class="button-group">
+                <button id="connectBtn" class="btn-connect">连接</button>
+                <button id="disconnectBtn" class="btn-disconnect" disabled>断开连接</button>
+                <button id="clearBtn" class="btn-clear">清空日志</button>
+            </div>
+        </div>
+
+        <div class="status">
+            <div class="status-item">
+                <strong>连接状态:</strong>
+                <span id="statusBadge" class="status-badge status-disconnected">未连接</span>
+            </div>
+            <div class="status-item">
+                <strong>当前地址:</strong>
+                <span id="currentUrl">-</span>
+            </div>
+            <div class="status-item">
+                <strong>连接时长:</strong>
+                <span id="connectionTime">-</span>
+            </div>
+        </div>
+
+        <div class="stats">
+            <div class="stat-item">
+                <div class="stat-value" id="messageCount">0</div>
+                <div class="stat-label">收到消息</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="errorCount">0</div>
+                <div class="stat-label">错误次数</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="reconnectCount">0</div>
+                <div class="stat-label">重连次数</div>
+            </div>
+        </div>
+
+        <div class="console">
+            <h2>📋 控制台输出</h2>
+            <div class="console-output" id="console"></div>
+        </div>
+    </div>
+
+    <script>
+        let ws = null;
+        let messageCount = 0;
+        let errorCount = 0;
+        let reconnectCount = 0;
+        let connectTime = null;
+        let timerInterval = null;
+
+        const wsUrlInput = document.getElementById('wsUrl');
+        const chainIdInput = document.getElementById('chainId');
+        const connectBtn = document.getElementById('connectBtn');
+        const disconnectBtn = document.getElementById('disconnectBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const consoleOutput = document.getElementById('console');
+        const statusBadge = document.getElementById('statusBadge');
+        const currentUrl = document.getElementById('currentUrl');
+        const connectionTimeSpan = document.getElementById('connectionTime');
+        const messageCountSpan = document.getElementById('messageCount');
+        const errorCountSpan = document.getElementById('errorCount');
+        const reconnectCountSpan = document.getElementById('reconnectCount');
+
+        function getTimestamp() {
+            const now = new Date();
+            return now.toLocaleTimeString('zh-CN', { hour12: false }) + '.' + now.getMilliseconds().toString().padStart(3, '0');
+        }
+
+        function log(message, type = 'info') {
+            const entry = document.createElement('div');
+            entry.className = `log-entry log-${type}`;
+            entry.innerHTML = `<span class="timestamp">[${getTimestamp()}]</span>${message}`;
+            consoleOutput.appendChild(entry);
+            consoleOutput.scrollTop = consoleOutput.scrollHeight;
+        }
+
+        function updateStatus(connected) {
+            if (connected) {
+                statusBadge.textContent = '已连接';
+                statusBadge.className = 'status-badge status-connected';
+                connectBtn.disabled = true;
+                disconnectBtn.disabled = false;
+            } else {
+                statusBadge.textContent = '未连接';
+                statusBadge.className = 'status-badge status-disconnected';
+                connectBtn.disabled = false;
+                disconnectBtn.disabled = true;
+                connectionTimeSpan.textContent = '-';
+                if (timerInterval) {
+                    clearInterval(timerInterval);
+                    timerInterval = null;
+                }
+            }
+        }
+
+        function updateStats() {
+            messageCountSpan.textContent = messageCount;
+            errorCountSpan.textContent = errorCount;
+            reconnectCountSpan.textContent = reconnectCount;
+        }
+
+        function updateConnectionTime() {
+            if (connectTime) {
+                const now = Date.now();
+                const diff = Math.floor((now - connectTime) / 1000);
+                const hours = Math.floor(diff / 3600);
+                const minutes = Math.floor((diff % 3600) / 60);
+                const seconds = diff % 60;
+                connectionTimeSpan.textContent = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            }
+        }
+
+        function connect() {
+            const baseUrl = wsUrlInput.value.trim();
+            const chainId = chainIdInput.value.trim();
+            const fullUrl = `${baseUrl}?chain_id=${chainId}`;
+
+            log(`正在连接到: ${fullUrl}`, 'info');
+            currentUrl.textContent = fullUrl;
+
+            try {
+                ws = new WebSocket(fullUrl);
+
+                ws.onopen = function(event) {
+                    log('✅ WebSocket 连接已建立', 'success');
+                    updateStatus(true);
+                    connectTime = Date.now();
+                    timerInterval = setInterval(updateConnectionTime, 1000);
+                };
+
+                ws.onmessage = function(event) {
+                    messageCount++;
+                    updateStats();
+                    
+                    log('📩 收到消息:', 'data');
+                    
+                    try {
+                        const data = JSON.parse(event.data);
+                        const formatted = JSON.stringify(data, null, 2);
+                        log(`<pre style="margin: 5px 0 5px 20px; color: #98fb98;">${formatted}</pre>`, 'data');
+                    } catch (e) {
+                        log(`<pre style="margin: 5px 0 5px 20px; color: #98fb98;">${event.data}</pre>`, 'data');
+                    }
+                };
+
+                ws.onerror = function(error) {
+                    errorCount++;
+                    updateStats();
+                    log('❌ WebSocket 错误: ' + error.toString(), 'error');
+                    console.error('WebSocket error:', error);
+                };
+
+                ws.onclose = function(event) {
+                    log(`🔌 WebSocket 连接已关闭 (code: ${event.code}, reason: ${event.reason || '无'})`, 'warning');
+                    updateStatus(false);
+                    connectTime = null;
+                };
+
+            } catch (error) {
+                errorCount++;
+                updateStats();
+                log('❌ 连接失败: ' + error.message, 'error');
+                console.error('Connection error:', error);
+            }
+        }
+
+        function disconnect() {
+            if (ws) {
+                log('正在断开连接...', 'info');
+                ws.close();
+                ws = null;
+                updateStatus(false);
+            }
+        }
+
+        function clearConsole() {
+            consoleOutput.innerHTML = '';
+            log('控制台已清空', 'info');
+        }
+
+        connectBtn.addEventListener('click', connect);
+        disconnectBtn.addEventListener('click', disconnect);
+        clearBtn.addEventListener('click', clearConsole);
+
+        // 初始日志
+        log('🚀 WebSocket 测试工具已就绪', 'success');
+        log('👉 请点击"连接"按钮开始测试', 'info');
+    </script>
+</body>
+</html>
+

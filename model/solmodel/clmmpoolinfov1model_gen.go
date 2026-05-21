@@ -47,6 +47,8 @@ type (
 		OutputVaultMint   string       `gorm:"column:output_vault_mint"`  // Output Vault Mint
 		RemainingAccounts string       `gorm:"column:remaining_accounts"` // Remaining Accounts (JSON format)
 		TradeFeeRate      int64        `gorm:"column:trade_fee_rate"`     // Trade Fee Rate
+		CurrentPrice      float64      `gorm:"column:current_price"`      // 当前价格（Token1 per Token0）
+		CurrentTick       int32        `gorm:"column:current_tick"`       // 当前 Tick 索引
 		TxHash            string       `gorm:"column:tx_hash"`            // Tx hash
 		CreatedAt         time.Time    `gorm:"column:created_at"`         // Creation timestamp
 		UpdatedAt         time.Time    `gorm:"column:updated_at"`         // Update timestamp

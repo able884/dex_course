@@ -7,7 +7,6 @@ import (
 	"richcode.cc/dex/market/internal/config"
 	"richcode.cc/dex/market/internal/server"
 	"richcode.cc/dex/market/internal/svc"
-	"richcode.cc/dex/market/internal/ticker"
 	"richcode.cc/dex/market/market"
 	rds "richcode.cc/dex/market/pkg/redis"
 
@@ -56,10 +55,10 @@ func main() {
 	defer serviceGroup.Stop()
 
 	// 添加定时任务 PumpTicker 到服务组
-	{
-		pumpTicker := ticker.NewPumpTicker(svcCtx)
-		serviceGroup.Add(pumpTicker)
-	}
+	// {
+	// 	pumpTicker := ticker.NewPumpTicker(svcCtx)
+	// 	serviceGroup.Add(pumpTicker)
+	// }
 
 	// 启动服务组
 	go func() {

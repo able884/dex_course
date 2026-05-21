@@ -2,8 +2,10 @@ package solmodel
 
 import (
 	"context"
+	"time"
 
 	. "github.com/klen-ygs/gorm-zero/gormc/sql"
+	"github.com/zeromicro/go-zero/core/logc"
 	"gorm.io/gorm"
 	"richcode.cc/dex/pkg/xcode"
 )
@@ -132,14 +134,27 @@ func (m customPairModel) FindLatestPumpLimit(ctx context.Context, pumpType strin
 	query, offset := m.buildPumpQuery(ctx, pageNum, pageSize)
 
 	resp := make([]Pair, 0, pageSize)
-	err := query.
+	dbCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 10*time.Second)
+	defer cancel()
+	err := query.WithContext(dbCtx).
 		Where("name = ?", pumpType).
 		Order("block_num DESC").
 		Offset(offset).
 		Limit(int(pageSize)).
 		Find(&resp).Error
-
-	return resp, err
+	if err != nil {
+		// 错误场景：单独打印错误信息，带上关键参数
+		logc.Error(ctx, "查询最新创建的 Pump 代币失败, pumpType: %s, pageNum: %d, pageSize: %d, err: %v",
+			pumpType, pageNum, pageSize, err)
+		return resp, err
+	}
+	// 关键修复：判断长度，再访问索引
+	if len(resp) > 0 {
+		logc.Info(ctx, "查询最新创建的 Pump 代币成功, count: %d, first_item: %+v", len(resp), resp[0])
+	} else {
+		logc.Info(ctx, "查询最新创建的 Pump 代币成功, count: 0 (无数据)")
+	}
+	return resp, nil
 }
 
 // FindLatestCompletingPumpLimit 查询正在完成中的 Pump 代币
@@ -147,14 +162,29 @@ func (m customPairModel) FindLatestCompletingPumpLimit(ctx context.Context, pump
 	query, offset := m.buildPumpQuery(ctx, pageNum, pageSize)
 
 	resp := make([]Pair, 0, pageSize)
-	err := query.
+	dbCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 10*time.Second)
+	defer cancel()
+	err := query.WithContext(dbCtx).
 		Where("name = ? AND pump_status = ?", pumpType, 1).
 		Order("pump_point DESC").
 		Offset(offset).
 		Limit(int(pageSize)).
 		Find(&resp).Error
 
-	return resp, err
+	if err != nil {
+		// 错误场景：单独打印错误信息，带上关键参数
+		logc.Error(ctx, "查询正在完成中的 Pump 代币失败, pumpType: %s, pageNum: %d, pageSize: %d, err: %v",
+			pumpType, pageNum, pageSize, err)
+		return resp, err
+	}
+	// 关键修复：判断长度，再访问索引
+	if len(resp) > 0 {
+		logc.Info(ctx, "查询正在完成中的 Pump 代币成功, count: %d, first_item: %+v", len(resp), resp[0])
+	} else {
+		logc.Info(ctx, "查询正在完成中的 Pump 代币成功, count: 0 (无数据)")
+	}
+
+	return resp, nil
 }
 
 // FindLatestCompletePumpLimit 查询已完成的 Pump 代币
@@ -162,12 +192,26 @@ func (m customPairModel) FindLatestCompletePumpLimit(ctx context.Context, pumpTy
 	query, offset := m.buildPumpQuery(ctx, pageNum, pageSize)
 
 	resp := make([]Pair, 0, pageSize)
-	err := query.
+	dbCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 10*time.Second)
+	defer cancel()
+	err := query.WithContext(dbCtx).
 		Where("name = ? AND pump_status = ?", pumpType, 2).
 		Order("block_num DESC").
 		Offset(offset).
 		Limit(int(pageSize)).
 		Find(&resp).Error
 
-	return resp, err
+	if err != nil {
+		// 错误场景：单独打印错误信息，带上关键参数
+		logc.Error(ctx, "查询已完成的 Pump 代币失败, pumpType: %s, pageNum: %d, pageSize: %d, err: %v",
+			pumpType, pageNum, pageSize, err)
+		return resp, err
+	}
+	// 关键修复：判断长度，再访问索引
+	if len(resp) > 0 {
+		logc.Info(ctx, "查询已完成的 Pump 代币成功, count: %d, first_item: %+v", len(resp), resp[0])
+	} else {
+		logc.Info(ctx, "查询已完成的 Pump 代币成功, count: 0 (无数据)")
+	}
+	return resp, nil
 }

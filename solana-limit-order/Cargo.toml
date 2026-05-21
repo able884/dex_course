@@ -1,0 +1,17 @@
+[workspace]
+members = [
+    "programs/limit_order",
+]
+resolver = "2"
+
+[workspace.package]
+edition = "2021"
+
+[profile.release]
+overflow-checks = true
+
+[workspace.dependencies]
+anchor-lang = { version = "0.31.0", features = ["init-if-needed"] }
+anchor-spl = "0.31.0"
+bytemuck = { version = "1.14", features = ["derive"] }
+pyth-solana-receiver-sdk = "0.2.0"

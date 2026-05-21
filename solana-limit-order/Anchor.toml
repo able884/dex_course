@@ -1,0 +1,21 @@
+[toolchain]
+
+[features]
+resolution = true
+skip-lint = false
+
+[programs.devnet]
+limit_order = "C4Xn6ACR3XmTwpWm2fN82QSAx23TQkwVW8wro9Hdpqef"
+
+[registry]
+url = "https://anchor.projectserum.com"
+
+[provider]
+cluster = "devnet"
+wallet = "~/.config/solana/id.json"
+
+[workspace]
+members = ["programs/limit_order"]
+
+[scripts]
+test = "anchor test"

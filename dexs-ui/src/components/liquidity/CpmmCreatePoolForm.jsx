@@ -252,7 +252,25 @@ const TokenInputRow = ({
   t,
 }) => {
   const symbol = token?.symbol || t('liquidityPage.form.selectToken');
-  const badgeText = symbol?.slice(0, 1)?.toUpperCase() || '?';
+  const renderIcon = () => {
+    const src = token?.logo || token?.icon || token?.tokenIcon;
+    if (src) {
+      return (
+        <img
+          src={src}
+          alt={symbol}
+          className="w-10 h-10 rounded-full border border-border object-cover"
+          onError={(e) => (e.currentTarget.style.display = 'none')}
+        />
+      );
+    }
+    return (
+      <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center text-base font-semibold text-foreground">
+        {symbol?.slice(0, 2)?.toUpperCase() || '?'}
+      </div>
+    );
+  };
+
   return (
     <div className="space-y-2">
       <label className="text-sm font-medium text-muted-foreground">{label}</label>
@@ -262,9 +280,7 @@ const TokenInputRow = ({
           onClick={onSelect}
           className="flex items-center gap-3 border rounded-2xl px-4 h-14 min-w-[220px] bg-background hover:bg-muted/50 transition-colors text-left"
         >
-          <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center text-base font-semibold text-foreground">
-            {badgeText}
-          </div>
+          {renderIcon()}
           <span className="text-lg font-semibold">{symbol}</span>
           <ChevronDown className="w-4 h-4 text-muted-foreground ml-auto" />
         </button>
@@ -302,10 +318,11 @@ const CpmmCreatePoolForm = () => {
     feeError: feeTierError,
     refreshFees,
   } = useCpmmConfig({
-    tokensEndpoint: `${CPMM_TOKENS_ENDPOINT}?chain_id=${CHAIN_ID}`,
-    feeEndpoint: `${CPMM_FEE_TIER_ENDPOINT}?chain_id=${CHAIN_ID}&poolType=cpmm`,
+    tokensEndpoint: `${CPMM_TOKENS_ENDPOINT}?chain_id=${CHAIN_ID}&pool_type=CPMM`,
+    feeEndpoint: `${CPMM_FEE_TIER_ENDPOINT}?chain_id=${CHAIN_ID}&pool_type=CPMM`,
     fallbackTokens: [],
     fallbackFees: [],
+    poolType: 'CPMM',
   });
   const [txSignature, setTxSignature] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -314,6 +331,10 @@ const CpmmCreatePoolForm = () => {
   const [tokenModalOpen, setTokenModalOpen] = useState(false);
   const [tokenModalType, setTokenModalType] = useState('base');
   const [priceView, setPriceView] = useState('quotePerBase');
+  const handleRefreshAll = useCallback(() => {
+    refreshTokens();
+    refreshFees();
+  }, [refreshTokens, refreshFees]);
 
   const tokenList = useMemo(
     () =>
@@ -331,11 +352,23 @@ const CpmmCreatePoolForm = () => {
     }
     return remoteFeeTiers
       .map((tier) => {
-        const configIndex = tier?.config_index ?? tier?.configIndex ?? 0;
-        const numeric = Number(configIndex);
+        if (tier?.value && tier?.label) {
+          return tier;
+        }
+        const raw =
+          tier?.value ??
+          tier?.valueBps ??
+          tier?.value_bps ??
+          tier?.value_bp ??
+          tier?.bps ??
+          tier?.fee_bps;
+        if (raw === undefined || raw === null) {
+          return null;
+        }
+        const numeric = Number(raw);
         const label = tier?.label || `${(numeric / 100).toFixed(2)}%`;
         return {
-          value: String(configIndex),
+          value: String(raw),
           label,
           description: tier?.description || '',
           tickSpacing: tier?.tickSpacing ?? tier?.tick_spacing,
@@ -447,7 +480,7 @@ const CpmmCreatePoolForm = () => {
         base_amount: baseAmount,
         quote_amount: quoteAmount,
         initial_price: priceValue.toString(),
-        config_index: Number(selectedFeeTier),
+        fee_tier_bps: Number(selectedFeeTier),
         start_time: startTimestamp,
         user_wallet_address: publicKey.toString(),
       };
@@ -627,6 +660,17 @@ const CpmmCreatePoolForm = () => {
         <div className="lg:col-span-2">
           <Card className="border border-border/60 shadow-sm">
             <CardContent className="p-6 space-y-6">
+              <div className="flex justify-end">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex items-center gap-2"
+                  onClick={handleRefreshAll}
+                >
+                  <RefreshCw className={cn('w-4 h-4', (tokenLoading || feeTierLoading) && 'animate-spin')} />
+                  {t('tokenList.buttons.refresh')}
+                </Button>
+              </div>
               {tokenError && (
                 <div className="flex items-center justify-between border border-amber-200 bg-amber-50 text-amber-700 px-4 py-2 rounded-lg text-sm">
                   <div className="flex items-center gap-2">
@@ -1060,10 +1104,24 @@ const TokenSelectorModal = ({
                         active && 'border-primary bg-primary/10'
                       )}
                     >
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="font-semibold">{token.symbol}</p>
-                          <p className="text-xs text-muted-foreground">{token.name}</p>
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-3">
+                          {token.logo ? (
+                            <img
+                              src={token.logo}
+                              alt={token.symbol}
+                              className="w-10 h-10 rounded-full border border-border object-cover"
+                              onError={(e) => (e.currentTarget.style.display = 'none')}
+                            />
+                          ) : (
+                            <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center text-base font-semibold">
+                              {token.symbol?.slice(0, 2)?.toUpperCase() || '?'}
+                            </div>
+                          )}
+                          <div className="flex flex-col">
+                            <p className="font-semibold">{token.symbol}</p>
+                            <p className="text-xs text-muted-foreground">{token.name}</p>
+                          </div>
                         </div>
                         <Badge variant="outline">{shortenAddress(token.mint)}</Badge>
                       </div>

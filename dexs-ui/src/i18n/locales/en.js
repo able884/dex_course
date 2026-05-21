@@ -378,6 +378,57 @@ export const en = {
     }
   },
 
+  // CLMM creation wizard
+  clmmCreation: {
+    title: 'Create CLMM Pool',
+    subtitle: 'Three-step guided flow to set tokens, price, and liquidity',
+    back: 'Back',
+    stepsTitle: 'Steps',
+    stepsDesc: 'Follow the steps to finish pool setup',
+    step1Title: 'Select tokens & fee tier',
+    step1Desc: 'Choose base/quote tokens and fee tier',
+    step2Title: 'Set initial price & range',
+    step2Desc: 'Configure price and liquidity range',
+    step3Title: 'Confirm deposit',
+    step3Desc: 'Provide token amounts and create',
+    tipsTitle: 'Tips',
+    tipTokens: 'Base token is token0, quote token is token1.',
+    tipPrice: 'Initial price sets the starting tick, please double-check.',
+    tipRange: 'Custom ranges concentrate liquidity and earn more fees.',
+    summaryTitle: 'Current selection',
+    baseToken: 'Base token',
+    quoteToken: 'Quote token',
+    feeTier: 'Fee tier',
+    priceSummary: 'Initial price',
+    tokens: 'Tokens',
+    selectBase: 'Select base token',
+    selectQuote: 'Select quote token',
+    feePlaceholder: 'Select fee tier',
+    continue: 'Continue',
+    searchToken: 'Search token',
+    noToken: 'No token found',
+    connectWallet: 'Please connect wallet to create pool',
+    per: 'per',
+    currentPrice: 'Current price',
+    priceSetting: 'Price setting',
+    initialPrice: 'Initial price',
+    priceRange: 'Price range',
+    fullRange: 'Full Range',
+    customRange: 'Custom',
+    minPrice: 'Min price',
+    maxPrice: 'Max price',
+    edit: 'Edit',
+    rangeLabel: 'Range',
+    balance: 'Balance',
+    totalDeposit: 'Total deposit',
+    depositRatio: 'Deposit ratio',
+    create: 'Create pool',
+    submit: 'Submitting',
+    submitDesc: 'Building transaction, please confirm in wallet',
+    fillAll: 'Please finish all required fields',
+    selectTokenTitle: 'Select token'
+  },
+
   // Token security
   tokenSecurity: {
     title: 'Token Security',
@@ -580,6 +631,18 @@ export const en = {
       successDesc: 'Unsigned transaction signed and submitted successfully.',
       viewOnExplorer: 'View on Solscan'
     },
+    toast: {
+      connectWalletTitle: 'Connect wallet',
+      connectWalletDesc: 'Please connect a wallet before creating a pool.',
+      incompleteTitle: 'Missing pool details',
+      incompleteDesc: 'Select tokens, enter amounts, and choose a fee tier to continue.',
+      transactionSent: 'Transaction sent',
+      waitingConfirmation: 'Waiting for confirmation...',
+      poolCreated: 'Liquidity pool initialized',
+      transactionConfirmed: 'Confirmed on-chain ({{signature}})',
+      createFailed: 'Failed to initialize pool',
+      submitted: 'Submitted, waiting for confirmation...'
+    },
     tokenModal: {
       selectBase: 'Select Base Token',
       selectQuote: 'Select Quote Token',
@@ -608,6 +671,85 @@ export const en = {
     }
   },
 
+  // Deposit / Withdraw liquidity page
+  depositPage: {
+    title: 'Add Liquidity',
+    back: 'Back',
+    missingPool: 'Pool data is missing.',
+    poolAddress: 'Pool',
+    tokenAddress: '{{symbol}} Address',
+    tokenPlaceholder: 'TOKEN',
+    tokenLabel: 'Token',
+    balance: 'Balance',
+    half: '50%',
+    max: 'Max',
+    tabs: {
+      deposit: 'Add Liquidity',
+      withdraw: 'Remove Liquidity'
+    },
+    connected: 'Connected',
+    notConnected: 'Wallet not connected',
+    totalDeposit: 'Total Deposit',
+    totalWithdraw: 'Total Withdraw',
+    slippage: 'Slippage',
+    connectWallet: 'Connect Wallet',
+    actions: {
+      submit: 'Add Liquidity',
+      withdraw: 'Withdraw Liquidity'
+    },
+    errors: {
+      exceedWithdraw: 'Exceeds maximum withdrawable amount'
+    },
+    myPosition: 'My Position',
+    lpBalances: 'LP Token Balances',
+    staked: 'Staked',
+    unstaked: 'Unstaked',
+    lpTokens: 'LP Tokens',
+    pooledToken: 'Pooled {{symbol}}',
+    totalApr: 'Total APR 7D',
+    fees: 'Fees',
+    feesDesc: 'Fees earned',
+    poolLiquidity: 'Pool Liquidity',
+    permanentLock: 'Permanent Lock',
+    permanentLockValue: '{{percent}}% permanently locked',
+    permanentLockHint: 'Protocol locked liquidity',
+    poolDetails: 'Pool Details',
+    poolVersion: 'Version',
+    poolState: 'Pool State',
+    volume24h: '24h Volume',
+    fees24h: 'Fees 24h',
+    priceHint: '1 {{base}} ≈ {{price}} {{quote}}',
+    syncing: 'Syncing latest pool data...',
+    tooltip: {
+      poolLabel: 'Pool Address',
+      tokenA: '{{symbol}} Mint',
+      tokenB: '{{symbol}} Mint'
+    },
+    errors: {
+      loadFailed: 'Failed to load pool details:',
+      unknown: 'Unknown error'
+    },
+    submitting: 'Submitting...',
+    toast: {
+      depositQueued: 'Deposit request queued',
+      withdrawQueued: 'Withdraw request queued',
+      preview: 'This is a preview flow. Please integrate on-chain calls to complete the action.'
+    }
+  },
+
+  // CLMM Deposit page specific translations
+  clmmDeposit: {
+    setPriceRange: 'Set Price Range',
+    minPrice: 'Min Price',
+    maxPrice: 'Max Price',
+    reset: 'Reset',
+    estimatedApr: 'Estimated APR',
+    setSlippageTolerance: 'Set Slippage Tolerance',
+    depositRatio: 'Deposit Ratio',
+    priceInfo: 'Price Information',
+    currentPrice: 'Current Price'
+  },
+
   // Footer
   footer: {
     pumpTokens: 'RichCode DEX',
@@ -630,6 +772,48 @@ export const en = {
     termsOfService: 'Terms of Service',
     disclaimer: 'Disclaimer',
     emailContact: 'Email Contact'
+  },
+
+  // Swap page
+  swapPage: {
+    title: 'Swap',
+    subtitle: 'Instant token swaps with deep liquidity and smart routing',
+    modeFixed: 'Single Pool',
+    modeRoute: 'Routing',
+    fixedDesc: 'Swap directly against this pool; tokens are locked to the pair.',
+    fromLabel: 'From',
+    toLabel: 'To',
+    back: 'Back',
+    balance: 'Balance',
+    slippage: 'Slippage',
+    autoSlippageHint: 'Auto-protect min received',
+    rateLabel: 'Rate',
+    rateUnavailable: 'No route price',
+    placeholder: 'Enter amount',
+    selectToken: 'Select token',
+    searchToken: 'Search token',
+    tokensEmpty: 'No tokens found',
+    swapAction: 'Swap now',
+    connectHint: 'Connect wallet to start swapping',
+    fillAmount: 'Please enter swap amount',
+    mockTitle: 'Swap initialized',
+    mockDesc: 'Layout is ready. Please wire backend quote/swap API to enable trading.',
+    routeHint: 'Route',
+    swapOverview: 'Swap overview',
+    minimumReceived: 'Minimum received',
+    priceImpact: 'Price impact',
+    priceImpactPending: '--',
+    feeLabel: 'Fee',
+    statsLiquidity: 'Total liquidity',
+    statsVolume: '24h volume',
+    statsFee: 'Fee rate',
+    statsApr: 'APR',
+    routeDesc: 'Best price quoted from current pool pair.',
+    ratioHint: 'Price derived from pool ratio',
+    submitting: 'Submitting...',
+    swapSubmitted: 'Swap submitted',
+    swapFailed: 'Swap failed',
+    walletRejected: 'You cancelled the transaction.'
   },
 
   // Wallet debugger

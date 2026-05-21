@@ -85,6 +85,52 @@ message PushTokenInfoRequest {
   int32 pump_status = 13;
 }
 
+message GetPoolDetailRequest {
+  int64 chain_id = 1;
+  string pool_state = 2;
+  int32 pool_version = 3; // 1: v1 clmm, 2: v2 clmm, 3: cpmm (default 3)
+  string user_wallet_address = 4; // optional: user wallet for position lookup
+}
+
+message GetPoolDetailResponse {
+  int64 chain_id = 1;
+  string pool_state = 2;
+  string input_vault_mint = 3;
+  string output_vault_mint = 4;
+  string input_token_symbol = 5;
+  string output_token_symbol = 6;
+  string input_token_icon = 7;
+  string output_token_icon = 8;
+  int64 trade_fee_rate = 9;
+  int64 launch_time = 10;
+  double liquidity_usd = 11;
+  uint32 txs_24h = 12;
+  double vol_24h = 13;
+  double apr = 14;
+  int32 pool_version = 15;
+  double locked_percent = 16;
+  double input_amount = 17;
+  double output_amount = 18;
+  double base_reserve = 19;
+  double quote_reserve = 20;
+  double input_reserve = 21;
+  double output_reserve = 22;
+  double price = 23;
+  double quote_per_base = 24;
+  double market_price = 25;
+  double user_pooled_input = 26;   // user's share of input token in pool
+  double user_pooled_output = 27;  // user's share of output token in pool
+  double user_staked_lp = 28;      // user's staked LP amount
+  double user_unstaked_lp = 29;    // user's unstaked LP amount
+  // Historical price ranges for different time periods
+  double price_range_24h_min = 30; // 24H min price
+  double price_range_24h_max = 31; // 24H max price
+  double price_range_7d_min = 32;  // 7D min price
+  double price_range_7d_max = 33;  // 7D max price
+  double price_range_30d_min = 34; // 30D min price
+  double price_range_30d_max = 35; // 30D max price
+}
+
 message PushTokenInfoResponse{
   int64 chain_id = 1;
   string token_address = 2;
@@ -172,11 +218,154 @@ message GetTokenInfoResponse {
   string program = 28;                 // token owner program
 }
 
+// Quote CPMM swap for Raydium-style constant product pools
+message QuoteCpmmRequest {
+  int64 chain_id = 1;
+  string pool_state = 2;
+  string input_mint = 3;
+  string output_mint = 4;
+  string amount_in = 5;   // optional: exact-in amount
+  string amount_out = 6;  // optional: exact-out desired amount
+  int64 slippage_bps = 7; // e.g. 100 = 1%
+}
+
+message QuoteCpmmResponse {
+  string pay_mint = 1;
+  string receive_mint = 2;
+  string pay_amount = 3;
+  string receive_amount = 4;
+  string min_receive_amount = 5;
+  string price_impact_pct = 6;
+  string fee_rate_pct = 7;
+  double price = 8;
+}
+
+// Quote CLMM swap for Raydium-style concentrated liquidity pools
+message QuoteClmmRequest {
+  int64 chain_id = 1;
+  string pool_state = 2;
+  string input_mint = 3;
+  string output_mint = 4;
+  string amount_in = 5;   // optional: exact-in amount
+  string amount_out = 6;  // optional: exact-out desired amount
+  int64 slippage_bps = 7; // e.g. 100 = 1%
+}
+
+message QuoteClmmResponse {
+  string pay_mint = 1;
+  string receive_mint = 2;
+  string pay_amount = 3;
+  string receive_amount = 4;
+  string min_receive_amount = 5;
+  string price_impact_pct = 6;
+  string fee_rate_pct = 7;
+  double price = 8;
+}
+
+// GetClmmPoolDepthData - Get CLMM pool depth data
+message GetClmmPoolDepthDataRequest {
+  int64 chain_id = 1;
+  string pool_state = 2; // Pool state address (required)
+}
+
+message GetClmmPoolDepthDataResponse {
+  int64 count = 1;              // Total count of liquidity data points
+  repeated DepthDataPoint line = 2; // Array of liquidity data points
+  double time_range_min = 3;    // Minimum price in time range (from trade history)
+  double time_range_max = 4;    // Maximum price in time range (from trade history)
+}
+
+message DepthDataPoint {
+  double price = 1;      // Price at this tick
+  string liquidity = 2;  // Liquidity at this tick (as string to preserve precision)
+  int32 tick = 3;        // Tick index
+}
+
+
+// GetUserPositions - Get user's liquidity positions
+message GetUserPositionsRequest {
+  int64 chain_id = 1;                    // Chain ID, default 100000 (Solana)
+  string user_wallet_address = 2;         // User wallet address (required)
+  string pool_type = 3;                  // Pool type: "all" | "cpmm" | "clmm" (optional, default "all")
+  int32 page_no = 4;                     // Page number (optional, default 1)
+  int32 page_size = 5;                   // Page size (optional, default 100)
+}
+
+message GetUserPositionsResponse {
+  repeated PositionItem items = 1;        // Position list
+  int32 total = 2;                       // Total count
+  int32 page_no = 3;                     // Current page number
+  int32 page_size = 4;                   // Page size
+}
+
+message PositionItem {
+  // Basic info
+  int64 chain_id = 1;
+  string user_wallet_address = 2;
+  string pool_state = 3;                 // Pool state address
+  int32 pool_version = 4;                // Pool version: 1=v1 CLMM, 2=v2 CLMM, 3=CPMM
+  
+  // CLMM position info
+  string position_nft_mint = 5;          // Position NFT Mint address (CLMM only)
+  string position_nft_account = 6;       // Position NFT account address (CLMM only)
+  string personal_position = 7;          // Personal position state account (CLMM only)
+  int32 tick_lower_index = 8;            // Lower tick index (CLMM only)
+  int32 tick_upper_index = 9;            // Upper tick index (CLMM only)
+  string liquidity = 10;                 // Liquidity amount (CLMM only, Uint128 string)
+  
+  // Token info
+  string token0_mint = 11;               // Token0 Mint address
+  string token1_mint = 12;               // Token1 Mint address
+  string token0_symbol = 13;            // Token0 symbol
+  string token1_symbol = 14;            // Token1 symbol
+  string token0_name = 15;              // Token0 name
+  string token1_name = 16;              // Token1 name
+  int32 token0_decimals = 17;           // Token0 decimals
+  int32 token1_decimals = 18;           // Token1 decimals
+  string token0_icon = 19;              // Token0 icon
+  string token1_icon = 20;              // Token1 icon
+  
+  // Position value info
+  double position_value = 21;           // Total position value (USD)
+  double token0_amount = 22;            // Token0 amount
+  double token1_amount = 23;            // Token1 amount
+  double unclaimed_fees = 24;           // Unclaimed fees (USD)
+  
+  // CLMM price range info
+  double price_min = 25;                // Min price (CLMM only)
+  double price_max = 26;                // Max price (CLMM only)
+  double current_price = 27;            // Current price (CLMM only)
+  bool is_in_range = 28;                // Is in price range (CLMM only)
+  
+  // CPMM position info
+  double lp_balance = 29;               // LP Token balance (CPMM only)
+  double lp_value = 30;                 // LP Token value (USD, CPMM only)
+  
+  // Pool info
+  double pool_liquidity_usd = 31;       // Pool total liquidity (USD)
+  double pool_volume_24h = 32;          // Pool 24h volume (USD)
+  double pool_apr = 33;                 // Pool APR
+  int64 fee_tier = 34;                 // Fee tier (basis points)
+  
+  // Metadata
+  string tx_hash = 35;                  // Transaction hash that created the position
+  int64 block_time = 36;                // Creation timestamp
+  int64 created_at = 37;                // Database creation time
+  int64 updated_at = 38;                // Database update time
+}
+
+
 service Market {
   rpc GetPumpTokenList(GetPumpTokenListRequest) returns (GetPumpTokenListResponse);
   rpc GetClmmPoolList(GetClmmPoolListRequest) returns (GetClmmPoolListResponse);
+  rpc GetPoolDetail(GetPoolDetailRequest) returns (GetPoolDetailResponse);
   rpc PushTokenInfo(PushTokenInfoRequest) returns (PushTokenInfoResponse);
   rpc GetPairInfoByToken(GetPairInfoByTokenRequest) returns (GetPairInfoByTokenResponse);
   rpc GetNativeTokenPrice(GetNativeTokenPriceRequest) returns (GetNativeTokenPriceResponse);
   rpc GetTokenInfo(GetTokenInfoRequest) returns (GetTokenInfoResponse);
+  rpc QuoteCpmm(QuoteCpmmRequest) returns (QuoteCpmmResponse);
+  rpc QuoteClmm(QuoteClmmRequest) returns (QuoteClmmResponse);
+  rpc GetClmmPoolDepthData(GetClmmPoolDepthDataRequest) returns (GetClmmPoolDepthDataResponse);
+  // Get user's liquidity positions
+  rpc GetUserPositions(GetUserPositionsRequest) returns (GetUserPositionsResponse);
 }

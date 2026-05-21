@@ -82,6 +82,9 @@ const BuyModal = ({ isOpen, onClose, token }) => {
       'PriceImpactTooHigh',
       '0x1771', // Slippage tolerance exceeded error code
       '0x1772', // Price impact too high
+      'too little sol received',
+      'tooLittleSolReceived',
+      '0x1773', // TooLittleSolReceived
     ];
     
     // 余额不足
@@ -132,6 +135,13 @@ const BuyModal = ({ isOpen, onClose, token }) => {
     if (allText.includes('computational budget exceeded')) {
       return '交易耗尽计算预算，请降低交易复杂度或稍后重试。';
     }
+    if (
+      allText.includes('too little sol received') ||
+      allText.includes('0x1773') ||
+      allText.includes('tooLittleSolReceived'.toLowerCase())
+    ) {
+      return '滑点保护触发：卖出收到的 SOL 过少。请减少卖出数量、提高滑点或分批卖出。';
+    }
     return '';
   };
 
@@ -152,12 +162,12 @@ const BuyModal = ({ isOpen, onClose, token }) => {
     const formattedMessage = formatErrorMessage(message);
     const errorType = detectErrorType(formattedMessage);
     const fallbackMessages = {
-      slippage: t('buyModal.slippageErrorDetail'),
+      slippage: t('buyModal.slippageErrorDetail') || '滑点保护触发，请调整滑点或修改数量',
       insufficient: t('buyModal.insufficientErrorDetail'),
       account: t('buyModal.accountErrorDetail'),
     };
     const fallback = fallbackMessages[errorType];
-    const description = fallback ? `${fallback}\n\n${formattedMessage}` : formattedMessage;
+    const description = fallback ? `${fallback}` : formattedMessage;
 
     toast({
       title: t('common.error'),
@@ -178,12 +188,24 @@ const BuyModal = ({ isOpen, onClose, token }) => {
     return false;
   };
 
-  const tokenDecimals =
-    typeof token?.decimals === 'number'
-      ? token.decimals
-      : typeof token?.tokenDecimals === 'number'
-      ? token.tokenDecimals
-      : 6;
+  // Resolve token decimals as best-effort to avoid mis-scaling quotes (especially on sells).
+  const resolveTokenDecimals = () => {
+    const candidates = [
+      token?.decimals,
+      token?.tokenDecimals,
+      token?.tokenDecimal,
+      token?.token_decimal,
+      token?.token_decimals,
+    ];
+    for (const val of candidates) {
+      if (typeof val === 'number' && !Number.isNaN(val)) return val;
+      if (typeof val === 'string' && val.trim() !== '' && !Number.isNaN(Number(val))) {
+        return Number(val);
+      }
+    }
+    return 9; // most Solana tokens (including pump) use 9; safer than under-scaling with 6
+  };
+  const tokenDecimals = resolveTokenDecimals();
 
   const parsedSlippage = (() => {
     if (slippageChoice === 'custom') {
@@ -198,9 +220,10 @@ const BuyModal = ({ isOpen, onClose, token }) => {
   })();
 
   const slippageBps = Math.round(parsedSlippage * 100);
+  // 报价阶段按当前输入字段；下单阶段卖出时始终传 token 数量
   const manualValue = (lastInputField === 'sol' ? amountIn : tokenInput).trim();
   const manualValueKey = `${lastInputField}:${manualValue}`;
-  const tradeAmount = tradeMode === 'buy' ? amountIn : tokenInput;
+  const tradeAmount = lastInputField === 'sol' ? amountIn : tokenInput;
 
   const clearTradeResultState = () => {
     if (!txSignature) return;
@@ -301,8 +324,9 @@ const BuyModal = ({ isOpen, onClose, token }) => {
           token_mint: mint,
           swap_type: tradeMode === 'buy' ? 1 : 2,
           input_asset: lastInputField === 'sol' ? 1 : 2,
-          amount: manualValue,
+          amount: manualValue, // sol 输入传 sol，token 输入传 token
           slippage_bps: slippageBps,
+          // 始终传递 token 的实际精度，后端按 input_asset 决定使用 sol 或 token 精度
           token_decimal: tokenDecimals,
         };
         const resp = await fetch(`${API_URL}/v1/pump/quote`, {
@@ -489,7 +513,8 @@ const BuyModal = ({ isOpen, onClose, token }) => {
         chain_id: 100000, // Solana
         token_ca: token.tokenAddress,
         swap_type: tradeMode === 'buy' ? 1 : 2,
-        amount_in: tradeAmount,
+        // 卖出场景：始终传递 token 数量；买入沿用输入的 sol 数量
+        amount_in: tradeMode === 'sell' ? tokenInput : amountIn,
         user_wallet_address: publicKey.toString(),
         slippage_bps: slippageBps,
       };

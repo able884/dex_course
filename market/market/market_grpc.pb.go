@@ -19,12 +19,17 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	Market_GetPumpTokenList_FullMethodName    = "/market.Market/GetPumpTokenList"
-	Market_GetClmmPoolList_FullMethodName     = "/market.Market/GetClmmPoolList"
-	Market_PushTokenInfo_FullMethodName       = "/market.Market/PushTokenInfo"
-	Market_GetPairInfoByToken_FullMethodName  = "/market.Market/GetPairInfoByToken"
-	Market_GetNativeTokenPrice_FullMethodName = "/market.Market/GetNativeTokenPrice"
-	Market_GetTokenInfo_FullMethodName        = "/market.Market/GetTokenInfo"
+	Market_GetPumpTokenList_FullMethodName     = "/market.Market/GetPumpTokenList"
+	Market_GetClmmPoolList_FullMethodName      = "/market.Market/GetClmmPoolList"
+	Market_GetPoolDetail_FullMethodName        = "/market.Market/GetPoolDetail"
+	Market_PushTokenInfo_FullMethodName        = "/market.Market/PushTokenInfo"
+	Market_GetPairInfoByToken_FullMethodName   = "/market.Market/GetPairInfoByToken"
+	Market_GetNativeTokenPrice_FullMethodName  = "/market.Market/GetNativeTokenPrice"
+	Market_GetTokenInfo_FullMethodName         = "/market.Market/GetTokenInfo"
+	Market_QuoteCpmm_FullMethodName            = "/market.Market/QuoteCpmm"
+	Market_QuoteClmm_FullMethodName            = "/market.Market/QuoteClmm"
+	Market_GetClmmPoolDepthData_FullMethodName = "/market.Market/GetClmmPoolDepthData"
+	Market_GetUserPositions_FullMethodName     = "/market.Market/GetUserPositions"
 )
 
 // MarketClient is the client API for Market service.
@@ -33,10 +38,16 @@ const (
 type MarketClient interface {
 	GetPumpTokenList(ctx context.Context, in *GetPumpTokenListRequest, opts ...grpc.CallOption) (*GetPumpTokenListResponse, error)
 	GetClmmPoolList(ctx context.Context, in *GetClmmPoolListRequest, opts ...grpc.CallOption) (*GetClmmPoolListResponse, error)
+	GetPoolDetail(ctx context.Context, in *GetPoolDetailRequest, opts ...grpc.CallOption) (*GetPoolDetailResponse, error)
 	PushTokenInfo(ctx context.Context, in *PushTokenInfoRequest, opts ...grpc.CallOption) (*PushTokenInfoResponse, error)
 	GetPairInfoByToken(ctx context.Context, in *GetPairInfoByTokenRequest, opts ...grpc.CallOption) (*GetPairInfoByTokenResponse, error)
 	GetNativeTokenPrice(ctx context.Context, in *GetNativeTokenPriceRequest, opts ...grpc.CallOption) (*GetNativeTokenPriceResponse, error)
 	GetTokenInfo(ctx context.Context, in *GetTokenInfoRequest, opts ...grpc.CallOption) (*GetTokenInfoResponse, error)
+	QuoteCpmm(ctx context.Context, in *QuoteCpmmRequest, opts ...grpc.CallOption) (*QuoteCpmmResponse, error)
+	QuoteClmm(ctx context.Context, in *QuoteClmmRequest, opts ...grpc.CallOption) (*QuoteClmmResponse, error)
+	GetClmmPoolDepthData(ctx context.Context, in *GetClmmPoolDepthDataRequest, opts ...grpc.CallOption) (*GetClmmPoolDepthDataResponse, error)
+	// Get user's liquidity positions
+	GetUserPositions(ctx context.Context, in *GetUserPositionsRequest, opts ...grpc.CallOption) (*GetUserPositionsResponse, error)
 }
 
 type marketClient struct {
@@ -61,6 +72,16 @@ func (c *marketClient) GetClmmPoolList(ctx context.Context, in *GetClmmPoolListR
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GetClmmPoolListResponse)
 	err := c.cc.Invoke(ctx, Market_GetClmmPoolList_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *marketClient) GetPoolDetail(ctx context.Context, in *GetPoolDetailRequest, opts ...grpc.CallOption) (*GetPoolDetailResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetPoolDetailResponse)
+	err := c.cc.Invoke(ctx, Market_GetPoolDetail_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -107,16 +128,62 @@ func (c *marketClient) GetTokenInfo(ctx context.Context, in *GetTokenInfoRequest
 	return out, nil
 }
 
+func (c *marketClient) QuoteCpmm(ctx context.Context, in *QuoteCpmmRequest, opts ...grpc.CallOption) (*QuoteCpmmResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(QuoteCpmmResponse)
+	err := c.cc.Invoke(ctx, Market_QuoteCpmm_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *marketClient) QuoteClmm(ctx context.Context, in *QuoteClmmRequest, opts ...grpc.CallOption) (*QuoteClmmResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(QuoteClmmResponse)
+	err := c.cc.Invoke(ctx, Market_QuoteClmm_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *marketClient) GetClmmPoolDepthData(ctx context.Context, in *GetClmmPoolDepthDataRequest, opts ...grpc.CallOption) (*GetClmmPoolDepthDataResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetClmmPoolDepthDataResponse)
+	err := c.cc.Invoke(ctx, Market_GetClmmPoolDepthData_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *marketClient) GetUserPositions(ctx context.Context, in *GetUserPositionsRequest, opts ...grpc.CallOption) (*GetUserPositionsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetUserPositionsResponse)
+	err := c.cc.Invoke(ctx, Market_GetUserPositions_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // MarketServer is the server API for Market service.
 // All implementations must embed UnimplementedMarketServer
 // for forward compatibility.
 type MarketServer interface {
 	GetPumpTokenList(context.Context, *GetPumpTokenListRequest) (*GetPumpTokenListResponse, error)
 	GetClmmPoolList(context.Context, *GetClmmPoolListRequest) (*GetClmmPoolListResponse, error)
+	GetPoolDetail(context.Context, *GetPoolDetailRequest) (*GetPoolDetailResponse, error)
 	PushTokenInfo(context.Context, *PushTokenInfoRequest) (*PushTokenInfoResponse, error)
 	GetPairInfoByToken(context.Context, *GetPairInfoByTokenRequest) (*GetPairInfoByTokenResponse, error)
 	GetNativeTokenPrice(context.Context, *GetNativeTokenPriceRequest) (*GetNativeTokenPriceResponse, error)
 	GetTokenInfo(context.Context, *GetTokenInfoRequest) (*GetTokenInfoResponse, error)
+	QuoteCpmm(context.Context, *QuoteCpmmRequest) (*QuoteCpmmResponse, error)
+	QuoteClmm(context.Context, *QuoteClmmRequest) (*QuoteClmmResponse, error)
+	GetClmmPoolDepthData(context.Context, *GetClmmPoolDepthDataRequest) (*GetClmmPoolDepthDataResponse, error)
+	// Get user's liquidity positions
+	GetUserPositions(context.Context, *GetUserPositionsRequest) (*GetUserPositionsResponse, error)
 	mustEmbedUnimplementedMarketServer()
 }
 
@@ -133,6 +200,9 @@ func (UnimplementedMarketServer) GetPumpTokenList(context.Context, *GetPumpToken
 func (UnimplementedMarketServer) GetClmmPoolList(context.Context, *GetClmmPoolListRequest) (*GetClmmPoolListResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetClmmPoolList not implemented")
 }
+func (UnimplementedMarketServer) GetPoolDetail(context.Context, *GetPoolDetailRequest) (*GetPoolDetailResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetPoolDetail not implemented")
+}
 func (UnimplementedMarketServer) PushTokenInfo(context.Context, *PushTokenInfoRequest) (*PushTokenInfoResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method PushTokenInfo not implemented")
 }
@@ -144,6 +214,18 @@ func (UnimplementedMarketServer) GetNativeTokenPrice(context.Context, *GetNative
 }
 func (UnimplementedMarketServer) GetTokenInfo(context.Context, *GetTokenInfoRequest) (*GetTokenInfoResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetTokenInfo not implemented")
+}
+func (UnimplementedMarketServer) QuoteCpmm(context.Context, *QuoteCpmmRequest) (*QuoteCpmmResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method QuoteCpmm not implemented")
+}
+func (UnimplementedMarketServer) QuoteClmm(context.Context, *QuoteClmmRequest) (*QuoteClmmResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method QuoteClmm not implemented")
+}
+func (UnimplementedMarketServer) GetClmmPoolDepthData(context.Context, *GetClmmPoolDepthDataRequest) (*GetClmmPoolDepthDataResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetClmmPoolDepthData not implemented")
+}
+func (UnimplementedMarketServer) GetUserPositions(context.Context, *GetUserPositionsRequest) (*GetUserPositionsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetUserPositions not implemented")
 }
 func (UnimplementedMarketServer) mustEmbedUnimplementedMarketServer() {}
 func (UnimplementedMarketServer) testEmbeddedByValue()                {}
@@ -198,6 +280,24 @@ func _Market_GetClmmPoolList_Handler(srv interface{}, ctx context.Context, dec f
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(MarketServer).GetClmmPoolList(ctx, req.(*GetClmmPoolListRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Market_GetPoolDetail_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetPoolDetailRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MarketServer).GetPoolDetail(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Market_GetPoolDetail_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MarketServer).GetPoolDetail(ctx, req.(*GetPoolDetailRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -274,6 +374,78 @@ func _Market_GetTokenInfo_Handler(srv interface{}, ctx context.Context, dec func
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Market_QuoteCpmm_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(QuoteCpmmRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MarketServer).QuoteCpmm(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Market_QuoteCpmm_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MarketServer).QuoteCpmm(ctx, req.(*QuoteCpmmRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Market_QuoteClmm_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(QuoteClmmRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MarketServer).QuoteClmm(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Market_QuoteClmm_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MarketServer).QuoteClmm(ctx, req.(*QuoteClmmRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Market_GetClmmPoolDepthData_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetClmmPoolDepthDataRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MarketServer).GetClmmPoolDepthData(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Market_GetClmmPoolDepthData_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MarketServer).GetClmmPoolDepthData(ctx, req.(*GetClmmPoolDepthDataRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Market_GetUserPositions_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetUserPositionsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MarketServer).GetUserPositions(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Market_GetUserPositions_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MarketServer).GetUserPositions(ctx, req.(*GetUserPositionsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Market_ServiceDesc is the grpc.ServiceDesc for Market service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -290,6 +462,10 @@ var Market_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _Market_GetClmmPoolList_Handler,
 		},
 		{
+			MethodName: "GetPoolDetail",
+			Handler:    _Market_GetPoolDetail_Handler,
+		},
+		{
 			MethodName: "PushTokenInfo",
 			Handler:    _Market_PushTokenInfo_Handler,
 		},
@@ -304,6 +480,22 @@ var Market_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetTokenInfo",
 			Handler:    _Market_GetTokenInfo_Handler,
+		},
+		{
+			MethodName: "QuoteCpmm",
+			Handler:    _Market_QuoteCpmm_Handler,
+		},
+		{
+			MethodName: "QuoteClmm",
+			Handler:    _Market_QuoteClmm_Handler,
+		},
+		{
+			MethodName: "GetClmmPoolDepthData",
+			Handler:    _Market_GetClmmPoolDepthData_Handler,
+		},
+		{
+			MethodName: "GetUserPositions",
+			Handler:    _Market_GetUserPositions_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

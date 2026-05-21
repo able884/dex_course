@@ -378,6 +378,57 @@ export const zh = {
     }
   },
 
+  // CLMM 创建向导
+  clmmCreation: {
+    title: '创建 CLMM 池子',
+    subtitle: '三步完成代币、价格与充值设置',
+    back: '返回',
+    stepsTitle: '步骤',
+    stepsDesc: '按顺序完成池子配置',
+    step1Title: '选择代币与手续费级别',
+    step1Desc: '选择基础/报价代币与费率',
+    step2Title: '设置初始价格与范围',
+    step2Desc: '配置价格和流动性范围',
+    step3Title: '确认充值金额',
+    step3Desc: '输入两种代币的充值数量并创建',
+    tipsTitle: '提示',
+    tipTokens: '基础代币视为 token0，报价代币视为 token1。',
+    tipPrice: '初始价格决定起始档位，请确认无误。',
+    tipRange: '自定义范围可集中流动性获取更多手续费。',
+    summaryTitle: '当前配置',
+    baseToken: '基础代币',
+    quoteToken: '报价代币',
+    feeTier: '手续费层级',
+    priceSummary: '初始价格',
+    tokens: '代币',
+    selectBase: '选择基础代币',
+    selectQuote: '选择报价代币',
+    feePlaceholder: '选择手续费层级',
+    continue: '继续',
+    searchToken: '搜索代币',
+    noToken: '未找到代币',
+    connectWallet: '请先连接钱包以创建池子',
+    per: '每',
+    currentPrice: '当前价格',
+    priceSetting: '价格设置',
+    initialPrice: '初始价格',
+    priceRange: '价格范围',
+    fullRange: '全范围',
+    customRange: '自定义',
+    minPrice: '最小价格',
+    maxPrice: '最大价格',
+    edit: '编辑',
+    rangeLabel: '范围',
+    balance: '余额',
+    totalDeposit: '总充值数量',
+    depositRatio: '充值占比',
+    create: '创建池子',
+    submit: '提交中',
+    submitDesc: '正在构建交易，请在钱包确认',
+    fillAll: '请完整填写必填信息',
+    selectTokenTitle: '选择代币'
+  },
+
   // 代币安全
   tokenSecurity: {
     title: '代币安全',
@@ -577,11 +628,91 @@ export const zh = {
       waitingConfirmation: '等待链上确认...',
       poolCreated: '流动性池初始化成功',
       transactionConfirmed: '已链上确认 ({{signature}})',
-      createFailed: '初始化失败'
+      createFailed: '初始化失败',
+      submitted: '已提交，等待链上确认...'
     },
     errors: {
       missingTransaction: '后端未返回未签名交易，请稍后重试。'
     }
+  },
+
+  // 添加/提取流动性页面
+  depositPage: {
+    title: '添加流动性',
+    back: '返回',
+    missingPool: '池子数据缺失。',
+    poolAddress: '池子',
+    tokenAddress: '{{symbol}} 地址',
+    tokenPlaceholder: 'TOKEN',
+    tokenLabel: '代币',
+    balance: '余额',
+    half: '50%',
+    max: 'Max',
+    tabs: {
+      deposit: '添加流动性',
+      withdraw: '提取流动性'
+    },
+    connected: '已连接',
+    notConnected: '钱包未连接',
+    totalDeposit: '总添加金额',
+    totalWithdraw: '总提取金额',
+    slippage: '滑点',
+    connectWallet: '连接钱包',
+    actions: {
+      submit: '添加流动性',
+      withdraw: '提取流动性'
+    },
+    errors: {
+      exceedWithdraw: '超出最大可提取额度'
+    },
+    myPosition: '我的持仓',
+    lpBalances: 'LP Token 余额',
+    staked: '已质押',
+    unstaked: '未质押',
+    lpTokens: 'LP 代币',
+    pooledToken: '池中 {{symbol}}',
+    totalApr: '总 APR（7D）',
+    fees: '手续费',
+    feesDesc: '手续费收益',
+    poolLiquidity: '池子流动性',
+    permanentLock: '永久锁仓',
+    permanentLockValue: '{{percent}}% 永久锁定',
+    permanentLockHint: '协议锁定的流动性',
+    poolDetails: '池子详情',
+    poolVersion: '版本',
+    poolState: '池子状态',
+    volume24h: '24 小时成交',
+    fees24h: '24 小时手续费',
+    priceHint: '1 {{base}} ≈ {{price}} {{quote}}',
+    syncing: '正在同步最新池子数据...',
+    tooltip: {
+      poolLabel: '池子地址',
+      tokenA: '{{symbol}} Mint',
+      tokenB: '{{symbol}} Mint'
+    },
+    errors: {
+      loadFailed: '加载池子详情失败：',
+      unknown: '未知错误'
+    },
+    submitting: '提交中...',
+    toast: {
+      depositQueued: '已提交添加流动性请求',
+      withdrawQueued: '已提交提取流动性请求',
+      preview: '当前为预览流程，请对接链上交易以完成操作。'
+    }
+  },
+
+  // CLMM 添加流动性页面特定翻译
+  clmmDeposit: {
+    setPriceRange: '设置价格范围',
+    minPrice: '最小价格',
+    maxPrice: '最大价格',
+    reset: '重置',
+    estimatedApr: '预计年化收益率',
+    setSlippageTolerance: '设置滑点容忍度',
+    depositRatio: '充值比例',
+    priceInfo: '价格信息',
+    currentPrice: '当前价格'
   },
 
   // 页脚
@@ -657,6 +788,48 @@ export const zh = {
       english: 'English',
       autoSave: '语言设置会自动保存'
     }
+  },
+
+  // Swap 页面
+  swapPage: {
+    title: 'Swap 兑换',
+    subtitle: '参考 Raydium 的流畅兑换体验与智能路由',
+    modeFixed: '固定池子',
+    modeRoute: '路由模式',
+    fixedDesc: '仅对当前池子进行兑换，交易对不可切换。',
+    back: '返回',
+    fromLabel: '支出',
+    toLabel: '获得',
+    balance: '余额',
+    slippage: '滑点',
+    autoSlippageHint: '自动按滑点保护最小到手',
+    rateLabel: '兑换比价',
+    rateUnavailable: '暂无路由价格',
+    placeholder: '输入数量',
+    selectToken: '选择代币',
+    searchToken: '搜索代币',
+    tokensEmpty: '没有可用代币',
+    swapAction: '立刻兑换',
+    connectHint: '请先连接钱包再进行兑换',
+    fillAmount: '请输入兑换数量',
+    mockTitle: '已进入兑换页',
+    mockDesc: '当前完成页面布局，请接入报价/下单接口以完成交易流程。',
+    routeHint: '路由',
+    swapOverview: 'Swap 概览',
+    minimumReceived: '最少可得',
+    priceImpact: '价格影响',
+    priceImpactPending: '--',
+    feeLabel: '手续费',
+    statsLiquidity: '总流动性',
+    statsVolume: '24h 成交量',
+    statsFee: '手续费',
+    statsApr: 'APR',
+    routeDesc: '默认按当前池子价格给出路径。',
+    ratioHint: '价格来自池子储备比例',
+    submitting: '提交中...',
+    swapSubmitted: '兑换已提交',
+    swapFailed: '兑换失败',
+    walletRejected: '您已取消本次交易'
   },
 
   // 通用

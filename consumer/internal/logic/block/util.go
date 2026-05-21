@@ -1,6 +1,13 @@
 package block
 
-import "math"
+import (
+	"fmt"
+	"math"
+	"strings"
+
+	"github.com/zeromicro/go-zero/core/logx"
+	"richcode.cc/dex/consumer/internal/config"
+)
 
 // RemoveMinAndMaxAndCalculateAverage 移除最小值和最大值后计算平均值
 func RemoveMinAndMaxAndCalculateAverage(nums []float64) float64 {
@@ -42,4 +49,43 @@ func RemoveMinAndMaxAndCalculateAverage(nums []float64) float64 {
 	average := sum / float64(len(filteredNums))
 
 	return average
+}
+
+// MetricName builds the fully-qualified metric name using the configured namespace.
+func MetricName(component, metric string) string {
+	namespace := config.Cfg.BlockPipeline.Metrics.Namespace
+	if namespace == "" {
+		namespace = "block_persistence"
+	}
+	return fmt.Sprintf("%s.%s.%s", namespace, component, metric)
+}
+
+// PersistenceLogFields produces a consistent set of log fields for structured logging.
+func PersistenceLogFields(slot uint64, pairAddr, tokenAddr, batchID string, attempt int) []logx.LogField {
+	fields := []logx.LogField{
+		logx.Field(LogFieldSlot, slot),
+	}
+	if pairAddr != "" {
+		fields = append(fields, logx.Field(LogFieldPair, pairAddr))
+	}
+	if tokenAddr != "" {
+		fields = append(fields, logx.Field(LogFieldToken, tokenAddr))
+	}
+	if batchID != "" {
+		fields = append(fields, logx.Field(LogFieldBatchID, batchID))
+	}
+	if attempt >= 0 {
+		fields = append(fields, logx.Field(LogFieldAttempt, attempt))
+	}
+	return fields
+}
+
+// TokenMetadataCacheKey returns the redis key for a token metadata cache entry.
+func TokenMetadataCacheKey(chainID int64, mint string) string {
+	return fmt.Sprintf("%s:%d:%s", RedisKeyTokenMetadataPrefix, chainID, strings.ToLower(mint))
+}
+
+// TokenAccountCacheKey builds the redis key used for token account snapshots.
+func TokenAccountCacheKey(owner, tokenAccount string) string {
+	return fmt.Sprintf("%s:%s:%s", RedisKeyTokenAccountPrefix, strings.ToLower(owner), strings.ToLower(tokenAccount))
 }
