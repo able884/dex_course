@@ -64,10 +64,10 @@ type PumpEvent struct {
 type Swap struct {
 	BaseTokenInfo      *TokenAccount
 	TokenInfo          *TokenAccount
-	BaseTokenAmount    float64 // 这笔交易的base token金额（已经除了 精度decimal）
-	TokenAmount        float64 // 这笔交易的token金额（已经除了 精度decimal）
-	BaseTokenAmountInt int64   // 本次交易的base token数量
-	TokenAmountInt     int64   // 本次交易的token数量
+	BaseTokenAmount    float64
+	TokenAmount        float64
+	BaseTokenAmountInt int64
+	TokenAmountInt     int64
 	Type               string
 	To                 string
 }

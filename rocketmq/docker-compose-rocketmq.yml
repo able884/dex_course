@@ -1,0 +1,68 @@
+version: '3.8'
+
+services:
+  # RocketMQ NameServer
+  rocketmq-nameserver:
+    image: apache/rocketmq:5.1.4
+    container_name: rocketmq-nameserver
+    ports:
+      - "9876:9876"
+    environment:
+      - JAVA_OPT_EXT=-Xms512m -Xmx512m
+    command: sh mqnamesrv
+    networks:
+      - rocketmq-network
+    volumes:
+      - ./rocketmq/nameserver/logs:/home/rocketmq/logs
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "sh", "mqadmin", "clusterList", "-n", "localhost:9876"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # RocketMQ Broker
+  rocketmq-broker:
+    image: apache/rocketmq:5.1.4
+    container_name: rocketmq-broker
+    ports:
+      - "10909:10909"
+      - "10911:10911"
+      - "10912:10912"
+    environment:
+      - NAMESRV_ADDR=rocketmq-nameserver:9876
+      - JAVA_OPT_EXT=-Xms1g -Xmx1g
+    command: sh mqbroker -c /home/rocketmq/broker.conf
+    depends_on:
+      - rocketmq-nameserver
+    networks:
+      - rocketmq-network
+    volumes:
+      - ./rocketmq/broker/logs:/home/rocketmq/logs
+      - ./rocketmq/broker/store:/home/rocketmq/store
+      - ./broker.conf:/home/rocketmq/broker.conf
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "sh", "mqadmin", "clusterList", "-n", "rocketmq-nameserver:9876"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # RocketMQ Console (可选 - 用于管理和监控)
+  rocketmq-console:
+    image: styletang/rocketmq-console-ng:latest
+    container_name: rocketmq-console
+    ports:
+      - "8090:8080"
+    environment:
+      - JAVA_OPTS=-Drocketmq.namesrv.addr=rocketmq-nameserver:9876 -Dcom.rocketmq.sendMessageWithVIPChannel=false
+    depends_on:
+      - rocketmq-nameserver
+      - rocketmq-broker
+    networks:
+      - rocketmq-network
+    restart: unless-stopped
+
+networks:
+  rocketmq-network:
+    driver: bridge

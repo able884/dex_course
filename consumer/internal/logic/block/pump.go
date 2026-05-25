@@ -224,7 +224,6 @@ func decodePumpSwap(ctx context.Context, sc *svc.ServiceContext, dtx *DecodedTx,
 	// 构建交易信息
 	trade := buildPumpTrade(dtx, accounts, tokenAccountInfo, event, logIndex)
 
-	// 是否发送迁移命令
 	dispatchPumpMigration(sc, trade)
 
 	return trade, nil
@@ -331,7 +330,7 @@ func buildPumpTrade(dtx *DecodedTx, accounts pumpSwapAccounts, tokenInfo *TokenA
 
 		BlockNum:         dtx.BlockDb.Slot,
 		BlockTime:        dtx.BlockDb.BlockTime.Unix(),
-		HashId:           fmt.Sprintf("%v#%d", dtx.BlockDb.Slot, dtx.TxIndex),
+		HashId:           fmt.Sprintf("%v#%d#%d", dtx.BlockDb.Slot, dtx.TxIndex, logIndex),
 		TransactionIndex: dtx.TxIndex,
 		LogIndex:         logIndex,
 
@@ -467,6 +466,8 @@ func calculatePumpProgress(trade *types.TradeWithPair) {
 		trade.PumpPoint = 1
 	}
 
+	logx.Infof("calculatePumpProgress: pair=%s, initToken=%.6f, currentToken=%.6f, virtualToken=%.6f, pumpPoint=%.6f",
+		trade.PairAddr, initTokenAmount, currentToken, trade.PumpVirtualTokenReserves, trade.PumpPoint)
 }
 
 // DecodePumpCreate 解码 Pump 创建指令
@@ -509,7 +510,9 @@ func DecodePumpCreate(ctx context.Context, sc *svc.ServiceContext, dtx *DecodedT
 	}
 
 	// 构建创建交易信息
-	trade = buildPumpCreateTrade(dtx, accounts, tokenAccountInfo, logIndex)
+	createEvent := parsePumpCreateEvent(dtx.Tx.Meta.LogMessages)
+
+	trade = buildPumpCreateTrade(dtx, accounts, tokenAccountInfo, createEvent, logIndex)
 
 	return trade, nil
 }
@@ -537,28 +540,63 @@ func extractPumpCreateAccounts(accountKeys []common.PublicKey, accounts []int) p
 	}
 }
 
+// parsePumpCreateEvent 尝试从日志中解析官方 CreateEvent，获取初始虚拟储备
+func parsePumpCreateEvent(logs []string) *pump.CreateEvent {
+	for _, log := range logs {
+		if !isPumpEventLog(log) {
+			continue
+		}
+		data, err := decodeBase64(strings.TrimPrefix(log, "Program data: "))
+		if err != nil {
+			continue
+		}
+		ev, err := pump.ParseEvent_CreateEvent(data)
+		if err == nil && ev != nil {
+			return ev
+		}
+	}
+	return nil
+}
+
 // buildPumpCreateTrade 构建 Pump 创建交易信息
-func buildPumpCreateTrade(dtx *DecodedTx, accounts pumpCreateAccounts, tokenInfo *TokenAccount, logIndex int) *types.TradeWithPair {
+func buildPumpCreateTrade(dtx *DecodedTx, accounts pumpCreateAccounts, tokenInfo *TokenAccount, createEvent *pump.CreateEvent, logIndex int) *types.TradeWithPair {
 	baseToken := util.GetBaseToken(SolChainIdInt)
 
 	tokenDecimal := tokenInfo.TokenDecimal
 	currentToken := decimal.New(tokenInfo.PostValue, -int32(tokenDecimal)).InexactFloat64()
-	virtualInitToken := float64(VirtualInitPumpTokenAmount)
-	realInitToken := float64(InitPumpTokenAmount)
-	if currentToken <= 0 || currentToken < realInitToken {
-		currentToken = realInitToken
+	// 从 CreateEvent 中获取链上初始虚拟储备，保证与官方一致
+	var pumpVirtualToken float64
+	var pumpVirtualBase float64
+	var currentBase float64
+	if createEvent != nil {
+		pumpVirtualToken = decimal.NewFromInt(int64(createEvent.VirtualTokenReserves)).Shift(-int32(tokenDecimal)).InexactFloat64()
+		pumpVirtualBase = decimal.NewFromInt(int64(createEvent.VirtualSolReserves)).Shift(-constants.SolDecimal).InexactFloat64()
+		currentToken = decimal.NewFromInt(int64(createEvent.RealTokenReserves)).Shift(-int32(tokenDecimal)).InexactFloat64()
+		currentBase = decimal.NewFromInt(int64(createEvent.VirtualSolReserves - SolReservesDiff)).Shift(-constants.SolDecimal).InexactFloat64()
+	} else {
+		// fallback to constants when event不可用
+		pumpVirtualToken = float64(VirtualInitPumpTokenAmount)
+		pumpVirtualBase = defaultPumpVirtualBaseToken
+		currentBase = InitSolTokenAmount
 	}
 
-	currentBase := InitSolTokenAmount
-	pumpVirtualBase := defaultPumpVirtualBaseToken
-	pumpVirtualToken := virtualInitToken
+	if currentToken <= 0 {
+		currentToken = pumpVirtualToken
+	}
+
+	if currentBase <= 0 {
+		currentBase = pumpVirtualBase
+	}
 
 	baseTokenPriceUSD := dtx.SolPrice
 	if baseTokenPriceUSD <= 0 {
 		baseTokenPriceUSD = defaultSolPriceUSD
 	}
 
-	tokenSupply := ensurePumpTotalSupply(currentToken)
+	tokenSupply := ensurePumpTotalSupply(pumpVirtualToken)
+	if createEvent != nil && createEvent.TokenTotalSupply > 0 {
+		tokenSupply = decimal.NewFromInt(int64(createEvent.TokenTotalSupply)).Shift(-int32(tokenDecimal)).InexactFloat64()
+	}
 	tokenPriceUSD := calcPumpTokenPrice(currentBase, currentToken, baseTokenPriceUSD)
 	fdv := calcPumpFDV(tokenPriceUSD, tokenSupply)
 	pumpPoint := calculatePumpPointFromAmount(currentToken, tokenDecimal)
@@ -581,7 +619,7 @@ func buildPumpCreateTrade(dtx *DecodedTx, accounts pumpCreateAccounts, tokenInfo
 
 		BlockNum:         dtx.BlockDb.Slot,
 		BlockTime:        dtx.BlockDb.BlockTime.Unix(),
-		HashId:           fmt.Sprintf("%v#%d", dtx.BlockDb.Slot, dtx.TxIndex),
+		HashId:           fmt.Sprintf("%v#%d#%d", dtx.BlockDb.Slot, dtx.TxIndex, logIndex),
 		TransactionIndex: dtx.TxIndex,
 		LogIndex:         logIndex,
 
@@ -609,8 +647,8 @@ func buildPumpCreateTrade(dtx *DecodedTx, accounts pumpCreateAccounts, tokenInfo
 		BlockTime:              dtx.BlockDb.BlockTime.Unix(),
 		BlockNum:               dtx.BlockDb.Slot,
 		Name:                   constants.PumpFun,
-		InitTokenAmount:        float64(VirtualInitPumpTokenAmount),
-		InitBaseTokenAmount:    InitSolTokenAmount,
+		InitTokenAmount:        pumpVirtualToken,
+		InitBaseTokenAmount:    pumpVirtualBase,
 		TokenTotalSupply:       tokenSupply,
 		CurrentBaseTokenAmount: currentBase,
 		CurrentTokenAmount:     currentToken,
@@ -674,21 +712,18 @@ func updatePumpMarketCap(trade *types.TradeWithPair) {
 		InexactFloat64()
 }
 
-// 发送迁移任务到共享通道，当交易达到迁移条件时（PumpPoint >= pumpMigrationPoint），
-// 并且确保同一交易对只推送一次迁移任务，避免重复迁移。
+// dispatchPumpMigration pushes a migration job into the shared channel when a pair
+// reaches the migration threshold.
 func dispatchPumpMigration(sc *svc.ServiceContext, trade *types.TradeWithPair) {
 	if sc == nil || sc.PumpMigrationChan == nil || trade == nil {
 		return
 	}
-
-	// 达到迁移条件才推送，避免过早推送导致重复迁移
 	if trade.PumpStatus != PumpStatusMigrating {
 		return
 	}
 
 	pairAddr := strings.ToLower(trade.PairAddr)
 	if sc.PumpMigrationOnce != nil {
-		// 使用 sync.Map 进行幂等检查，确保同一交易对只推送一次迁移任务
 		if _, loaded := sc.PumpMigrationOnce.LoadOrStore(pairAddr, struct{}{}); loaded {
 			return
 		}
@@ -737,11 +772,4 @@ func shouldSkipPumpCreate(ctx context.Context, sc *svc.ServiceContext, pairAddr 
 		return false
 	}
 	return exists
-}
-
-func GetInstructionDiscriminator(data []byte) []byte {
-	if len(data) < 8 || data == nil {
-		return nil
-	}
-	return data[:8]
 }

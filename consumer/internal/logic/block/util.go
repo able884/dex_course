@@ -6,10 +6,10 @@ import (
 	"strings"
 
 	"github.com/zeromicro/go-zero/core/logx"
+
 	"richcode.cc/dex/consumer/internal/config"
 )
 
-// RemoveMinAndMaxAndCalculateAverage 移除最小值和最大值后计算平均值
 func RemoveMinAndMaxAndCalculateAverage(nums []float64) float64 {
 	if len(nums) == 0 {
 		return 0

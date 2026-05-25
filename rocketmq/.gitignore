@@ -1,0 +1,12 @@
+# RocketMQ 数据目录 - 不提交到 Git
+
+# Broker 数据
+broker/logs/
+broker/store/
+
+# NameServer 日志
+nameserver/logs/
+
+# 临时文件
+*.tmp
+*.log

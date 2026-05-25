@@ -33,6 +33,7 @@ type ServiceContext struct {
 	solClientIndex            int
 	solClient                 *client.Client
 	solClients                []*client.Client
+	DB                        *gorm.DB // 数据库连接，供需要直接操作的组件使用
 	PairModel                 solmodel.PairModel
 	BlockModel                solmodel.BlockModel
 	TokenModel                solmodel.TokenModel
@@ -85,7 +86,6 @@ func NewSolServiceContext(c config.Config) *ServiceContext {
 		}))
 		solClients = append(solClients, client.NewClient(node))
 	}
-	// fmt.Println("solClients: ", c.Sol.NodeUrl)
 
 	// Initialize database connection
 	dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=utf8mb4&parseTime=True&loc=Local",
@@ -98,9 +98,10 @@ func NewSolServiceContext(c config.Config) *ServiceContext {
 	newLogger := logger.New(
 		log.New(os.Stdout, "\r\n", log.LstdFlags),
 		logger.Config{
-			SlowThreshold:             200 * time.Millisecond, // 慢 sql 阈值
-			LogLevel:                  logger.Warn,            // 日志级别
-			IgnoreRecordNotFoundError: true,                   // 忽略 record not found
+			SlowThreshold:             5 * time.Second, // 慢 sql 阈值
+			LogLevel:                  logger.Warn,     // 日志级别
+			IgnoreRecordNotFoundError: true,            // 忽略 record not found
+			ParameterizedQueries:      false,           // 禁用参数化查询
 			Colorful:                  true,
 		},
 	)
@@ -110,6 +111,11 @@ func NewSolServiceContext(c config.Config) *ServiceContext {
 	if err != nil {
 		panic(fmt.Sprintf("failed to connect database: %v", err))
 	}
+
+	sqlDB, _ := db.DB()
+	sqlDB.SetMaxIdleConns(200)
+	sqlDB.SetMaxOpenConns(500)
+	sqlDB.SetConnMaxLifetime(5 * time.Minute)
 
 	// Initialize BlockModel
 	blockModel := solmodel.NewBlockModel(db)
@@ -129,6 +135,7 @@ func NewSolServiceContext(c config.Config) *ServiceContext {
 		MetadataCache:             redisClient,
 		BlockPipelineSettings:     c.BlockPipeline,
 		solClients:                solClients,
+		DB:                        db, // 保存数据库连接
 		BlockModel:                blockModel,
 		PairModel:                 solmodel.NewPairModel(db),
 		TokenModel:                solmodel.NewTokenModel(db),

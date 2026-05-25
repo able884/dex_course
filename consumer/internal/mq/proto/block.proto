@@ -1,0 +1,114 @@
+syntax = "proto3";
+
+package dex.consumer.mq;
+
+option go_package = "richcode.cc/dex/consumer/internal/mq/proto";
+
+// BlockMessage 主消息（仅包含过滤后的相关交易）
+message BlockMessage {
+    // 基础信息
+    uint64 slot = 1;
+    int64 block_time = 2;
+    string block_hash = 3;
+    uint64 parent_slot = 4;
+
+    // 公共数据（生产者已解析，仅基于过滤后的交易）
+    map<string, TokenAccount> token_accounts = 5;
+    map<int32, InnerInstructions> inner_instructions_map = 6;
+    repeated string account_keys = 7;
+
+    // 仅包含过滤后的交易数据
+    repeated RawTransaction transactions = 8;
+
+    // 元数据
+    int32 transaction_count = 9;          // 过滤后的交易数量
+    int32 original_transaction_count = 10; // 原始区块交易总数
+    double sol_price = 11;                 // 预计算的 SOL 价格
+
+    // 过滤统计
+    FilterStats filter_stats = 12;
+
+    // 按协议分组的交易（生产者已分组，消费者可并发处理）
+    map<string, ProtocolTransactionGroup> protocol_groups = 13;
+}
+
+// 协议交易分组
+message ProtocolTransactionGroup {
+    string protocol_name = 1;                      // 协议名称 (PumpFun, PumpSwap, Raydium_CLMM, etc.)
+    repeated RawTransaction transactions = 2;       // 该协议的所有交易
+    int32 transaction_count = 3;                   // 交易数量
+}
+
+// Token 账户信息
+message TokenAccount {
+    string owner = 1;
+    string token_account_address = 2;
+    string token_address = 3;
+    string token_symbol = 4;
+    string token_name = 5;
+    uint32 token_decimal = 6;
+    int64 pre_value = 7;
+    int64 post_value = 8;
+    bool init = 9;
+    bool closed = 10;
+    string pre_value_ui_string = 11;
+    string post_value_ui_string = 12;
+}
+
+// Inner Instructions
+message InnerInstructions {
+    uint64 index = 1;
+    repeated CompiledInstruction instructions = 2;
+}
+
+// 编译后的指令
+message CompiledInstruction {
+    uint32 program_id_index = 1;
+    repeated uint32 accounts = 2;
+    bytes data = 3;
+}
+
+// 原始交易
+message RawTransaction {
+    repeated bytes signatures = 1;
+    Message message = 2;
+    TransactionMeta meta = 3;
+    repeated bytes account_keys = 4;  // 交易的 AccountKeys
+}
+
+message Message {
+    repeated bytes account_keys = 1;
+    bytes recent_blockhash = 2;
+    repeated CompiledInstruction instructions = 3;
+}
+
+message TransactionMeta {
+    bytes err = 1;  // null if success
+    uint64 fee = 2;
+    repeated int64 pre_balances = 3;
+    repeated int64 post_balances = 4;
+    repeated InnerInstructions inner_instructions = 5;
+    repeated TokenBalance pre_token_balances = 6;
+    repeated TokenBalance post_token_balances = 7;
+}
+
+message TokenBalance {
+    uint32 account_index = 1;
+    string mint = 2;
+    string owner = 3;
+    UITokenAmount ui_token_amount = 4;
+}
+
+message UITokenAmount {
+    string ui_amount_string = 1;
+    uint32 decimals = 2;
+    string amount = 3;
+}
+
+// 过滤统计信息
+message FilterStats {
+    int32 total_transactions = 1;
+    int32 filtered_transactions = 2;
+    double filter_ratio = 3;
+    map<string, int32> protocol_counts = 4;  // 各协议的交易数
+}

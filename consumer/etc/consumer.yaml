@@ -66,3 +66,93 @@ trade_service:
   transport: tcp
   middlewares:
     breaker: false
+
+
+
+# RocketMQ 配置
+RocketMQ:
+  NameServers:
+    - "127.0.0.1:9876"
+  AccessKey: ""     # 可选，启用 ACL 时填写
+  SecretKey: ""     # 可选，启用 ACL 时填写
+  MaxMessageSize: 16777216  # 16MB
+  Topics:
+    Blocks: "solana-blocks"
+    Retry: "solana-blocks-retry"
+    Migration: "pump-migration"
+  Producer:
+    SendTimeout: 10s
+    RetryTimes: 2
+    CompressLevel: 3  # gzip 压缩级别 (3=快速压缩，6=默认，9=最大压缩)
+  Consumer:
+    GroupName: "block-consumer-group"
+    ConsumeFromWhere: "CONSUME_FROM_LAST_OFFSET"
+    MessageModel: "CLUSTERING"
+    MaxReconsumeTimes: 3
+    ConsumeTimeout: 15m
+
+# 交易过滤配置
+BlockFilter:
+  Enabled: true
+  TargetProtocols:
+    # PumpFun 协议 - 匹配所有交易
+    - Name: "PumpFun"
+      ProgramID: "6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEwF6P"
+
+    # PumpSwap/PumpAMM 协议 - 匹配所有交易
+    - Name: "PumpSwap"
+      ProgramID: "pAMMBay6oceH9fJKBRHGP5D4bD4sWpmSwMn52FMfXEA"
+
+    # Raydium CLMM 主网 - 匹配所有交易
+    - Name: "Raydium_CLMM"
+      ProgramID: "CAMMCzo5YL8w4VFF8KVHrK22GGUsp5VTaW7grrKgrWqK"
+
+    # Raydium CLMM DevNet - 匹配所有交易
+    - Name: "Raydium_CLMM_DevNet"
+      ProgramID: "GodmWN2QXikut2nwHuFGpCPeN6nBb2vuCFknVy3edxVw"
+
+    # Raydium CPMM 主网 - 匹配所有交易
+    - Name: "Raydium_CPMM"
+      ProgramID: "CPMMoo8L3F4NbTegBCKVNunggL7H1ZpdTHKxQB5qKP1C"
+
+    # Raydium CPMM DevNet - 匹配所有交易
+    - Name: "Raydium_CPMM_DevNet"
+      ProgramID: "6Phx6fHxjmyXLpqFdPgSwe8VkCnaBX2FMH3ZHchGHvA2"
+
+    # SPL Token 程序 - 匹配所有交易
+    - Name: "SPL_Token"
+      ProgramID: "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+
+    # SPL Token 2022 程序 - 匹配所有交易
+    - Name: "SPL_Token_2022"
+      ProgramID: "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"
+
+# 区块处理器性能配置
+BlockProcessor:
+  SlotChannelSize: 500       # Block 缓冲区大小
+  WorkerCount: 10            # 并发 Worker 数量（生产端处理）
+  MaxConcurrentRPC: 5        # 最大并发 RPC 请求数（仅用于 RecoveryManager）
+  RPCDelayMs: 100            # RPC 请求之间的延迟（毫秒，仅用于 RecoveryManager）
+  BlockNotAvailableRetry:
+    MaxAttempts: 3           # RecoveryManager 重试次数
+    RetryDelayMs: 1000       # RecoveryManager 重试间隔（毫秒）
+
+# Latest Slot 追踪配置
+LatestSlotTracker:
+  SyncInterval: 5s           # 同步到 Redis 的间隔
+
+# 失败恢复配置
+Recovery:
+  Enabled: true              # 是否启用恢复服务
+  Interval: 5s               # 恢复检查间隔
+  BatchSize: 50              # 每批处理的失败 slot 数量
+  MaxRetryCount: 3           # 最大重试次数
+
+# 启动回补配置
+StartupBackfill:
+  MaxGap: 10000              # 最大全量回补的 gap 大小
+  LogDir: "./logs/backfill/" # 大 gap 日志文件目录
+
+# 失败 Slot 日志配置
+FailedSlotLog:
+  LogDir: "./logs/failed_slots/" # 失败 slot 日志目录

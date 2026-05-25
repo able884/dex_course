@@ -18,7 +18,6 @@ import (
 	"richcode.cc/dex/model/solmodel"
 	"richcode.cc/dex/pkg/pumpfun/generated/pump_amm"
 	"richcode.cc/dex/pkg/types"
-	"richcode.cc/dex/pkg/util"
 )
 
 const eventLogPrefix = "Program data: "
@@ -152,7 +151,6 @@ func (decoder *PumpAmmDecoder) DecodePumpFunAMMBuyInstruction() (*types.TradeWit
 		buyEvent.QuoteAmountInWithLpFee,
 		trade.TokenPriceUSD,
 	)
-
 	return trade, nil
 }
 
@@ -212,7 +210,7 @@ func (decoder *PumpAmmDecoder) DecodePumpFunAMMSellInstruction() (*types.TradeWi
 	logger.Infof("pump.fun AMM sell instruction tx=%s", decoder.dtx.TxHash)
 
 	// 解析账户数据: 回顾交易解析（账户存储结构、指令数据结构）
-	if len(decoder.compiledInstruction.Accounts) != 21 {
+	if len(decoder.compiledInstruction.Accounts) < 21 {
 		return nil, fmt.Errorf("invalid accounts length: %d", len(decoder.compiledInstruction.Accounts))
 	}
 
@@ -338,6 +336,18 @@ func (decoder *PumpAmmDecoder) DecodeCreatePoolInstruction(logMessages []string)
 	if createPoolEvent == nil {
 		return nil, errors.New("create pool event not found in logs")
 	}
+	// 从 TokenAccountMap 获取 base token 和 quote token 的 symbol
+	var baseTokenSymbol string
+	var quoteTokenSymbol string
+	for _, account := range decoder.dtx.TokenAccountMap {
+		if account.TokenAddress == createPoolEvent.BaseMint.String() {
+			baseTokenSymbol = account.TokenSymbol
+		}
+		if account.TokenAddress == createPoolEvent.QuoteMint.String() {
+			quoteTokenSymbol = account.TokenSymbol
+		}
+	}
+
 	trade := &types.TradeWithPair{}
 	trade.ChainId = SolChainId
 	trade.TxHash = decoder.dtx.TxHash
@@ -347,8 +357,9 @@ func (decoder *PumpAmmDecoder) DecodeCreatePoolInstruction(logMessages []string)
 		Addr:             createPoolEvent.Pool.String(),
 		BaseTokenAddr:    createPoolEvent.BaseMint.String(),
 		BaseTokenDecimal: createPoolEvent.BaseMintDecimals,
-		BaseTokenSymbol:  util.GetBaseToken(SolChainIdInt).Symbol,
+		BaseTokenSymbol:  baseTokenSymbol, // 使用从 TokenAccountMap 获取的 base token symbol
 		TokenAddr:        createPoolEvent.QuoteMint.String(),
+		TokenSymbol:      quoteTokenSymbol, // 使用从 TokenAccountMap 获取的 quote token symbol
 		TokenDecimal:     createPoolEvent.QuoteMintDecimals,
 		BlockTime:        decoder.dtx.BlockDb.BlockTime.Unix(),
 		BlockNum:         decoder.dtx.BlockDb.Slot,
@@ -414,8 +425,9 @@ func (decoder *PumpAmmDecoder) newPumpTrade(poolAddr, maker string, baseAccount,
 		Slot:              block.Slot,
 		BlockNum:          block.Slot,
 		BlockTime:         block.BlockTime.Unix(),
-		HashId:            fmt.Sprintf("%v#%d", block.Slot, decoder.dtx.TxIndex),
+		HashId:            fmt.Sprintf("%v#%d#%d", block.Slot, decoder.dtx.TxIndex, 0),
 		TransactionIndex:  decoder.dtx.TxIndex,
+		LogIndex:          0,
 		SwapName:          PumpSwap,
 		PumpPairAddr:      poolAddr,
 		PumpStatus:        PumpStatusTrading,
@@ -425,8 +437,9 @@ func (decoder *PumpAmmDecoder) newPumpTrade(poolAddr, maker string, baseAccount,
 			Addr:             poolAddr,
 			BaseTokenAddr:    baseAccount.TokenAddress,
 			BaseTokenDecimal: baseAccount.TokenDecimal,
-			BaseTokenSymbol:  util.GetBaseToken(SolChainIdInt).Symbol,
+			BaseTokenSymbol:  baseAccount.TokenSymbol, // 使用从数据库获取的 base token symbol
 			TokenAddr:        quoteAccount.TokenAddress,
+			TokenSymbol:      quoteAccount.TokenSymbol, // 使用从数据库获取的 quote token symbol
 			TokenDecimal:     quoteAccount.TokenDecimal,
 			BlockNum:         block.Slot,
 			BlockTime:        block.BlockTime.Unix(),
