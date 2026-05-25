@@ -14,7 +14,7 @@ import (
 
 func TestBlock(t *testing.T) {
 
-	var slot int64 = 423708218
+	var slot int64 = 464087069
 
 	cfgFile := os.Getenv("CONSUMER_CONFIG")
 	if cfgFile == "" {

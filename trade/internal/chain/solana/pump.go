@@ -724,7 +724,7 @@ func createPumpSwapInstructionV2(ctx context.Context, db *gorm.DB, in *CreateMar
 }
 
 func (tm *TxManager) CreateMarketOrder4Pumpfun(ctx context.Context, in *CreateMarketTx) ([]ag_solanago.Instruction, error) {
-	fmt.Println("************************************************")
+	fmt.Println("********************创建购买pumpfun代币的交易****************************")
 	initiator := in.UserWalletAccount
 
 	//需要创建1个ata账户，尽管token 账户可能存在，但是为了避免网络请求，不做判断，直接认为需要这个费用
@@ -802,6 +802,7 @@ func (tm *TxManager) CreateMarketOrder4Pumpfun(ctx context.Context, in *CreateMa
 	if swapDirection == sol.Swap_Direction_Buy {
 		logx.WithContext(ctx).Infof("CreateMarketOrder4Pumpfun::Swap_Direction_Buy, amount to buy in sol=%d", amountUint64)
 
+		// 构建花费精确SOL数量的购买指令，价格滑点按照用户输入的百分比来计算
 		buyInstruction, err := pumpfun.BuildBuyInstruction(initiator, tokenMint, amountUint64, in.Slippage, tm.Client, priceDecimal.InexactFloat64(), in.InDecimal, in.OutDecimal)
 		if nil != err {
 			return nil, err

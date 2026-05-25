@@ -3,6 +3,7 @@ package pumpfun
 import (
 	"context"
 	"fmt"
+	"log"
 	"math/big"
 
 	"richcode.cc/dex/pkg/pumpfun/generated/pump"
@@ -246,6 +247,7 @@ func BuildBuyInstruction(
 	}
 
 	// 构建 buy_exact_sol_in 指令
+	log.Printf("构建 buy_exact_sol_in 指令，花费精确SQL：{}，最少获得TOKEN：{}", solAmountIn, minTokenAmount)
 	instruction, err := pump.NewBuyExactSolInInstruction(
 		solAmountIn,                 // spendableSolIn - 精确花费的 SOL 数量
 		minTokenAmount,              // minTokensOut - 最少获得的 token 数量（滑点保护）
@@ -324,6 +326,7 @@ func BuildSellInstruction(
 	programID := ag_solanago.MustPublicKeyFromBase58(PumpSwapProgramID)
 
 	// 构建 sell 指令
+	log.Printf("构建 sell 指令，卖出TOKEN数量：{}，预期获得SOL数量：{}，最少获得SOL数量：{}", tokenAmountIn, solAmount, minSolAmount)
 	instruction, err := pump.NewSellInstruction(
 		tokenAmountIn,               // amount
 		minSolAmount,                // minSolOutput

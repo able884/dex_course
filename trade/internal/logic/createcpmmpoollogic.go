@@ -414,10 +414,12 @@ func (l *CreateCpmmPoolLogic) getTokenDecimals(tokenMint string) (int64, error) 
 		TokenAddress: tokenMint,
 	})
 	if err != nil {
+		logx.Errorf("调用market服务获取代币信息失败: %v", err)
 		return 0, fmt.Errorf("获取代币信息失败 %s: %w", tokenMint, err)
 	}
 
 	if resp == nil {
+		logx.Errorf("代币信息未找到 %s", tokenMint)
 		return 0, fmt.Errorf("代币信息未找到 %s", tokenMint)
 	}
 

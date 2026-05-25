@@ -701,6 +701,7 @@ func (tm *TxManager) BuildUnsignedTransaction(ctx context.Context, createMarketT
 // BuildUnsignedPumpCreateTransaction builds an unsigned transaction for PumpFun token creation
 func (tm *TxManager) BuildUnsignedPumpCreateTransaction(ctx context.Context, in *trade2.CreatePumpTokenRequest) (string, error) {
 	// Parse inputs
+	logx.Infof("开始构建未签名的创建PumpFun代币的交易，输入参数: %#v", in)
 	user, err := aSDK.PublicKeyFromBase58(in.UserWalletAddress)
 	if err != nil {
 		return "", fmt.Errorf("invalid user_wallet_address: %w", err)

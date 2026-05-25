@@ -71,7 +71,7 @@ func (l *CreateMarketOrderLogic) CreateMarketOrder(in *trade.CreateMarketOrderRe
 		TokenAddress: in.TokenCa,
 	})
 	if err != nil {
-		l.Errorf("GetPairInfoByToken err: %v", err)
+		l.Errorf("获取交易对信息失败 err: %v", err)
 		return nil, fmt.Errorf("获取交易对信息失败: %w", err)
 	}
 	if pairInfo == nil {
@@ -118,23 +118,23 @@ func (l *CreateMarketOrderLogic) CreateMarketOrder(in *trade.CreateMarketOrderRe
 	// 8. 构建订单实体
 	order := &trademodel.TradeOrder{
 		TradeType:      int64(trade.TradeType_Market),      // 市价订单
-		ChainId:        int64(in.ChainId),                   // 链ID
-		TokenCa:        in.TokenCa,                          // 交易代币地址
-		SwapType:       int64(in.SwapType),                  // 交易方向（买/卖）
-		IsAutoSlippage: 0,                                   // 是否自动滑点
-		Slippage:       int64(slippageBps),                  // 滑点设置（bps）
-		IsAntiMev:      0,                                   // 是否反MEV
-		GasType:        1,                                   // Gas类型
-		Status:         int64(trade.OrderStatus_Proc),       // 订单状态：处理中
-		OrderCap:       capDecimal.InexactFloat64(),         // FDV
-		OrderAmount:    amountDecimal.InexactFloat64(),      // 订单金额
-		OrderPriceBase: tokenPriceDecimal.InexactFloat64(),  // 基础币价格
-		OrderValueBase: orderValueBase.InexactFloat64(),     // 订单价值（基础币）
-		OrderBasePrice: baseTokenPrice.InexactFloat64(),     // 基础币价格（USD）
-		DoubleOut:      util.BoolToInt64(in.DoubleOut),      // 是否翻倍出本
-		DexName:        pairInfo.Name,                       // DEX名称
-		PairCa:         pairInfo.Address,                    // 交易对地址
-		WalletAddress:  in.UserWalletAddress,                // 用户钱包地址
+		ChainId:        int64(in.ChainId),                  // 链ID
+		TokenCa:        in.TokenCa,                         // 交易代币地址
+		SwapType:       int64(in.SwapType),                 // 交易方向（买/卖）
+		IsAutoSlippage: 0,                                  // 是否自动滑点
+		Slippage:       int64(slippageBps),                 // 滑点设置（bps）
+		IsAntiMev:      0,                                  // 是否反MEV
+		GasType:        1,                                  // Gas类型
+		Status:         int64(trade.OrderStatus_Proc),      // 订单状态：处理中
+		OrderCap:       capDecimal.InexactFloat64(),        // FDV
+		OrderAmount:    amountDecimal.InexactFloat64(),     // 订单金额
+		OrderPriceBase: tokenPriceDecimal.InexactFloat64(), // 基础币价格
+		OrderValueBase: orderValueBase.InexactFloat64(),    // 订单价值（基础币）
+		OrderBasePrice: baseTokenPrice.InexactFloat64(),    // 基础币价格（USD）
+		DoubleOut:      util.BoolToInt64(in.DoubleOut),     // 是否翻倍出本
+		DexName:        pairInfo.Name,                      // DEX名称
+		PairCa:         pairInfo.Address,                   // 交易对地址
+		WalletAddress:  in.UserWalletAddress,               // 用户钱包地址
 	}
 
 	// 9. 处理一键买模式
@@ -224,7 +224,7 @@ func (l *CreateMarketOrderLogic) CreateMarketTx(order *trademodel.TradeOrder, pa
 //   - errReason: 错误原因（失败时使用）
 func (l *CreateMarketOrderLogic) updateDbByTxResult(order *trademodel.TradeOrder, param *trade2.CreateMarketTx, txHash string, errReason error) error {
 	model := trademodel.NewTradeOrderModel(l.svcCtx.DB)
-	
+
 	// 复制ctx防止取消导致更新失败
 	dbCtx := trace.ContextWithSpan(context.Background(), trace.SpanFromContext(l.ctx))
 	orderData, _ := json.Marshal(order)
@@ -299,9 +299,9 @@ func (l *CreateMarketOrderLogic) createMarketTxWithPairInfo(order *trademodel.Tr
 
 	// 2. 判断是否启用价格限制（限价单或CLMM池子）
 	usePriceLimit := false
-	if order.TradeType == int64(trade.TradeType_Limit) || 
-	   order.TradeType == int64(trade.TradeType_TokenCapLimit) ||
-	   order.DexName == constants.RaydiumConcentratedLiquidity {
+	if order.TradeType == int64(trade.TradeType_Limit) ||
+		order.TradeType == int64(trade.TradeType_TokenCapLimit) ||
+		order.DexName == constants.RaydiumConcentratedLiquidity {
 		usePriceLimit = true
 	}
 
@@ -332,25 +332,25 @@ func (l *CreateMarketOrderLogic) createMarketTxWithPairInfo(order *trademodel.Tr
 
 	// 6. 构建交易参数
 	param := &trade2.CreateMarketTx{
-		UserId:              uint64(order.Uid),
-		ChainId:             uint64(order.ChainId),
-		UserWalletId:        uint32(order.WalletIndex),
-		UserWalletAddress:   order.WalletAddress,
-		AmountIn:            decimal.NewFromFloat(order.OrderAmount).String(),
-		IsAntiMev:           order.IsAntiMev != 0,
-		IsAutoSlippage:      order.IsAutoSlippage != 0,
-		Slippage:            uint32(order.Slippage),
-		GasType:             int32(order.GasType),
-		TradePoolName:       pairInfo.Name,
-		InDecimal:           inDecimal,
-		OutDecimal:          outDecimal,
-		InTokenCa:           inTokenAddr,
-		OutTokenCa:          outTokenAddr,
-		PairAddr:            pairInfo.Address,
-		Price:               decimal.NewFromFloat(order.OrderPriceBase).String(),
-		UsePriceLimit:       usePriceLimit,
-		InTokenProgram:      inTokenProgram,
-		OutTokenProgram:     outTokenProgram,
+		UserId:            uint64(order.Uid),
+		ChainId:           uint64(order.ChainId),
+		UserWalletId:      uint32(order.WalletIndex),
+		UserWalletAddress: order.WalletAddress,
+		AmountIn:          decimal.NewFromFloat(order.OrderAmount).String(),
+		IsAntiMev:         order.IsAntiMev != 0,
+		IsAutoSlippage:    order.IsAutoSlippage != 0,
+		Slippage:          uint32(order.Slippage),
+		GasType:           int32(order.GasType),
+		TradePoolName:     pairInfo.Name,
+		InDecimal:         inDecimal,
+		OutDecimal:        outDecimal,
+		InTokenCa:         inTokenAddr,
+		OutTokenCa:        outTokenAddr,
+		PairAddr:          pairInfo.Address,
+		Price:             decimal.NewFromFloat(order.OrderPriceBase).String(),
+		UsePriceLimit:     usePriceLimit,
+		InTokenProgram:    inTokenProgram,
+		OutTokenProgram:   outTokenProgram,
 	}
 
 	// 7. 执行交易（支持自动滑点重试）

@@ -101,6 +101,7 @@ func (l *UploadIpfsFileLogic) UploadIpfsFile(in *trade.UploadIpfsFileRequest) (*
 
 // uploadViaNFTStorageBinary 通过 NFT.Storage 二进制上传
 func uploadViaNFTStorageBinary(ctx context.Context, apiKey string, data []byte) (string, error) {
+	logx.Infof("使用 NFT.Storage 二进制上传，数据大小: %d bytes", len(data))
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, "https://api.nft.storage/upload", bytes.NewReader(data))
 	if err != nil {
 		return "", err

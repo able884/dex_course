@@ -50,7 +50,7 @@ Auth:
 Redis:
   Host: 172.17.112.1
   Port: 6379
-  Auth: 123456
+  Auth: "123456"
   MaxIdle: 20
   MaxActive: 100
   Db: 0
@@ -94,7 +94,7 @@ Upstreams: # upstreams
         RpcPath: market.Market/GetUserPositions        
   - Name: trade
     Grpc: # trade service upstream
-      Target: localhost:8100 # grpc target,the direct grpc server address,for only one node
+      Target: 127.0.0.1:8100 # grpc target,the direct grpc server address,for only one node
       nonblock: true
       timeout: 60000000
     ProtoSets:

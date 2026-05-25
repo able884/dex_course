@@ -147,7 +147,7 @@ func (l *GetCpmmTokensLogic) calcCpmmTokens(in *types.GetCpmmTokensInput) (*type
 // fetchTokensFromDB 从数据库查询代币列表
 func (l *GetCpmmTokensLogic) fetchTokensFromDB(in *types.GetCpmmTokensInput, statuses []string, pageNo, pageSize int64) ([]*types.CpmmToken, int64, error) {
 	// 构建查询
-	db := l.svcCtx.DB.Table("cpmm_allowed_tokens").Where("chain_id = ?", in.ChainID)
+	db := l.svcCtx.DB.Table("allowed_tokens").Where("chain_id = ?", in.ChainID)
 	if len(statuses) > 0 {
 		db = db.Where("status IN ?", statuses)
 	}

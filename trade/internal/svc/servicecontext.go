@@ -35,7 +35,17 @@ type ServiceContext struct {
 }
 
 func NewServiceContext(c config.Config) *ServiceContext {
-	redisService := c.Redis.NewRedis()
+	// redisService := c.Redis.NewRedis()
+	rds := redis.MustNewRedis(redis.RedisConf{
+		Host:        c.Redis.Host,
+		Type:        c.Redis.Type,
+		Pass:        c.Redis.Pass,
+		Tls:         c.Redis.Tls,
+		PingTimeout: c.Redis.PingTimeout,
+	})
+	if !rds.Ping() {
+		panic("rds ping err")
+	}
 
 	dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?parseTime=true",
 		c.MySQLConfig.User,
@@ -79,7 +89,7 @@ func NewServiceContext(c config.Config) *ServiceContext {
 
 	svc := &ServiceContext{
 		Config:            c,
-		Redis:             redisService,
+		Redis:             rds,
 		MarketClient:      marketClient,
 		MarketTokenClient: marketClient,
 		DB:                db,

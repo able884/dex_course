@@ -344,6 +344,7 @@ func (l *CreateClmmPoolLogic) buildCreateClmmPoolTx(in *trade.CreateClmmPoolRequ
 		TickSpacing:   tier.TickSpacing,
 	})
 	if err != nil {
+		logx.Errorf("构建CLMM初始化流动性指令失败 : %v", err)
 		return "", fmt.Errorf("failed to build init liquidity instruction: %w", err)
 	}
 	if openIx != nil {
@@ -395,6 +396,7 @@ func (l *CreateClmmPoolLogic) buildCreateClmmPoolTx(in *trade.CreateClmmPoolRequ
 
 	logx.WithContext(l.ctx).Infof("Create CLMM pool tx built: pool_state=%s token0=%s token1=%s config_index=%d", poolState.String(), token0Mint.String(), token1Mint.String(), tier.ConfigIndex)
 
+	logx.Info("构建创建CLMM流动性池子未签名交易成功")
 	return base64.StdEncoding.EncodeToString(txBytes), nil
 }
 
@@ -646,7 +648,7 @@ func (l *CreateClmmPoolLogic) buildInitLiquidityInstruction(p clmmInitLiquidityP
 
 	// 日志验证 tick 对齐及 PDA
 	block := int32(p.TickSpacing) * clmmTickArraySize
-	fmt.Println("CLMM init tick debug",
+	fmt.Println("CLMM池子 初始化 tick ：",
 		"lower", p.TickLower,
 		"upper", p.TickUpper,
 		"spacing", p.TickSpacing,

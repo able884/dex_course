@@ -34,7 +34,7 @@ INSERT INTO `cpmm_fee_tiers` (`pool_type`, `program_address`, `value_bps`, `labe
 ('CPMM', 'Db2MGEacxHrshK1UV4k4rBdVVtoET8hTBzh6X939c8AW', 40000, '4.00%', '高手续费 - 适用于低流动性或高风险交易对', 20, 4, 'Egn9AWQrkstM4NJv2g8rqLfxiYdgFWLr2UxrsrvSRCQZ', 50, 'v1');
 
 -- CPMM 允许的代币列表
-CREATE TABLE `cpmm_allowed_tokens` (
+CREATE TABLE `allowed_tokens` (
   `id` bigint NOT NULL AUTO_INCREMENT COMMENT '主键ID',
   `chain_id` bigint NOT NULL COMMENT '链 ID',
   `mint` varchar(64) NOT NULL COMMENT 'SPL mint 地址',
@@ -55,7 +55,7 @@ CREATE TABLE `cpmm_allowed_tokens` (
   KEY `idx_cpmm_token_updated_at` (`updated_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='允许添加到 CPMM 的代币';
 
-INSERT INTO `cpmm_allowed_tokens`
+INSERT INTO `allowed_tokens`
 (`chain_id`, `mint`, `program`, `name`, `symbol`, `decimals`, `logo`, `description`, `status`, `tags`, `priority_order`, `created_at`, `updated_at`) VALUES
 (100000, 'So11111111111111111111111111111111111111112', 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA', 'Wrapped SOL', 'SOL', 9, '', '', 'active', '[]', 20, '2025-11-17 02:41:45', '2025-11-17 06:17:44'),
 (100000, '5B8vQ6Nak7DySL7MjpUSxZjv26Lxhynr5VziFaPkkJPH', 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA', 'L BTC', 'LBTC', 6, 'https://gateway.lighthouse.storage/ipfs/bafkreiasjlsp3urir2ifjczadfpgxpb6u6r6oj2ivzscpdujs5njyuqynm', 'LL BTC', 'active', '[]', 100, '2025-11-16 20:54:12', '2025-11-16 20:54:12'),

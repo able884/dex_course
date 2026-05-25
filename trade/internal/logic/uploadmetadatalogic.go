@@ -39,11 +39,13 @@ func NewUploadMetadataLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Up
 func (l *UploadMetadataLogic) UploadTokenMetadata(in *trade.UploadMetadataRequest) (*trade.UploadMetadataResponse, error) {
 	// 1. 校验 IPFS API Key 是否配置
 	if l.svcCtx.NFTStorageKey == "" {
+		logx.Error("IPFS API Key 未配置")
 		return nil, fmt.Errorf("IPFS API Key not configured")
 	}
 
 	// 2. 校验必填字段（代币名称和符号）
 	if in.Name == "" || in.Symbol == "" {
+		logx.Error("名字/标识 required")
 		return nil, fmt.Errorf("name/symbol required")
 	}
 
@@ -53,6 +55,7 @@ func (l *UploadMetadataLogic) UploadTokenMetadata(in *trade.UploadMetadataReques
 		// 解码 base64 图片数据
 		imgData, err := base64.StdEncoding.DecodeString(in.ImageContentBase64)
 		if err != nil {
+			logx.Error("无效的 image_content_base64")
 			return nil, fmt.Errorf("invalid image_content_base64: %w", err)
 		}
 
@@ -66,6 +69,7 @@ func (l *UploadMetadataLogic) UploadTokenMetadata(in *trade.UploadMetadataReques
 				reader := bytes.NewReader(imgData)
 				res, err := l.svcCtx.LhClient.Storage().UploadReader(l.ctx, "image.jpg", int64(len(imgData)), reader)
 				if err != nil {
+					logx.Error("Lighthouse 图片上传失败")
 					c2, err2 := uploadViaLighthouse(l.ctx, l.svcCtx.NFTStorageKey, "image.jpg", imgData)
 					if err2 != nil {
 						return nil, fmt.Errorf("lighthouse image upload failed: %v; fallback err: %v", err, err2)
@@ -77,6 +81,7 @@ func (l *UploadMetadataLogic) UploadTokenMetadata(in *trade.UploadMetadataReques
 			} else {
 				c2, err2 := uploadViaLighthouse(l.ctx, l.svcCtx.NFTStorageKey, "image.jpg", imgData)
 				if err2 != nil {
+					logx.Error("降级到 Lighthouse HTTP 上传图片失败")
 					return nil, err2
 				}
 				cid = c2
@@ -85,6 +90,7 @@ func (l *UploadMetadataLogic) UploadTokenMetadata(in *trade.UploadMetadataReques
 			// 默认使用 NFT.Storage
 			c2, err2 := uploadViaNFTStorageBinary(l.ctx, l.svcCtx.NFTStorageKey, imgData)
 			if err2 != nil {
+				logx.Error("NFT.Storage 图片上传失败")
 				return nil, err2
 			}
 			cid = c2
@@ -98,14 +104,14 @@ func (l *UploadMetadataLogic) UploadTokenMetadata(in *trade.UploadMetadataReques
 
 	// 4. 构建代币元数据 JSON（兼容标准 NFT 元数据格式）
 	meta := map[string]interface{}{
-		"name":        in.Name,           // 代币名称
-		"symbol":      in.Symbol,         // 代币符号
-		"description": in.Description,    // 代币描述
-		"image":       imageURI,          // 图片 URI
-		"website":     in.Website,        // 官网链接
-		"twitter":     in.Twitter,        // Twitter 链接
-		"telegram":    in.Telegram,       // Telegram 链接
-		"extensions": map[string]string{  // 扩展字段（便于索引）
+		"name":        in.Name,        // 代币名称
+		"symbol":      in.Symbol,      // 代币符号
+		"description": in.Description, // 代币描述
+		"image":       imageURI,       // 图片 URI
+		"website":     in.Website,     // 官网链接
+		"twitter":     in.Twitter,     // Twitter 链接
+		"telegram":    in.Telegram,    // Telegram 链接
+		"extensions": map[string]string{ // 扩展字段（便于索引）
 			"website":  in.Website,
 			"twitter":  in.Twitter,
 			"telegram": in.Telegram,
@@ -123,6 +129,7 @@ func (l *UploadMetadataLogic) UploadTokenMetadata(in *trade.UploadMetadataReques
 				// 降级到 HTTP
 				v2, err2 := uploadMetadataViaLighthouse(l.ctx, l.svcCtx.NFTStorageKey, meta)
 				if err2 != nil {
+					logx.Error("降级到 Lighthouse HTTP 上传元数据失败")
 					return nil, fmt.Errorf("lighthouse upload failed: %v; fallback err: %v", err, err2)
 				}
 				cid = v2
@@ -132,6 +139,7 @@ func (l *UploadMetadataLogic) UploadTokenMetadata(in *trade.UploadMetadataReques
 		} else {
 			v, err := uploadMetadataViaLighthouse(l.ctx, l.svcCtx.NFTStorageKey, meta)
 			if err != nil {
+				logx.Error("降级到 Lighthouse HTTP 上传元数据失败")
 				return nil, err
 			}
 			cid = v
@@ -139,6 +147,7 @@ func (l *UploadMetadataLogic) UploadTokenMetadata(in *trade.UploadMetadataReques
 	default:
 		v, err := uploadMetadataViaNFTStorage(l.ctx, l.svcCtx.NFTStorageKey, meta)
 		if err != nil {
+			logx.Error("NFT.Storage 上传元数据失败")
 			return nil, err
 		}
 		cid = v
@@ -158,6 +167,7 @@ func (l *UploadMetadataLogic) UploadTokenMetadata(in *trade.UploadMetadataReques
 // uploadMetadataViaNFTStorage 通过 NFT.Storage 上传元数据
 func uploadMetadataViaNFTStorage(ctx context.Context, apiKey string, meta map[string]interface{}) (string, error) {
 	// 序列化元数据为 JSON
+	logx.Infof("使用 NFT.Storage 上传元数据，大小: %d bytes", len(meta))
 	body, _ := json.Marshal(meta)
 
 	// 创建 HTTP 请求
@@ -213,6 +223,7 @@ func uploadMetadataViaNFTStorage(ctx context.Context, apiKey string, meta map[st
 // uploadMetadataViaLighthouse 通过 Lighthouse HTTP API 上传元数据
 func uploadMetadataViaLighthouse(ctx context.Context, apiKey string, meta map[string]interface{}) (string, error) {
 	// 序列化元数据为 JSON
+	logx.Infof("使用 Lighthouse HTTP API 上传元数据，大小: %d bytes", len(meta))
 	content, _ := json.Marshal(meta)
 
 	// 创建 multipart form
@@ -313,12 +324,15 @@ func uploadMetadataViaLighthouseSDK(ctx context.Context, client *lighthouse.Clie
 	reader := bytes.NewReader(content)
 
 	// 调用 SDK 上传
+	logx.Infof("使用 Lighthouse SDK 上传元数据，大小: %d bytes", len(content))
 	res, err := client.Storage().UploadReader(ctx, "metadata.json", int64(len(content)), reader)
 	if err != nil {
+		logx.Errorf("Lighthouse SDK 上传元数据失败: %v", err)
 		return "", err
 	}
 
 	if res == nil || res.Hash == "" {
+		logx.Error("Lighthouse SDK 上传元数据 返回空的 Hash")
 		return "", fmt.Errorf("lighthouse sdk returned empty hash")
 	}
 

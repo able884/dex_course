@@ -205,11 +205,13 @@ func (s *BlockService) ProcessBlock(ctx context.Context, slot int64) {
 	// Step0: 初始化区块对象，并将状态默认标记为失败，后续流程成功再回写
 	// 采用"失败优先"策略，只有处理成功才更新状态，确保异常情况下能正确标记失败
 	s.slot = uint64(slot)
+	s.resetMetadataAggregator(s.slot)
 
 	// 初始化区块数据库模型，默认状态为失败
 	block := &solmodel.Block{
-		Slot:   slot,
-		Status: constants.BlockFailed, // 默认设置为失败，后续根据获取块信息的结果更新状态
+		Slot:      slot,
+		Status:    constants.BlockFailed, // 默认设置为失败，后续根据获取块信息的结果更新状态
+		BlockTime: time.Now(),            // 设置默认时间，避免 '0000-00-00' 错误
 	}
 
 	// 通过 RPC 获取区块详细信息（包含所有交易数据）

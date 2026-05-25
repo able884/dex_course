@@ -57,6 +57,7 @@ func (l *CreatePumpTokenLogic) CreatePumpToken(in *trade.CreatePumpTokenRequest)
 
 	// 5. 如果未提供 URI，则自动生成元数据并上传到 IPFS
 	if in.Uri == "" {
+		logx.Infof("未提供 URI，开始自动生成并上传代币元数据: Name=%s, Symbol=%s", in.Name, in.Symbol)
 		uml := NewUploadMetadataLogic(l.ctx, l.svcCtx)
 		metaResp, err := uml.UploadTokenMetadata(&trade.UploadMetadataRequest{
 			Name:               in.Name,
@@ -69,6 +70,7 @@ func (l *CreatePumpTokenLogic) CreatePumpToken(in *trade.CreatePumpTokenRequest)
 			Telegram:           in.Telegram,
 		})
 		if err != nil {
+			logx.Errorf("自动上传代币元数据失败: %v", err)
 			return nil, fmt.Errorf("元数据上传失败: %w", err)
 		}
 		// 克隆请求并填充 URI
@@ -81,6 +83,7 @@ func (l *CreatePumpTokenLogic) CreatePumpToken(in *trade.CreatePumpTokenRequest)
 	// 6. 构建未签名的代币创建交易
 	txBase64, err := l.svcCtx.SolTxMananger.BuildUnsignedPumpCreateTransaction(l.ctx, in)
 	if err != nil {
+		logx.Errorf("构建未签名 Pump创建token 交易失败: %v", err)
 		l.Errorf("BuildUnsignedPumpCreateTransaction 失败: %v", err)
 		return nil, err
 	}
@@ -128,6 +131,7 @@ func (l *CreatePumpTokenLogic) CreatePumpToken(in *trade.CreatePumpTokenRequest)
 	}
 
 	// 9. 返回未签名交易给客户端
+	logx.Infof("成功构建未签名 Pump 创建交易，返回给客户端: Mint=%s, PairAddr=%s", in.Mint, pairAddr)
 	return &trade.CreatePumpTokenResponse{Tx: txBase64}, nil
 }
 
