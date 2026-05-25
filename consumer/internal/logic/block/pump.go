@@ -224,6 +224,9 @@ func decodePumpSwap(ctx context.Context, sc *svc.ServiceContext, dtx *DecodedTx,
 	// 构建交易信息
 	trade := buildPumpTrade(dtx, accounts, tokenAccountInfo, event, logIndex)
 
+	// 是否发送迁移命令
+	dispatchPumpMigration(sc, trade)
+
 	return trade, nil
 }
 
@@ -669,6 +672,54 @@ func updatePumpMarketCap(trade *types.TradeWithPair) {
 	trade.PumpMarketCap = decimal.NewFromFloat(trade.TokenPriceUSD).
 		Mul(decimal.NewFromFloat(supply)).
 		InexactFloat64()
+}
+
+// 发送迁移任务到共享通道，当交易达到迁移条件时（PumpPoint >= pumpMigrationPoint），
+// 并且确保同一交易对只推送一次迁移任务，避免重复迁移。
+func dispatchPumpMigration(sc *svc.ServiceContext, trade *types.TradeWithPair) {
+	if sc == nil || sc.PumpMigrationChan == nil || trade == nil {
+		return
+	}
+
+	// 达到迁移条件才推送，避免过早推送导致重复迁移
+	if trade.PumpStatus != PumpStatusMigrating {
+		return
+	}
+
+	pairAddr := strings.ToLower(trade.PairAddr)
+	if sc.PumpMigrationOnce != nil {
+		// 使用 sync.Map 进行幂等检查，确保同一交易对只推送一次迁移任务
+		if _, loaded := sc.PumpMigrationOnce.LoadOrStore(pairAddr, struct{}{}); loaded {
+			return
+		}
+	}
+
+	baseAmt := trade.CurrentBaseTokenInPoolAmount
+	if baseAmt <= 0 {
+		baseAmt = trade.PairInfo.CurrentBaseTokenAmount
+	}
+	tokenAmt := trade.CurrentTokenInPoolAmount
+	if tokenAmt <= 0 {
+		tokenAmt = trade.PairInfo.CurrentTokenAmount
+	}
+
+	job := svc.PumpMigrationJob{
+		PairAddr:    pairAddr,
+		TokenMint:   trade.PairInfo.TokenAddr,
+		TokenSymbol: trade.PairInfo.TokenSymbol,
+		BaseAmount:  baseAmt,
+		TokenAmount: tokenAmt,
+		PumpPoint:   trade.PumpPoint,
+		Maker:       trade.Maker,
+	}
+
+	select {
+	case sc.PumpMigrationChan <- job:
+		logx.Infof("enqueue pump migration job: pair=%s token=%s pumpPoint=%.4f base=%.6f token=%.6f",
+			job.PairAddr, job.TokenMint, job.PumpPoint, job.BaseAmount, job.TokenAmount)
+	default:
+		logx.Errorf("pump migration channel full, drop pair=%s token=%s", job.PairAddr, job.TokenMint)
+	}
 }
 
 func shouldSkipPumpCreate(ctx context.Context, sc *svc.ServiceContext, pairAddr string) bool {
