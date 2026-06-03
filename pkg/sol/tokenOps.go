@@ -63,11 +63,18 @@ func (CreateToken2022AtaIdempotentInstruction) Data() ([]byte, error) {
 	})
 }
 
+// 创建 Token-2022 标准 的关联代币账户（ATA），并且是 幂等（idempotent） 操作 ,
+// 账户不存在 → 创建, 账户存在 → 直接成功
+// payer           付费人（通常是交易发起者）
+// walletAddress   要为谁创建 ATA（代币归属人）
+// mintAddress     代币 Mint 地址（Token-2022 类型）
 func CreateToken2022AtaIdempotent(payer, walletAddress, mintAddress aSDK.PublicKey) (aSDK.Instruction, error) {
 	inst, err := associatedtoken2022account.NewCreateInstruction(payer, walletAddress, mintAddress).ValidateAndBuild()
 	if nil != err {
 		return nil, err
 	}
+
+	// 修改指令为冥等创建-存在直接成功，不存在才创建
 	inst.TypeID = TypeIDCreateAtaIdempotent
 
 	a := &CreateToken2022AtaIdempotentInstruction{

@@ -46,6 +46,9 @@ type Config struct {
 
 	// 失败 Slot 日志配置
 	FailedSlotLog FailedSlotLogConfig `json:"FailedSlotLog,optional"`
+
+	// Geyser gRPC 配置
+	Geyser GeyserConfig `json:"Geyser,optional"`
 }
 
 type MySQLConfig struct {
@@ -171,6 +174,11 @@ func (cfg *Config) normalize() error {
 	// 失败 Slot 日志配置验证
 	if err := cfg.FailedSlotLog.normalize(); err != nil {
 		return fmt.Errorf("failed slot log config error: %w", err)
+	}
+
+	// Geyser 配置验证
+	if err := cfg.Geyser.normalize(); err != nil {
+		return fmt.Errorf("geyser config error: %w", err)
 	}
 
 	return nil
@@ -625,6 +633,153 @@ func (cfg *FailedSlotLogConfig) normalize() error {
 	// 设置默认值
 	if cfg.LogDir == "" {
 		cfg.LogDir = "./logs/failed_slots/"
+	}
+
+	return nil
+}
+
+// GeyserConfig Geyser gRPC 配置
+type GeyserConfig struct {
+	// Enabled 是否启用 Geyser 模式（默认 false）
+	Enabled bool `json:"Enabled" json:",default=false"`
+	// Endpoints Geyser 端点列表（支持多个备用端点）
+	Endpoints []string `json:"Endpoints,optional"`
+	// Commitment 承诺级别（processed/confirmed/finalized，默认 confirmed）
+	Commitment string `json:"Commitment" json:",default=confirmed"`
+	// EnableTLS 是否启用 TLS（默认 true）
+	EnableTLS bool `json:"EnableTLS" json:",default=true"`
+	// ReconnectInterval 重连间隔（默认 5s）
+	ReconnectInterval time.Duration `json:"ReconnectInterval" json:",default=5s"`
+	// HealthCheckInterval 健康检查间隔（默认 10s）
+	HealthCheckInterval time.Duration `json:"HealthCheckInterval" json:",default=10s"`
+	// ConnectionTimeout 连接超时（默认 30s）
+	ConnectionTimeout time.Duration `json:"ConnectionTimeout" json:",default=30s"`
+	// StreamTimeout 流超时（默认 60s）
+	StreamTimeout time.Duration `json:"StreamTimeout" json:",default=60s"`
+	// Filters 订阅过滤器
+	Filters GeyserFiltersConfig `json:"Filters,optional"`
+	// Fallback 降级配置
+	Fallback GeyserFallbackConfig `json:"Fallback,optional"`
+}
+
+// GeyserFiltersConfig Geyser 过滤器配置
+type GeyserFiltersConfig struct {
+	// AccountInclude 包含的账户/程序 ID 列表（服务端过滤）
+	AccountInclude []string `json:"AccountInclude,optional"`
+}
+
+// GeyserFallbackConfig Geyser 降级配置
+type GeyserFallbackConfig struct {
+	// Enabled 是否启用自动降级（默认 true）
+	Enabled bool `json:"Enabled" json:",default=true"`
+	// MaxConsecutiveFailures 连续失败几次触发降级（默认 3）
+	MaxConsecutiveFailures int `json:"MaxConsecutiveFailures" json:",default=3"`
+	// RecoveryCheckInterval 恢复检查间隔（默认 30s）
+	RecoveryCheckInterval time.Duration `json:"RecoveryCheckInterval" json:",default=30s"`
+	// SlotDelayThreshold slot 延迟阈值，超过此值触发降级（默认 10s）
+	SlotDelayThreshold time.Duration `json:"SlotDelayThreshold" json:",default=10s"`
+}
+
+func (cfg *GeyserConfig) normalize() error {
+	// 如果未启用 Geyser，跳过验证
+	if !cfg.Enabled {
+		return nil
+	}
+
+	// 验证端点配置
+	if len(cfg.Endpoints) == 0 {
+		return fmt.Errorf("geyser endpoints cannot be empty when enabled")
+	}
+
+	// 设置默认值
+	if cfg.Commitment == "" {
+		cfg.Commitment = "confirmed"
+	}
+
+	// 验证承诺级别
+	validCommitments := map[string]bool{
+		"processed":  true,
+		"confirmed":  true,
+		"finalized":  true,
+	}
+	if !validCommitments[cfg.Commitment] {
+		return fmt.Errorf("invalid commitment level: %s (must be processed/confirmed/finalized)", cfg.Commitment)
+	}
+
+	// 设置超时默认值
+	if cfg.ReconnectInterval <= 0 {
+		cfg.ReconnectInterval = 5 * time.Second
+	}
+	if cfg.HealthCheckInterval <= 0 {
+		cfg.HealthCheckInterval = 10 * time.Second
+	}
+	if cfg.ConnectionTimeout <= 0 {
+		cfg.ConnectionTimeout = 30 * time.Second
+	}
+	if cfg.StreamTimeout <= 0 {
+		cfg.StreamTimeout = 60 * time.Second
+	}
+
+	// 验证超时范围
+	if cfg.ReconnectInterval < 1*time.Second {
+		return fmt.Errorf("reconnect interval must be at least 1s, got %s", cfg.ReconnectInterval)
+	}
+	if cfg.ReconnectInterval > 60*time.Second {
+		return fmt.Errorf("reconnect interval must be at most 60s, got %s", cfg.ReconnectInterval)
+	}
+	if cfg.HealthCheckInterval < 5*time.Second {
+		return fmt.Errorf("health check interval must be at least 5s, got %s", cfg.HealthCheckInterval)
+	}
+	if cfg.HealthCheckInterval > 300*time.Second {
+		return fmt.Errorf("health check interval must be at most 300s, got %s", cfg.HealthCheckInterval)
+	}
+	if cfg.ConnectionTimeout < 5*time.Second {
+		return fmt.Errorf("connection timeout must be at least 5s, got %s", cfg.ConnectionTimeout)
+	}
+	if cfg.ConnectionTimeout > 300*time.Second {
+		return fmt.Errorf("connection timeout must be at most 300s, got %s", cfg.ConnectionTimeout)
+	}
+	if cfg.StreamTimeout < 10*time.Second {
+		return fmt.Errorf("stream timeout must be at least 10s, got %s", cfg.StreamTimeout)
+	}
+	if cfg.StreamTimeout > 600*time.Second {
+		return fmt.Errorf("stream timeout must be at most 600s, got %s", cfg.StreamTimeout)
+	}
+
+	// 验证过滤器配置
+	if len(cfg.Filters.AccountInclude) == 0 {
+		return fmt.Errorf("geyser filters must include at least one account/program ID")
+	}
+
+	// 验证降级配置
+	if cfg.Fallback.MaxConsecutiveFailures <= 0 {
+		cfg.Fallback.MaxConsecutiveFailures = 3
+	}
+	if cfg.Fallback.MaxConsecutiveFailures < 1 {
+		return fmt.Errorf("max consecutive failures must be at least 1, got %d", cfg.Fallback.MaxConsecutiveFailures)
+	}
+	if cfg.Fallback.MaxConsecutiveFailures > 10 {
+		return fmt.Errorf("max consecutive failures must be at most 10, got %d", cfg.Fallback.MaxConsecutiveFailures)
+	}
+
+	if cfg.Fallback.RecoveryCheckInterval <= 0 {
+		cfg.Fallback.RecoveryCheckInterval = 30 * time.Second
+	}
+	if cfg.Fallback.RecoveryCheckInterval < 10*time.Second {
+		return fmt.Errorf("recovery check interval must be at least 10s, got %s", cfg.Fallback.RecoveryCheckInterval)
+	}
+	if cfg.Fallback.RecoveryCheckInterval > 300*time.Second {
+		return fmt.Errorf("recovery check interval must be at most 300s, got %s", cfg.Fallback.RecoveryCheckInterval)
+	}
+
+	if cfg.Fallback.SlotDelayThreshold <= 0 {
+		cfg.Fallback.SlotDelayThreshold = 10 * time.Second
+	}
+	if cfg.Fallback.SlotDelayThreshold < 5*time.Second {
+		return fmt.Errorf("slot delay threshold must be at least 5s, got %s", cfg.Fallback.SlotDelayThreshold)
+	}
+	if cfg.Fallback.SlotDelayThreshold > 60*time.Second {
+		return fmt.Errorf("slot delay threshold must be at most 60s, got %s", cfg.Fallback.SlotDelayThreshold)
 	}
 
 	return nil

@@ -2980,6 +2980,1773 @@ func (x *PositionItem) GetUpdatedAt() int64 {
 	return 0
 }
 
+// Get order book request
+type GetLimitOrderBookRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ChainId       int64                  `protobuf:"varint,1,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`      // Chain ID (100000 for Solana)
+	MarketPda     string                 `protobuf:"bytes,2,opt,name=market_pda,json=marketPda,proto3" json:"market_pda,omitempty"` // Market PDA address
+	Depth         int32                  `protobuf:"varint,3,opt,name=depth,proto3" json:"depth,omitempty"`                         // Order book depth (default 20)
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetLimitOrderBookRequest) Reset() {
+	*x = GetLimitOrderBookRequest{}
+	mi := &file_market_proto_msgTypes[26]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetLimitOrderBookRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetLimitOrderBookRequest) ProtoMessage() {}
+
+func (x *GetLimitOrderBookRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_market_proto_msgTypes[26]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetLimitOrderBookRequest.ProtoReflect.Descriptor instead.
+func (*GetLimitOrderBookRequest) Descriptor() ([]byte, []int) {
+	return file_market_proto_rawDescGZIP(), []int{26}
+}
+
+func (x *GetLimitOrderBookRequest) GetChainId() int64 {
+	if x != nil {
+		return x.ChainId
+	}
+	return 0
+}
+
+func (x *GetLimitOrderBookRequest) GetMarketPda() string {
+	if x != nil {
+		return x.MarketPda
+	}
+	return ""
+}
+
+func (x *GetLimitOrderBookRequest) GetDepth() int32 {
+	if x != nil {
+		return x.Depth
+	}
+	return 0
+}
+
+type GetLimitOrderBookResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Bids          []*OrderBookLevel      `protobuf:"bytes,1,rep,name=bids,proto3" json:"bids,omitempty"`                         // Buy orders (price descending)
+	Asks          []*OrderBookLevel      `protobuf:"bytes,2,rep,name=asks,proto3" json:"asks,omitempty"`                         // Sell orders (price ascending)
+	BestBid       string                 `protobuf:"bytes,3,opt,name=best_bid,json=bestBid,proto3" json:"best_bid,omitempty"`    // Best bid price
+	BestAsk       string                 `protobuf:"bytes,4,opt,name=best_ask,json=bestAsk,proto3" json:"best_ask,omitempty"`    // Best ask price
+	Spread        string                 `protobuf:"bytes,5,opt,name=spread,proto3" json:"spread,omitempty"`                     // Bid-ask spread
+	MidPrice      string                 `protobuf:"bytes,6,opt,name=mid_price,json=midPrice,proto3" json:"mid_price,omitempty"` // Mid price
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetLimitOrderBookResponse) Reset() {
+	*x = GetLimitOrderBookResponse{}
+	mi := &file_market_proto_msgTypes[27]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetLimitOrderBookResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetLimitOrderBookResponse) ProtoMessage() {}
+
+func (x *GetLimitOrderBookResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_market_proto_msgTypes[27]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetLimitOrderBookResponse.ProtoReflect.Descriptor instead.
+func (*GetLimitOrderBookResponse) Descriptor() ([]byte, []int) {
+	return file_market_proto_rawDescGZIP(), []int{27}
+}
+
+func (x *GetLimitOrderBookResponse) GetBids() []*OrderBookLevel {
+	if x != nil {
+		return x.Bids
+	}
+	return nil
+}
+
+func (x *GetLimitOrderBookResponse) GetAsks() []*OrderBookLevel {
+	if x != nil {
+		return x.Asks
+	}
+	return nil
+}
+
+func (x *GetLimitOrderBookResponse) GetBestBid() string {
+	if x != nil {
+		return x.BestBid
+	}
+	return ""
+}
+
+func (x *GetLimitOrderBookResponse) GetBestAsk() string {
+	if x != nil {
+		return x.BestAsk
+	}
+	return ""
+}
+
+func (x *GetLimitOrderBookResponse) GetSpread() string {
+	if x != nil {
+		return x.Spread
+	}
+	return ""
+}
+
+func (x *GetLimitOrderBookResponse) GetMidPrice() string {
+	if x != nil {
+		return x.MidPrice
+	}
+	return ""
+}
+
+type OrderBookLevel struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Price         string                 `protobuf:"bytes,1,opt,name=price,proto3" json:"price,omitempty"`                              // Price (display value)
+	Quantity      string                 `protobuf:"bytes,2,opt,name=quantity,proto3" json:"quantity,omitempty"`                        // Total quantity at this price level
+	TotalValue    string                 `protobuf:"bytes,3,opt,name=total_value,json=totalValue,proto3" json:"total_value,omitempty"`  // Total value (price * quantity)
+	OrderCount    int32                  `protobuf:"varint,4,opt,name=order_count,json=orderCount,proto3" json:"order_count,omitempty"` // Number of orders at this level
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *OrderBookLevel) Reset() {
+	*x = OrderBookLevel{}
+	mi := &file_market_proto_msgTypes[28]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *OrderBookLevel) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*OrderBookLevel) ProtoMessage() {}
+
+func (x *OrderBookLevel) ProtoReflect() protoreflect.Message {
+	mi := &file_market_proto_msgTypes[28]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use OrderBookLevel.ProtoReflect.Descriptor instead.
+func (*OrderBookLevel) Descriptor() ([]byte, []int) {
+	return file_market_proto_rawDescGZIP(), []int{28}
+}
+
+func (x *OrderBookLevel) GetPrice() string {
+	if x != nil {
+		return x.Price
+	}
+	return ""
+}
+
+func (x *OrderBookLevel) GetQuantity() string {
+	if x != nil {
+		return x.Quantity
+	}
+	return ""
+}
+
+func (x *OrderBookLevel) GetTotalValue() string {
+	if x != nil {
+		return x.TotalValue
+	}
+	return ""
+}
+
+func (x *OrderBookLevel) GetOrderCount() int32 {
+	if x != nil {
+		return x.OrderCount
+	}
+	return 0
+}
+
+// Get user orders request
+type GetUserLimitOrdersRequest struct {
+	state             protoimpl.MessageState `protogen:"open.v1"`
+	ChainId           int64                  `protobuf:"varint,1,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`                                // Chain ID
+	UserWalletAddress string                 `protobuf:"bytes,2,opt,name=user_wallet_address,json=userWalletAddress,proto3" json:"user_wallet_address,omitempty"` // User wallet address
+	MarketPda         string                 `protobuf:"bytes,3,opt,name=market_pda,json=marketPda,proto3" json:"market_pda,omitempty"`                           // Market PDA (optional filter)
+	Status            int32                  `protobuf:"varint,4,opt,name=status,proto3" json:"status,omitempty"`                                                 // Status filter: 0=All, 1=Active, 2=Filled, 3=Cancelled, 4=Expired
+	PageNo            int32                  `protobuf:"varint,5,opt,name=page_no,json=pageNo,proto3" json:"page_no,omitempty"`                                   // Page number (default 1)
+	PageSize          int32                  `protobuf:"varint,6,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`                             // Page size (default 20)
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
+}
+
+func (x *GetUserLimitOrdersRequest) Reset() {
+	*x = GetUserLimitOrdersRequest{}
+	mi := &file_market_proto_msgTypes[29]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetUserLimitOrdersRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetUserLimitOrdersRequest) ProtoMessage() {}
+
+func (x *GetUserLimitOrdersRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_market_proto_msgTypes[29]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetUserLimitOrdersRequest.ProtoReflect.Descriptor instead.
+func (*GetUserLimitOrdersRequest) Descriptor() ([]byte, []int) {
+	return file_market_proto_rawDescGZIP(), []int{29}
+}
+
+func (x *GetUserLimitOrdersRequest) GetChainId() int64 {
+	if x != nil {
+		return x.ChainId
+	}
+	return 0
+}
+
+func (x *GetUserLimitOrdersRequest) GetUserWalletAddress() string {
+	if x != nil {
+		return x.UserWalletAddress
+	}
+	return ""
+}
+
+func (x *GetUserLimitOrdersRequest) GetMarketPda() string {
+	if x != nil {
+		return x.MarketPda
+	}
+	return ""
+}
+
+func (x *GetUserLimitOrdersRequest) GetStatus() int32 {
+	if x != nil {
+		return x.Status
+	}
+	return 0
+}
+
+func (x *GetUserLimitOrdersRequest) GetPageNo() int32 {
+	if x != nil {
+		return x.PageNo
+	}
+	return 0
+}
+
+func (x *GetUserLimitOrdersRequest) GetPageSize() int32 {
+	if x != nil {
+		return x.PageSize
+	}
+	return 0
+}
+
+type GetUserLimitOrdersResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Orders        []*UserOrderItem       `protobuf:"bytes,1,rep,name=orders,proto3" json:"orders,omitempty"`
+	Total         int32                  `protobuf:"varint,2,opt,name=total,proto3" json:"total,omitempty"`
+	PageNo        int32                  `protobuf:"varint,3,opt,name=page_no,json=pageNo,proto3" json:"page_no,omitempty"`
+	PageSize      int32                  `protobuf:"varint,4,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetUserLimitOrdersResponse) Reset() {
+	*x = GetUserLimitOrdersResponse{}
+	mi := &file_market_proto_msgTypes[30]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetUserLimitOrdersResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetUserLimitOrdersResponse) ProtoMessage() {}
+
+func (x *GetUserLimitOrdersResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_market_proto_msgTypes[30]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetUserLimitOrdersResponse.ProtoReflect.Descriptor instead.
+func (*GetUserLimitOrdersResponse) Descriptor() ([]byte, []int) {
+	return file_market_proto_rawDescGZIP(), []int{30}
+}
+
+func (x *GetUserLimitOrdersResponse) GetOrders() []*UserOrderItem {
+	if x != nil {
+		return x.Orders
+	}
+	return nil
+}
+
+func (x *GetUserLimitOrdersResponse) GetTotal() int32 {
+	if x != nil {
+		return x.Total
+	}
+	return 0
+}
+
+func (x *GetUserLimitOrdersResponse) GetPageNo() int32 {
+	if x != nil {
+		return x.PageNo
+	}
+	return 0
+}
+
+func (x *GetUserLimitOrdersResponse) GetPageSize() int32 {
+	if x != nil {
+		return x.PageSize
+	}
+	return 0
+}
+
+type UserOrderItem struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	OrderPda      string                 `protobuf:"bytes,1,opt,name=order_pda,json=orderPda,proto3" json:"order_pda,omitempty"`                // Order PDA
+	MarketPda     string                 `protobuf:"bytes,2,opt,name=market_pda,json=marketPda,proto3" json:"market_pda,omitempty"`             // Market PDA
+	BaseSymbol    string                 `protobuf:"bytes,3,opt,name=base_symbol,json=baseSymbol,proto3" json:"base_symbol,omitempty"`          // Base token symbol
+	QuoteSymbol   string                 `protobuf:"bytes,4,opt,name=quote_symbol,json=quoteSymbol,proto3" json:"quote_symbol,omitempty"`       // Quote token symbol
+	Side          int32                  `protobuf:"varint,5,opt,name=side,proto3" json:"side,omitempty"`                                       // 1=Bid(Buy), 2=Ask(Sell)
+	Price         string                 `protobuf:"bytes,6,opt,name=price,proto3" json:"price,omitempty"`                                      // Price (display value)
+	Quantity      string                 `protobuf:"bytes,7,opt,name=quantity,proto3" json:"quantity,omitempty"`                                // Original quantity
+	Remaining     string                 `protobuf:"bytes,8,opt,name=remaining,proto3" json:"remaining,omitempty"`                              // Remaining quantity
+	FilledPercent string                 `protobuf:"bytes,9,opt,name=filled_percent,json=filledPercent,proto3" json:"filled_percent,omitempty"` // Filled percentage (0-100)
+	Status        int32                  `protobuf:"varint,10,opt,name=status,proto3" json:"status,omitempty"`                                  // Status: 1=Active, 2=Filled, 3=Cancelled, 4=Expired
+	CreatedAt     int64                  `protobuf:"varint,11,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`           // Creation timestamp (Unix seconds)
+	ExpirySlot    int64                  `protobuf:"varint,12,opt,name=expiry_slot,json=expirySlot,proto3" json:"expiry_slot,omitempty"`        // Expiry slot (0 for no expiry)
+	TotalValue    string                 `protobuf:"bytes,13,opt,name=total_value,json=totalValue,proto3" json:"total_value,omitempty"`         // Total value (price * quantity)
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UserOrderItem) Reset() {
+	*x = UserOrderItem{}
+	mi := &file_market_proto_msgTypes[31]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UserOrderItem) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UserOrderItem) ProtoMessage() {}
+
+func (x *UserOrderItem) ProtoReflect() protoreflect.Message {
+	mi := &file_market_proto_msgTypes[31]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UserOrderItem.ProtoReflect.Descriptor instead.
+func (*UserOrderItem) Descriptor() ([]byte, []int) {
+	return file_market_proto_rawDescGZIP(), []int{31}
+}
+
+func (x *UserOrderItem) GetOrderPda() string {
+	if x != nil {
+		return x.OrderPda
+	}
+	return ""
+}
+
+func (x *UserOrderItem) GetMarketPda() string {
+	if x != nil {
+		return x.MarketPda
+	}
+	return ""
+}
+
+func (x *UserOrderItem) GetBaseSymbol() string {
+	if x != nil {
+		return x.BaseSymbol
+	}
+	return ""
+}
+
+func (x *UserOrderItem) GetQuoteSymbol() string {
+	if x != nil {
+		return x.QuoteSymbol
+	}
+	return ""
+}
+
+func (x *UserOrderItem) GetSide() int32 {
+	if x != nil {
+		return x.Side
+	}
+	return 0
+}
+
+func (x *UserOrderItem) GetPrice() string {
+	if x != nil {
+		return x.Price
+	}
+	return ""
+}
+
+func (x *UserOrderItem) GetQuantity() string {
+	if x != nil {
+		return x.Quantity
+	}
+	return ""
+}
+
+func (x *UserOrderItem) GetRemaining() string {
+	if x != nil {
+		return x.Remaining
+	}
+	return ""
+}
+
+func (x *UserOrderItem) GetFilledPercent() string {
+	if x != nil {
+		return x.FilledPercent
+	}
+	return ""
+}
+
+func (x *UserOrderItem) GetStatus() int32 {
+	if x != nil {
+		return x.Status
+	}
+	return 0
+}
+
+func (x *UserOrderItem) GetCreatedAt() int64 {
+	if x != nil {
+		return x.CreatedAt
+	}
+	return 0
+}
+
+func (x *UserOrderItem) GetExpirySlot() int64 {
+	if x != nil {
+		return x.ExpirySlot
+	}
+	return 0
+}
+
+func (x *UserOrderItem) GetTotalValue() string {
+	if x != nil {
+		return x.TotalValue
+	}
+	return ""
+}
+
+// Get order detail request
+type GetLimitOrderDetailRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ChainId       int64                  `protobuf:"varint,1,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`   // Chain ID
+	OrderPda      string                 `protobuf:"bytes,2,opt,name=order_pda,json=orderPda,proto3" json:"order_pda,omitempty"` // Order PDA address
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetLimitOrderDetailRequest) Reset() {
+	*x = GetLimitOrderDetailRequest{}
+	mi := &file_market_proto_msgTypes[32]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetLimitOrderDetailRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetLimitOrderDetailRequest) ProtoMessage() {}
+
+func (x *GetLimitOrderDetailRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_market_proto_msgTypes[32]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetLimitOrderDetailRequest.ProtoReflect.Descriptor instead.
+func (*GetLimitOrderDetailRequest) Descriptor() ([]byte, []int) {
+	return file_market_proto_rawDescGZIP(), []int{32}
+}
+
+func (x *GetLimitOrderDetailRequest) GetChainId() int64 {
+	if x != nil {
+		return x.ChainId
+	}
+	return 0
+}
+
+func (x *GetLimitOrderDetailRequest) GetOrderPda() string {
+	if x != nil {
+		return x.OrderPda
+	}
+	return ""
+}
+
+type GetLimitOrderDetailResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Order         *OrderDetailItem       `protobuf:"bytes,1,opt,name=order,proto3" json:"order,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetLimitOrderDetailResponse) Reset() {
+	*x = GetLimitOrderDetailResponse{}
+	mi := &file_market_proto_msgTypes[33]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetLimitOrderDetailResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetLimitOrderDetailResponse) ProtoMessage() {}
+
+func (x *GetLimitOrderDetailResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_market_proto_msgTypes[33]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetLimitOrderDetailResponse.ProtoReflect.Descriptor instead.
+func (*GetLimitOrderDetailResponse) Descriptor() ([]byte, []int) {
+	return file_market_proto_rawDescGZIP(), []int{33}
+}
+
+func (x *GetLimitOrderDetailResponse) GetOrder() *OrderDetailItem {
+	if x != nil {
+		return x.Order
+	}
+	return nil
+}
+
+type OrderDetailItem struct {
+	state             protoimpl.MessageState `protogen:"open.v1"`
+	OrderPda          string                 `protobuf:"bytes,1,opt,name=order_pda,json=orderPda,proto3" json:"order_pda,omitempty"`
+	OrderId           int64                  `protobuf:"varint,2,opt,name=order_id,json=orderId,proto3" json:"order_id,omitempty"`
+	MarketPda         string                 `protobuf:"bytes,3,opt,name=market_pda,json=marketPda,proto3" json:"market_pda,omitempty"`
+	BaseSymbol        string                 `protobuf:"bytes,4,opt,name=base_symbol,json=baseSymbol,proto3" json:"base_symbol,omitempty"`
+	QuoteSymbol       string                 `protobuf:"bytes,5,opt,name=quote_symbol,json=quoteSymbol,proto3" json:"quote_symbol,omitempty"`
+	Owner             string                 `protobuf:"bytes,6,opt,name=owner,proto3" json:"owner,omitempty"`
+	MarginPda         string                 `protobuf:"bytes,7,opt,name=margin_pda,json=marginPda,proto3" json:"margin_pda,omitempty"`
+	Side              int32                  `protobuf:"varint,8,opt,name=side,proto3" json:"side,omitempty"` // 1=Bid, 2=Ask
+	Price             string                 `protobuf:"bytes,9,opt,name=price,proto3" json:"price,omitempty"`
+	Quantity          string                 `protobuf:"bytes,10,opt,name=quantity,proto3" json:"quantity,omitempty"`
+	Remaining         string                 `protobuf:"bytes,11,opt,name=remaining,proto3" json:"remaining,omitempty"`
+	TotalValue        string                 `protobuf:"bytes,12,opt,name=total_value,json=totalValue,proto3" json:"total_value,omitempty"`
+	FilledPercent     string                 `protobuf:"bytes,13,opt,name=filled_percent,json=filledPercent,proto3" json:"filled_percent,omitempty"`
+	Status            int32                  `protobuf:"varint,14,opt,name=status,proto3" json:"status,omitempty"`
+	ExpirySlot        int64                  `protobuf:"varint,15,opt,name=expiry_slot,json=expirySlot,proto3" json:"expiry_slot,omitempty"`
+	SelfTradeBehavior int32                  `protobuf:"varint,16,opt,name=self_trade_behavior,json=selfTradeBehavior,proto3" json:"self_trade_behavior,omitempty"`
+	CreateTxHash      string                 `protobuf:"bytes,17,opt,name=create_tx_hash,json=createTxHash,proto3" json:"create_tx_hash,omitempty"`
+	CancelTxHash      string                 `protobuf:"bytes,18,opt,name=cancel_tx_hash,json=cancelTxHash,proto3" json:"cancel_tx_hash,omitempty"`
+	CreatedAt         int64                  `protobuf:"varint,19,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	UpdatedAt         int64                  `protobuf:"varint,20,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
+	FilledAt          int64                  `protobuf:"varint,21,opt,name=filled_at,json=filledAt,proto3" json:"filled_at,omitempty"`
+	CancelledAt       int64                  `protobuf:"varint,22,opt,name=cancelled_at,json=cancelledAt,proto3" json:"cancelled_at,omitempty"`
+	ExpiredAt         int64                  `protobuf:"varint,23,opt,name=expired_at,json=expiredAt,proto3" json:"expired_at,omitempty"`
+	Fills             []*OrderFillItem       `protobuf:"bytes,24,rep,name=fills,proto3" json:"fills,omitempty"` // Fill history
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
+}
+
+func (x *OrderDetailItem) Reset() {
+	*x = OrderDetailItem{}
+	mi := &file_market_proto_msgTypes[34]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *OrderDetailItem) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*OrderDetailItem) ProtoMessage() {}
+
+func (x *OrderDetailItem) ProtoReflect() protoreflect.Message {
+	mi := &file_market_proto_msgTypes[34]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use OrderDetailItem.ProtoReflect.Descriptor instead.
+func (*OrderDetailItem) Descriptor() ([]byte, []int) {
+	return file_market_proto_rawDescGZIP(), []int{34}
+}
+
+func (x *OrderDetailItem) GetOrderPda() string {
+	if x != nil {
+		return x.OrderPda
+	}
+	return ""
+}
+
+func (x *OrderDetailItem) GetOrderId() int64 {
+	if x != nil {
+		return x.OrderId
+	}
+	return 0
+}
+
+func (x *OrderDetailItem) GetMarketPda() string {
+	if x != nil {
+		return x.MarketPda
+	}
+	return ""
+}
+
+func (x *OrderDetailItem) GetBaseSymbol() string {
+	if x != nil {
+		return x.BaseSymbol
+	}
+	return ""
+}
+
+func (x *OrderDetailItem) GetQuoteSymbol() string {
+	if x != nil {
+		return x.QuoteSymbol
+	}
+	return ""
+}
+
+func (x *OrderDetailItem) GetOwner() string {
+	if x != nil {
+		return x.Owner
+	}
+	return ""
+}
+
+func (x *OrderDetailItem) GetMarginPda() string {
+	if x != nil {
+		return x.MarginPda
+	}
+	return ""
+}
+
+func (x *OrderDetailItem) GetSide() int32 {
+	if x != nil {
+		return x.Side
+	}
+	return 0
+}
+
+func (x *OrderDetailItem) GetPrice() string {
+	if x != nil {
+		return x.Price
+	}
+	return ""
+}
+
+func (x *OrderDetailItem) GetQuantity() string {
+	if x != nil {
+		return x.Quantity
+	}
+	return ""
+}
+
+func (x *OrderDetailItem) GetRemaining() string {
+	if x != nil {
+		return x.Remaining
+	}
+	return ""
+}
+
+func (x *OrderDetailItem) GetTotalValue() string {
+	if x != nil {
+		return x.TotalValue
+	}
+	return ""
+}
+
+func (x *OrderDetailItem) GetFilledPercent() string {
+	if x != nil {
+		return x.FilledPercent
+	}
+	return ""
+}
+
+func (x *OrderDetailItem) GetStatus() int32 {
+	if x != nil {
+		return x.Status
+	}
+	return 0
+}
+
+func (x *OrderDetailItem) GetExpirySlot() int64 {
+	if x != nil {
+		return x.ExpirySlot
+	}
+	return 0
+}
+
+func (x *OrderDetailItem) GetSelfTradeBehavior() int32 {
+	if x != nil {
+		return x.SelfTradeBehavior
+	}
+	return 0
+}
+
+func (x *OrderDetailItem) GetCreateTxHash() string {
+	if x != nil {
+		return x.CreateTxHash
+	}
+	return ""
+}
+
+func (x *OrderDetailItem) GetCancelTxHash() string {
+	if x != nil {
+		return x.CancelTxHash
+	}
+	return ""
+}
+
+func (x *OrderDetailItem) GetCreatedAt() int64 {
+	if x != nil {
+		return x.CreatedAt
+	}
+	return 0
+}
+
+func (x *OrderDetailItem) GetUpdatedAt() int64 {
+	if x != nil {
+		return x.UpdatedAt
+	}
+	return 0
+}
+
+func (x *OrderDetailItem) GetFilledAt() int64 {
+	if x != nil {
+		return x.FilledAt
+	}
+	return 0
+}
+
+func (x *OrderDetailItem) GetCancelledAt() int64 {
+	if x != nil {
+		return x.CancelledAt
+	}
+	return 0
+}
+
+func (x *OrderDetailItem) GetExpiredAt() int64 {
+	if x != nil {
+		return x.ExpiredAt
+	}
+	return 0
+}
+
+func (x *OrderDetailItem) GetFills() []*OrderFillItem {
+	if x != nil {
+		return x.Fills
+	}
+	return nil
+}
+
+// Get market list request
+type GetLimitOrderMarketsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ChainId       int64                  `protobuf:"varint,1,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`    // Chain ID
+	PageNo        int32                  `protobuf:"varint,2,opt,name=page_no,json=pageNo,proto3" json:"page_no,omitempty"`       // Page number
+	PageSize      int32                  `protobuf:"varint,3,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"` // Page size
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetLimitOrderMarketsRequest) Reset() {
+	*x = GetLimitOrderMarketsRequest{}
+	mi := &file_market_proto_msgTypes[35]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetLimitOrderMarketsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetLimitOrderMarketsRequest) ProtoMessage() {}
+
+func (x *GetLimitOrderMarketsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_market_proto_msgTypes[35]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetLimitOrderMarketsRequest.ProtoReflect.Descriptor instead.
+func (*GetLimitOrderMarketsRequest) Descriptor() ([]byte, []int) {
+	return file_market_proto_rawDescGZIP(), []int{35}
+}
+
+func (x *GetLimitOrderMarketsRequest) GetChainId() int64 {
+	if x != nil {
+		return x.ChainId
+	}
+	return 0
+}
+
+func (x *GetLimitOrderMarketsRequest) GetPageNo() int32 {
+	if x != nil {
+		return x.PageNo
+	}
+	return 0
+}
+
+func (x *GetLimitOrderMarketsRequest) GetPageSize() int32 {
+	if x != nil {
+		return x.PageSize
+	}
+	return 0
+}
+
+type GetLimitOrderMarketsResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Markets       []*MarketItem          `protobuf:"bytes,1,rep,name=markets,proto3" json:"markets,omitempty"`
+	Total         int32                  `protobuf:"varint,2,opt,name=total,proto3" json:"total,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetLimitOrderMarketsResponse) Reset() {
+	*x = GetLimitOrderMarketsResponse{}
+	mi := &file_market_proto_msgTypes[36]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetLimitOrderMarketsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetLimitOrderMarketsResponse) ProtoMessage() {}
+
+func (x *GetLimitOrderMarketsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_market_proto_msgTypes[36]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetLimitOrderMarketsResponse.ProtoReflect.Descriptor instead.
+func (*GetLimitOrderMarketsResponse) Descriptor() ([]byte, []int) {
+	return file_market_proto_rawDescGZIP(), []int{36}
+}
+
+func (x *GetLimitOrderMarketsResponse) GetMarkets() []*MarketItem {
+	if x != nil {
+		return x.Markets
+	}
+	return nil
+}
+
+func (x *GetLimitOrderMarketsResponse) GetTotal() int32 {
+	if x != nil {
+		return x.Total
+	}
+	return 0
+}
+
+type MarketItem struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	MarketPda     string                 `protobuf:"bytes,1,opt,name=market_pda,json=marketPda,proto3" json:"market_pda,omitempty"`
+	BaseMint      string                 `protobuf:"bytes,2,opt,name=base_mint,json=baseMint,proto3" json:"base_mint,omitempty"`
+	QuoteMint     string                 `protobuf:"bytes,3,opt,name=quote_mint,json=quoteMint,proto3" json:"quote_mint,omitempty"`
+	BaseSymbol    string                 `protobuf:"bytes,4,opt,name=base_symbol,json=baseSymbol,proto3" json:"base_symbol,omitempty"`
+	QuoteSymbol   string                 `protobuf:"bytes,5,opt,name=quote_symbol,json=quoteSymbol,proto3" json:"quote_symbol,omitempty"`
+	BaseDecimals  int32                  `protobuf:"varint,6,opt,name=base_decimals,json=baseDecimals,proto3" json:"base_decimals,omitempty"`
+	QuoteDecimals int32                  `protobuf:"varint,7,opt,name=quote_decimals,json=quoteDecimals,proto3" json:"quote_decimals,omitempty"`
+	TickSize      string                 `protobuf:"bytes,8,opt,name=tick_size,json=tickSize,proto3" json:"tick_size,omitempty"`               // Price tick size (display value)
+	MinQuantity   string                 `protobuf:"bytes,9,opt,name=min_quantity,json=minQuantity,proto3" json:"min_quantity,omitempty"`      // Minimum order quantity (display value)
+	MakerFeeBps   int32                  `protobuf:"varint,10,opt,name=maker_fee_bps,json=makerFeeBps,proto3" json:"maker_fee_bps,omitempty"`  // Maker fee in bps
+	TakerFeeBps   int32                  `protobuf:"varint,11,opt,name=taker_fee_bps,json=takerFeeBps,proto3" json:"taker_fee_bps,omitempty"`  // Taker fee in bps
+	Paused        bool                   `protobuf:"varint,12,opt,name=paused,proto3" json:"paused,omitempty"`                                 // Is market paused
+	ActiveOrders  int64                  `protobuf:"varint,13,opt,name=active_orders,json=activeOrders,proto3" json:"active_orders,omitempty"` // Active order count
+	Volume_24H    string                 `protobuf:"bytes,14,opt,name=volume_24h,json=volume24h,proto3" json:"volume_24h,omitempty"`           // 24h volume
+	BestBid       string                 `protobuf:"bytes,15,opt,name=best_bid,json=bestBid,proto3" json:"best_bid,omitempty"`                 // Best bid price
+	BestAsk       string                 `protobuf:"bytes,16,opt,name=best_ask,json=bestAsk,proto3" json:"best_ask,omitempty"`                 // Best ask price
+	Status        int32                  `protobuf:"varint,17,opt,name=status,proto3" json:"status,omitempty"`
+	InitTxHash    string                 `protobuf:"bytes,18,opt,name=init_tx_hash,json=initTxHash,proto3" json:"init_tx_hash,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *MarketItem) Reset() {
+	*x = MarketItem{}
+	mi := &file_market_proto_msgTypes[37]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *MarketItem) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*MarketItem) ProtoMessage() {}
+
+func (x *MarketItem) ProtoReflect() protoreflect.Message {
+	mi := &file_market_proto_msgTypes[37]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use MarketItem.ProtoReflect.Descriptor instead.
+func (*MarketItem) Descriptor() ([]byte, []int) {
+	return file_market_proto_rawDescGZIP(), []int{37}
+}
+
+func (x *MarketItem) GetMarketPda() string {
+	if x != nil {
+		return x.MarketPda
+	}
+	return ""
+}
+
+func (x *MarketItem) GetBaseMint() string {
+	if x != nil {
+		return x.BaseMint
+	}
+	return ""
+}
+
+func (x *MarketItem) GetQuoteMint() string {
+	if x != nil {
+		return x.QuoteMint
+	}
+	return ""
+}
+
+func (x *MarketItem) GetBaseSymbol() string {
+	if x != nil {
+		return x.BaseSymbol
+	}
+	return ""
+}
+
+func (x *MarketItem) GetQuoteSymbol() string {
+	if x != nil {
+		return x.QuoteSymbol
+	}
+	return ""
+}
+
+func (x *MarketItem) GetBaseDecimals() int32 {
+	if x != nil {
+		return x.BaseDecimals
+	}
+	return 0
+}
+
+func (x *MarketItem) GetQuoteDecimals() int32 {
+	if x != nil {
+		return x.QuoteDecimals
+	}
+	return 0
+}
+
+func (x *MarketItem) GetTickSize() string {
+	if x != nil {
+		return x.TickSize
+	}
+	return ""
+}
+
+func (x *MarketItem) GetMinQuantity() string {
+	if x != nil {
+		return x.MinQuantity
+	}
+	return ""
+}
+
+func (x *MarketItem) GetMakerFeeBps() int32 {
+	if x != nil {
+		return x.MakerFeeBps
+	}
+	return 0
+}
+
+func (x *MarketItem) GetTakerFeeBps() int32 {
+	if x != nil {
+		return x.TakerFeeBps
+	}
+	return 0
+}
+
+func (x *MarketItem) GetPaused() bool {
+	if x != nil {
+		return x.Paused
+	}
+	return false
+}
+
+func (x *MarketItem) GetActiveOrders() int64 {
+	if x != nil {
+		return x.ActiveOrders
+	}
+	return 0
+}
+
+func (x *MarketItem) GetVolume_24H() string {
+	if x != nil {
+		return x.Volume_24H
+	}
+	return ""
+}
+
+func (x *MarketItem) GetBestBid() string {
+	if x != nil {
+		return x.BestBid
+	}
+	return ""
+}
+
+func (x *MarketItem) GetBestAsk() string {
+	if x != nil {
+		return x.BestAsk
+	}
+	return ""
+}
+
+func (x *MarketItem) GetStatus() int32 {
+	if x != nil {
+		return x.Status
+	}
+	return 0
+}
+
+func (x *MarketItem) GetInitTxHash() string {
+	if x != nil {
+		return x.InitTxHash
+	}
+	return ""
+}
+
+// Get user margin request
+type GetUserMarginRequest struct {
+	state             protoimpl.MessageState `protogen:"open.v1"`
+	ChainId           int64                  `protobuf:"varint,1,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`                                // Chain ID
+	UserWalletAddress string                 `protobuf:"bytes,2,opt,name=user_wallet_address,json=userWalletAddress,proto3" json:"user_wallet_address,omitempty"` // User wallet address
+	MarketPda         string                 `protobuf:"bytes,3,opt,name=market_pda,json=marketPda,proto3" json:"market_pda,omitempty"`                           // Market PDA
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
+}
+
+func (x *GetUserMarginRequest) Reset() {
+	*x = GetUserMarginRequest{}
+	mi := &file_market_proto_msgTypes[38]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetUserMarginRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetUserMarginRequest) ProtoMessage() {}
+
+func (x *GetUserMarginRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_market_proto_msgTypes[38]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetUserMarginRequest.ProtoReflect.Descriptor instead.
+func (*GetUserMarginRequest) Descriptor() ([]byte, []int) {
+	return file_market_proto_rawDescGZIP(), []int{38}
+}
+
+func (x *GetUserMarginRequest) GetChainId() int64 {
+	if x != nil {
+		return x.ChainId
+	}
+	return 0
+}
+
+func (x *GetUserMarginRequest) GetUserWalletAddress() string {
+	if x != nil {
+		return x.UserWalletAddress
+	}
+	return ""
+}
+
+func (x *GetUserMarginRequest) GetMarketPda() string {
+	if x != nil {
+		return x.MarketPda
+	}
+	return ""
+}
+
+type GetUserMarginResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Margin        *MarginAccountItem     `protobuf:"bytes,1,opt,name=margin,proto3" json:"margin,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetUserMarginResponse) Reset() {
+	*x = GetUserMarginResponse{}
+	mi := &file_market_proto_msgTypes[39]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetUserMarginResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetUserMarginResponse) ProtoMessage() {}
+
+func (x *GetUserMarginResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_market_proto_msgTypes[39]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetUserMarginResponse.ProtoReflect.Descriptor instead.
+func (*GetUserMarginResponse) Descriptor() ([]byte, []int) {
+	return file_market_proto_rawDescGZIP(), []int{39}
+}
+
+func (x *GetUserMarginResponse) GetMargin() *MarginAccountItem {
+	if x != nil {
+		return x.Margin
+	}
+	return nil
+}
+
+// Sync margin balance from blockchain
+type SyncMarginBalanceRequest struct {
+	state             protoimpl.MessageState `protogen:"open.v1"`
+	ChainId           int64                  `protobuf:"varint,1,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`
+	MarketPda         string                 `protobuf:"bytes,2,opt,name=market_pda,json=marketPda,proto3" json:"market_pda,omitempty"`
+	UserWalletAddress string                 `protobuf:"bytes,3,opt,name=user_wallet_address,json=userWalletAddress,proto3" json:"user_wallet_address,omitempty"`
+	TxHash            string                 `protobuf:"bytes,4,opt,name=tx_hash,json=txHash,proto3" json:"tx_hash,omitempty"` // Transaction hash for reference
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
+}
+
+func (x *SyncMarginBalanceRequest) Reset() {
+	*x = SyncMarginBalanceRequest{}
+	mi := &file_market_proto_msgTypes[40]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SyncMarginBalanceRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SyncMarginBalanceRequest) ProtoMessage() {}
+
+func (x *SyncMarginBalanceRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_market_proto_msgTypes[40]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SyncMarginBalanceRequest.ProtoReflect.Descriptor instead.
+func (*SyncMarginBalanceRequest) Descriptor() ([]byte, []int) {
+	return file_market_proto_rawDescGZIP(), []int{40}
+}
+
+func (x *SyncMarginBalanceRequest) GetChainId() int64 {
+	if x != nil {
+		return x.ChainId
+	}
+	return 0
+}
+
+func (x *SyncMarginBalanceRequest) GetMarketPda() string {
+	if x != nil {
+		return x.MarketPda
+	}
+	return ""
+}
+
+func (x *SyncMarginBalanceRequest) GetUserWalletAddress() string {
+	if x != nil {
+		return x.UserWalletAddress
+	}
+	return ""
+}
+
+func (x *SyncMarginBalanceRequest) GetTxHash() string {
+	if x != nil {
+		return x.TxHash
+	}
+	return ""
+}
+
+type SyncMarginBalanceResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Success       bool                   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
+	Message       string                 `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`
+	Margin        *MarginAccountItem     `protobuf:"bytes,3,opt,name=margin,proto3" json:"margin,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SyncMarginBalanceResponse) Reset() {
+	*x = SyncMarginBalanceResponse{}
+	mi := &file_market_proto_msgTypes[41]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SyncMarginBalanceResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SyncMarginBalanceResponse) ProtoMessage() {}
+
+func (x *SyncMarginBalanceResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_market_proto_msgTypes[41]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SyncMarginBalanceResponse.ProtoReflect.Descriptor instead.
+func (*SyncMarginBalanceResponse) Descriptor() ([]byte, []int) {
+	return file_market_proto_rawDescGZIP(), []int{41}
+}
+
+func (x *SyncMarginBalanceResponse) GetSuccess() bool {
+	if x != nil {
+		return x.Success
+	}
+	return false
+}
+
+func (x *SyncMarginBalanceResponse) GetMessage() string {
+	if x != nil {
+		return x.Message
+	}
+	return ""
+}
+
+func (x *SyncMarginBalanceResponse) GetMargin() *MarginAccountItem {
+	if x != nil {
+		return x.Margin
+	}
+	return nil
+}
+
+type MarginAccountItem struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	MarginPda     string                 `protobuf:"bytes,1,opt,name=margin_pda,json=marginPda,proto3" json:"margin_pda,omitempty"`
+	MarketPda     string                 `protobuf:"bytes,2,opt,name=market_pda,json=marketPda,proto3" json:"market_pda,omitempty"`
+	BaseSymbol    string                 `protobuf:"bytes,3,opt,name=base_symbol,json=baseSymbol,proto3" json:"base_symbol,omitempty"`
+	QuoteSymbol   string                 `protobuf:"bytes,4,opt,name=quote_symbol,json=quoteSymbol,proto3" json:"quote_symbol,omitempty"`
+	BaseFree      string                 `protobuf:"bytes,5,opt,name=base_free,json=baseFree,proto3" json:"base_free,omitempty"`                 // Base token available balance
+	BaseLocked    string                 `protobuf:"bytes,6,opt,name=base_locked,json=baseLocked,proto3" json:"base_locked,omitempty"`           // Base token locked balance
+	QuoteFree     string                 `protobuf:"bytes,7,opt,name=quote_free,json=quoteFree,proto3" json:"quote_free,omitempty"`              // Quote token available balance
+	QuoteLocked   string                 `protobuf:"bytes,8,opt,name=quote_locked,json=quoteLocked,proto3" json:"quote_locked,omitempty"`        // Quote token locked balance
+	BaseTotal     string                 `protobuf:"bytes,9,opt,name=base_total,json=baseTotal,proto3" json:"base_total,omitempty"`              // Base total (free + locked)
+	QuoteTotal    string                 `protobuf:"bytes,10,opt,name=quote_total,json=quoteTotal,proto3" json:"quote_total,omitempty"`          // Quote total (free + locked)
+	LastSyncSlot  int64                  `protobuf:"varint,11,opt,name=last_sync_slot,json=lastSyncSlot,proto3" json:"last_sync_slot,omitempty"` // Last sync slot
+	Status        int32                  `protobuf:"varint,12,opt,name=status,proto3" json:"status,omitempty"`                                   // Status: 0=Creating, 1=Normal, 2=Closed
+	InitTxHash    string                 `protobuf:"bytes,13,opt,name=init_tx_hash,json=initTxHash,proto3" json:"init_tx_hash,omitempty"`        // Initialize transaction hash
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *MarginAccountItem) Reset() {
+	*x = MarginAccountItem{}
+	mi := &file_market_proto_msgTypes[42]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *MarginAccountItem) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*MarginAccountItem) ProtoMessage() {}
+
+func (x *MarginAccountItem) ProtoReflect() protoreflect.Message {
+	mi := &file_market_proto_msgTypes[42]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use MarginAccountItem.ProtoReflect.Descriptor instead.
+func (*MarginAccountItem) Descriptor() ([]byte, []int) {
+	return file_market_proto_rawDescGZIP(), []int{42}
+}
+
+func (x *MarginAccountItem) GetMarginPda() string {
+	if x != nil {
+		return x.MarginPda
+	}
+	return ""
+}
+
+func (x *MarginAccountItem) GetMarketPda() string {
+	if x != nil {
+		return x.MarketPda
+	}
+	return ""
+}
+
+func (x *MarginAccountItem) GetBaseSymbol() string {
+	if x != nil {
+		return x.BaseSymbol
+	}
+	return ""
+}
+
+func (x *MarginAccountItem) GetQuoteSymbol() string {
+	if x != nil {
+		return x.QuoteSymbol
+	}
+	return ""
+}
+
+func (x *MarginAccountItem) GetBaseFree() string {
+	if x != nil {
+		return x.BaseFree
+	}
+	return ""
+}
+
+func (x *MarginAccountItem) GetBaseLocked() string {
+	if x != nil {
+		return x.BaseLocked
+	}
+	return ""
+}
+
+func (x *MarginAccountItem) GetQuoteFree() string {
+	if x != nil {
+		return x.QuoteFree
+	}
+	return ""
+}
+
+func (x *MarginAccountItem) GetQuoteLocked() string {
+	if x != nil {
+		return x.QuoteLocked
+	}
+	return ""
+}
+
+func (x *MarginAccountItem) GetBaseTotal() string {
+	if x != nil {
+		return x.BaseTotal
+	}
+	return ""
+}
+
+func (x *MarginAccountItem) GetQuoteTotal() string {
+	if x != nil {
+		return x.QuoteTotal
+	}
+	return ""
+}
+
+func (x *MarginAccountItem) GetLastSyncSlot() int64 {
+	if x != nil {
+		return x.LastSyncSlot
+	}
+	return 0
+}
+
+func (x *MarginAccountItem) GetStatus() int32 {
+	if x != nil {
+		return x.Status
+	}
+	return 0
+}
+
+func (x *MarginAccountItem) GetInitTxHash() string {
+	if x != nil {
+		return x.InitTxHash
+	}
+	return ""
+}
+
+// Get order fills request
+type GetLimitOrderFillsRequest struct {
+	state             protoimpl.MessageState `protogen:"open.v1"`
+	ChainId           int64                  `protobuf:"varint,1,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`                                // Chain ID
+	OrderPda          string                 `protobuf:"bytes,2,opt,name=order_pda,json=orderPda,proto3" json:"order_pda,omitempty"`                              // Order PDA (optional)
+	UserWalletAddress string                 `protobuf:"bytes,3,opt,name=user_wallet_address,json=userWalletAddress,proto3" json:"user_wallet_address,omitempty"` // User wallet address (optional)
+	MarketPda         string                 `protobuf:"bytes,4,opt,name=market_pda,json=marketPda,proto3" json:"market_pda,omitempty"`                           // Market PDA (optional)
+	PageNo            int32                  `protobuf:"varint,5,opt,name=page_no,json=pageNo,proto3" json:"page_no,omitempty"`                                   // Page number
+	PageSize          int32                  `protobuf:"varint,6,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`                             // Page size
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
+}
+
+func (x *GetLimitOrderFillsRequest) Reset() {
+	*x = GetLimitOrderFillsRequest{}
+	mi := &file_market_proto_msgTypes[43]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetLimitOrderFillsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetLimitOrderFillsRequest) ProtoMessage() {}
+
+func (x *GetLimitOrderFillsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_market_proto_msgTypes[43]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetLimitOrderFillsRequest.ProtoReflect.Descriptor instead.
+func (*GetLimitOrderFillsRequest) Descriptor() ([]byte, []int) {
+	return file_market_proto_rawDescGZIP(), []int{43}
+}
+
+func (x *GetLimitOrderFillsRequest) GetChainId() int64 {
+	if x != nil {
+		return x.ChainId
+	}
+	return 0
+}
+
+func (x *GetLimitOrderFillsRequest) GetOrderPda() string {
+	if x != nil {
+		return x.OrderPda
+	}
+	return ""
+}
+
+func (x *GetLimitOrderFillsRequest) GetUserWalletAddress() string {
+	if x != nil {
+		return x.UserWalletAddress
+	}
+	return ""
+}
+
+func (x *GetLimitOrderFillsRequest) GetMarketPda() string {
+	if x != nil {
+		return x.MarketPda
+	}
+	return ""
+}
+
+func (x *GetLimitOrderFillsRequest) GetPageNo() int32 {
+	if x != nil {
+		return x.PageNo
+	}
+	return 0
+}
+
+func (x *GetLimitOrderFillsRequest) GetPageSize() int32 {
+	if x != nil {
+		return x.PageSize
+	}
+	return 0
+}
+
+type GetLimitOrderFillsResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Fills         []*OrderFillItem       `protobuf:"bytes,1,rep,name=fills,proto3" json:"fills,omitempty"`
+	Total         int32                  `protobuf:"varint,2,opt,name=total,proto3" json:"total,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetLimitOrderFillsResponse) Reset() {
+	*x = GetLimitOrderFillsResponse{}
+	mi := &file_market_proto_msgTypes[44]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetLimitOrderFillsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetLimitOrderFillsResponse) ProtoMessage() {}
+
+func (x *GetLimitOrderFillsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_market_proto_msgTypes[44]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetLimitOrderFillsResponse.ProtoReflect.Descriptor instead.
+func (*GetLimitOrderFillsResponse) Descriptor() ([]byte, []int) {
+	return file_market_proto_rawDescGZIP(), []int{44}
+}
+
+func (x *GetLimitOrderFillsResponse) GetFills() []*OrderFillItem {
+	if x != nil {
+		return x.Fills
+	}
+	return nil
+}
+
+func (x *GetLimitOrderFillsResponse) GetTotal() int32 {
+	if x != nil {
+		return x.Total
+	}
+	return 0
+}
+
+type OrderFillItem struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	MarketPda     string                 `protobuf:"bytes,1,opt,name=market_pda,json=marketPda,proto3" json:"market_pda,omitempty"`
+	BaseSymbol    string                 `protobuf:"bytes,2,opt,name=base_symbol,json=baseSymbol,proto3" json:"base_symbol,omitempty"`
+	QuoteSymbol   string                 `protobuf:"bytes,3,opt,name=quote_symbol,json=quoteSymbol,proto3" json:"quote_symbol,omitempty"`
+	Maker         string                 `protobuf:"bytes,4,opt,name=maker,proto3" json:"maker,omitempty"`                             // Maker address
+	Taker         string                 `protobuf:"bytes,5,opt,name=taker,proto3" json:"taker,omitempty"`                             // Taker address
+	Quantity      string                 `protobuf:"bytes,6,opt,name=quantity,proto3" json:"quantity,omitempty"`                       // Fill quantity
+	Price         string                 `protobuf:"bytes,7,opt,name=price,proto3" json:"price,omitempty"`                             // Fill price
+	Fee           string                 `protobuf:"bytes,8,opt,name=fee,proto3" json:"fee,omitempty"`                                 // Fee paid
+	TotalValue    string                 `protobuf:"bytes,9,opt,name=total_value,json=totalValue,proto3" json:"total_value,omitempty"` // Total value
+	TxHash        string                 `protobuf:"bytes,10,opt,name=tx_hash,json=txHash,proto3" json:"tx_hash,omitempty"`            // Transaction hash
+	Slot          int64                  `protobuf:"varint,11,opt,name=slot,proto3" json:"slot,omitempty"`                             // Slot number
+	CreatedAt     int64                  `protobuf:"varint,12,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`  // Fill timestamp
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *OrderFillItem) Reset() {
+	*x = OrderFillItem{}
+	mi := &file_market_proto_msgTypes[45]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *OrderFillItem) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*OrderFillItem) ProtoMessage() {}
+
+func (x *OrderFillItem) ProtoReflect() protoreflect.Message {
+	mi := &file_market_proto_msgTypes[45]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use OrderFillItem.ProtoReflect.Descriptor instead.
+func (*OrderFillItem) Descriptor() ([]byte, []int) {
+	return file_market_proto_rawDescGZIP(), []int{45}
+}
+
+func (x *OrderFillItem) GetMarketPda() string {
+	if x != nil {
+		return x.MarketPda
+	}
+	return ""
+}
+
+func (x *OrderFillItem) GetBaseSymbol() string {
+	if x != nil {
+		return x.BaseSymbol
+	}
+	return ""
+}
+
+func (x *OrderFillItem) GetQuoteSymbol() string {
+	if x != nil {
+		return x.QuoteSymbol
+	}
+	return ""
+}
+
+func (x *OrderFillItem) GetMaker() string {
+	if x != nil {
+		return x.Maker
+	}
+	return ""
+}
+
+func (x *OrderFillItem) GetTaker() string {
+	if x != nil {
+		return x.Taker
+	}
+	return ""
+}
+
+func (x *OrderFillItem) GetQuantity() string {
+	if x != nil {
+		return x.Quantity
+	}
+	return ""
+}
+
+func (x *OrderFillItem) GetPrice() string {
+	if x != nil {
+		return x.Price
+	}
+	return ""
+}
+
+func (x *OrderFillItem) GetFee() string {
+	if x != nil {
+		return x.Fee
+	}
+	return ""
+}
+
+func (x *OrderFillItem) GetTotalValue() string {
+	if x != nil {
+		return x.TotalValue
+	}
+	return ""
+}
+
+func (x *OrderFillItem) GetTxHash() string {
+	if x != nil {
+		return x.TxHash
+	}
+	return ""
+}
+
+func (x *OrderFillItem) GetSlot() int64 {
+	if x != nil {
+		return x.Slot
+	}
+	return 0
+}
+
+func (x *OrderFillItem) GetCreatedAt() int64 {
+	if x != nil {
+		return x.CreatedAt
+	}
+	return 0
+}
+
 var File_market_proto protoreflect.FileDescriptor
 
 const file_market_proto_rawDesc = "" +
@@ -3320,7 +5087,200 @@ const file_market_proto_rawDesc = "" +
 	"\n" +
 	"created_at\x18% \x01(\x03R\tcreatedAt\x12\x1d\n" +
 	"\n" +
-	"updated_at\x18& \x01(\x03R\tupdatedAt2\x95\a\n" +
+	"updated_at\x18& \x01(\x03R\tupdatedAt\"j\n" +
+	"\x18GetLimitOrderBookRequest\x12\x19\n" +
+	"\bchain_id\x18\x01 \x01(\x03R\achainId\x12\x1d\n" +
+	"\n" +
+	"market_pda\x18\x02 \x01(\tR\tmarketPda\x12\x14\n" +
+	"\x05depth\x18\x03 \x01(\x05R\x05depth\"\xde\x01\n" +
+	"\x19GetLimitOrderBookResponse\x12*\n" +
+	"\x04bids\x18\x01 \x03(\v2\x16.market.OrderBookLevelR\x04bids\x12*\n" +
+	"\x04asks\x18\x02 \x03(\v2\x16.market.OrderBookLevelR\x04asks\x12\x19\n" +
+	"\bbest_bid\x18\x03 \x01(\tR\abestBid\x12\x19\n" +
+	"\bbest_ask\x18\x04 \x01(\tR\abestAsk\x12\x16\n" +
+	"\x06spread\x18\x05 \x01(\tR\x06spread\x12\x1b\n" +
+	"\tmid_price\x18\x06 \x01(\tR\bmidPrice\"\x84\x01\n" +
+	"\x0eOrderBookLevel\x12\x14\n" +
+	"\x05price\x18\x01 \x01(\tR\x05price\x12\x1a\n" +
+	"\bquantity\x18\x02 \x01(\tR\bquantity\x12\x1f\n" +
+	"\vtotal_value\x18\x03 \x01(\tR\n" +
+	"totalValue\x12\x1f\n" +
+	"\vorder_count\x18\x04 \x01(\x05R\n" +
+	"orderCount\"\xd3\x01\n" +
+	"\x19GetUserLimitOrdersRequest\x12\x19\n" +
+	"\bchain_id\x18\x01 \x01(\x03R\achainId\x12.\n" +
+	"\x13user_wallet_address\x18\x02 \x01(\tR\x11userWalletAddress\x12\x1d\n" +
+	"\n" +
+	"market_pda\x18\x03 \x01(\tR\tmarketPda\x12\x16\n" +
+	"\x06status\x18\x04 \x01(\x05R\x06status\x12\x17\n" +
+	"\apage_no\x18\x05 \x01(\x05R\x06pageNo\x12\x1b\n" +
+	"\tpage_size\x18\x06 \x01(\x05R\bpageSize\"\x97\x01\n" +
+	"\x1aGetUserLimitOrdersResponse\x12-\n" +
+	"\x06orders\x18\x01 \x03(\v2\x15.market.UserOrderItemR\x06orders\x12\x14\n" +
+	"\x05total\x18\x02 \x01(\x05R\x05total\x12\x17\n" +
+	"\apage_no\x18\x03 \x01(\x05R\x06pageNo\x12\x1b\n" +
+	"\tpage_size\x18\x04 \x01(\x05R\bpageSize\"\x93\x03\n" +
+	"\rUserOrderItem\x12\x1b\n" +
+	"\torder_pda\x18\x01 \x01(\tR\borderPda\x12\x1d\n" +
+	"\n" +
+	"market_pda\x18\x02 \x01(\tR\tmarketPda\x12\x1f\n" +
+	"\vbase_symbol\x18\x03 \x01(\tR\n" +
+	"baseSymbol\x12!\n" +
+	"\fquote_symbol\x18\x04 \x01(\tR\vquoteSymbol\x12\x12\n" +
+	"\x04side\x18\x05 \x01(\x05R\x04side\x12\x14\n" +
+	"\x05price\x18\x06 \x01(\tR\x05price\x12\x1a\n" +
+	"\bquantity\x18\a \x01(\tR\bquantity\x12\x1c\n" +
+	"\tremaining\x18\b \x01(\tR\tremaining\x12%\n" +
+	"\x0efilled_percent\x18\t \x01(\tR\rfilledPercent\x12\x16\n" +
+	"\x06status\x18\n" +
+	" \x01(\x05R\x06status\x12\x1d\n" +
+	"\n" +
+	"created_at\x18\v \x01(\x03R\tcreatedAt\x12\x1f\n" +
+	"\vexpiry_slot\x18\f \x01(\x03R\n" +
+	"expirySlot\x12\x1f\n" +
+	"\vtotal_value\x18\r \x01(\tR\n" +
+	"totalValue\"T\n" +
+	"\x1aGetLimitOrderDetailRequest\x12\x19\n" +
+	"\bchain_id\x18\x01 \x01(\x03R\achainId\x12\x1b\n" +
+	"\torder_pda\x18\x02 \x01(\tR\borderPda\"L\n" +
+	"\x1bGetLimitOrderDetailResponse\x12-\n" +
+	"\x05order\x18\x01 \x01(\v2\x17.market.OrderDetailItemR\x05order\"\x8c\x06\n" +
+	"\x0fOrderDetailItem\x12\x1b\n" +
+	"\torder_pda\x18\x01 \x01(\tR\borderPda\x12\x19\n" +
+	"\border_id\x18\x02 \x01(\x03R\aorderId\x12\x1d\n" +
+	"\n" +
+	"market_pda\x18\x03 \x01(\tR\tmarketPda\x12\x1f\n" +
+	"\vbase_symbol\x18\x04 \x01(\tR\n" +
+	"baseSymbol\x12!\n" +
+	"\fquote_symbol\x18\x05 \x01(\tR\vquoteSymbol\x12\x14\n" +
+	"\x05owner\x18\x06 \x01(\tR\x05owner\x12\x1d\n" +
+	"\n" +
+	"margin_pda\x18\a \x01(\tR\tmarginPda\x12\x12\n" +
+	"\x04side\x18\b \x01(\x05R\x04side\x12\x14\n" +
+	"\x05price\x18\t \x01(\tR\x05price\x12\x1a\n" +
+	"\bquantity\x18\n" +
+	" \x01(\tR\bquantity\x12\x1c\n" +
+	"\tremaining\x18\v \x01(\tR\tremaining\x12\x1f\n" +
+	"\vtotal_value\x18\f \x01(\tR\n" +
+	"totalValue\x12%\n" +
+	"\x0efilled_percent\x18\r \x01(\tR\rfilledPercent\x12\x16\n" +
+	"\x06status\x18\x0e \x01(\x05R\x06status\x12\x1f\n" +
+	"\vexpiry_slot\x18\x0f \x01(\x03R\n" +
+	"expirySlot\x12.\n" +
+	"\x13self_trade_behavior\x18\x10 \x01(\x05R\x11selfTradeBehavior\x12$\n" +
+	"\x0ecreate_tx_hash\x18\x11 \x01(\tR\fcreateTxHash\x12$\n" +
+	"\x0ecancel_tx_hash\x18\x12 \x01(\tR\fcancelTxHash\x12\x1d\n" +
+	"\n" +
+	"created_at\x18\x13 \x01(\x03R\tcreatedAt\x12\x1d\n" +
+	"\n" +
+	"updated_at\x18\x14 \x01(\x03R\tupdatedAt\x12\x1b\n" +
+	"\tfilled_at\x18\x15 \x01(\x03R\bfilledAt\x12!\n" +
+	"\fcancelled_at\x18\x16 \x01(\x03R\vcancelledAt\x12\x1d\n" +
+	"\n" +
+	"expired_at\x18\x17 \x01(\x03R\texpiredAt\x12+\n" +
+	"\x05fills\x18\x18 \x03(\v2\x15.market.OrderFillItemR\x05fills\"n\n" +
+	"\x1bGetLimitOrderMarketsRequest\x12\x19\n" +
+	"\bchain_id\x18\x01 \x01(\x03R\achainId\x12\x17\n" +
+	"\apage_no\x18\x02 \x01(\x05R\x06pageNo\x12\x1b\n" +
+	"\tpage_size\x18\x03 \x01(\x05R\bpageSize\"b\n" +
+	"\x1cGetLimitOrderMarketsResponse\x12,\n" +
+	"\amarkets\x18\x01 \x03(\v2\x12.market.MarketItemR\amarkets\x12\x14\n" +
+	"\x05total\x18\x02 \x01(\x05R\x05total\"\xcb\x04\n" +
+	"\n" +
+	"MarketItem\x12\x1d\n" +
+	"\n" +
+	"market_pda\x18\x01 \x01(\tR\tmarketPda\x12\x1b\n" +
+	"\tbase_mint\x18\x02 \x01(\tR\bbaseMint\x12\x1d\n" +
+	"\n" +
+	"quote_mint\x18\x03 \x01(\tR\tquoteMint\x12\x1f\n" +
+	"\vbase_symbol\x18\x04 \x01(\tR\n" +
+	"baseSymbol\x12!\n" +
+	"\fquote_symbol\x18\x05 \x01(\tR\vquoteSymbol\x12#\n" +
+	"\rbase_decimals\x18\x06 \x01(\x05R\fbaseDecimals\x12%\n" +
+	"\x0equote_decimals\x18\a \x01(\x05R\rquoteDecimals\x12\x1b\n" +
+	"\ttick_size\x18\b \x01(\tR\btickSize\x12!\n" +
+	"\fmin_quantity\x18\t \x01(\tR\vminQuantity\x12\"\n" +
+	"\rmaker_fee_bps\x18\n" +
+	" \x01(\x05R\vmakerFeeBps\x12\"\n" +
+	"\rtaker_fee_bps\x18\v \x01(\x05R\vtakerFeeBps\x12\x16\n" +
+	"\x06paused\x18\f \x01(\bR\x06paused\x12#\n" +
+	"\ractive_orders\x18\r \x01(\x03R\factiveOrders\x12\x1d\n" +
+	"\n" +
+	"volume_24h\x18\x0e \x01(\tR\tvolume24h\x12\x19\n" +
+	"\bbest_bid\x18\x0f \x01(\tR\abestBid\x12\x19\n" +
+	"\bbest_ask\x18\x10 \x01(\tR\abestAsk\x12\x16\n" +
+	"\x06status\x18\x11 \x01(\x05R\x06status\x12 \n" +
+	"\finit_tx_hash\x18\x12 \x01(\tR\n" +
+	"initTxHash\"\x80\x01\n" +
+	"\x14GetUserMarginRequest\x12\x19\n" +
+	"\bchain_id\x18\x01 \x01(\x03R\achainId\x12.\n" +
+	"\x13user_wallet_address\x18\x02 \x01(\tR\x11userWalletAddress\x12\x1d\n" +
+	"\n" +
+	"market_pda\x18\x03 \x01(\tR\tmarketPda\"J\n" +
+	"\x15GetUserMarginResponse\x121\n" +
+	"\x06margin\x18\x01 \x01(\v2\x19.market.MarginAccountItemR\x06margin\"\x9d\x01\n" +
+	"\x18SyncMarginBalanceRequest\x12\x19\n" +
+	"\bchain_id\x18\x01 \x01(\x03R\achainId\x12\x1d\n" +
+	"\n" +
+	"market_pda\x18\x02 \x01(\tR\tmarketPda\x12.\n" +
+	"\x13user_wallet_address\x18\x03 \x01(\tR\x11userWalletAddress\x12\x17\n" +
+	"\atx_hash\x18\x04 \x01(\tR\x06txHash\"\x82\x01\n" +
+	"\x19SyncMarginBalanceResponse\x12\x18\n" +
+	"\asuccess\x18\x01 \x01(\bR\asuccess\x12\x18\n" +
+	"\amessage\x18\x02 \x01(\tR\amessage\x121\n" +
+	"\x06margin\x18\x03 \x01(\v2\x19.market.MarginAccountItemR\x06margin\"\xb5\x03\n" +
+	"\x11MarginAccountItem\x12\x1d\n" +
+	"\n" +
+	"margin_pda\x18\x01 \x01(\tR\tmarginPda\x12\x1d\n" +
+	"\n" +
+	"market_pda\x18\x02 \x01(\tR\tmarketPda\x12\x1f\n" +
+	"\vbase_symbol\x18\x03 \x01(\tR\n" +
+	"baseSymbol\x12!\n" +
+	"\fquote_symbol\x18\x04 \x01(\tR\vquoteSymbol\x12\x1b\n" +
+	"\tbase_free\x18\x05 \x01(\tR\bbaseFree\x12\x1f\n" +
+	"\vbase_locked\x18\x06 \x01(\tR\n" +
+	"baseLocked\x12\x1d\n" +
+	"\n" +
+	"quote_free\x18\a \x01(\tR\tquoteFree\x12!\n" +
+	"\fquote_locked\x18\b \x01(\tR\vquoteLocked\x12\x1d\n" +
+	"\n" +
+	"base_total\x18\t \x01(\tR\tbaseTotal\x12\x1f\n" +
+	"\vquote_total\x18\n" +
+	" \x01(\tR\n" +
+	"quoteTotal\x12$\n" +
+	"\x0elast_sync_slot\x18\v \x01(\x03R\flastSyncSlot\x12\x16\n" +
+	"\x06status\x18\f \x01(\x05R\x06status\x12 \n" +
+	"\finit_tx_hash\x18\r \x01(\tR\n" +
+	"initTxHash\"\xd8\x01\n" +
+	"\x19GetLimitOrderFillsRequest\x12\x19\n" +
+	"\bchain_id\x18\x01 \x01(\x03R\achainId\x12\x1b\n" +
+	"\torder_pda\x18\x02 \x01(\tR\borderPda\x12.\n" +
+	"\x13user_wallet_address\x18\x03 \x01(\tR\x11userWalletAddress\x12\x1d\n" +
+	"\n" +
+	"market_pda\x18\x04 \x01(\tR\tmarketPda\x12\x17\n" +
+	"\apage_no\x18\x05 \x01(\x05R\x06pageNo\x12\x1b\n" +
+	"\tpage_size\x18\x06 \x01(\x05R\bpageSize\"_\n" +
+	"\x1aGetLimitOrderFillsResponse\x12+\n" +
+	"\x05fills\x18\x01 \x03(\v2\x15.market.OrderFillItemR\x05fills\x12\x14\n" +
+	"\x05total\x18\x02 \x01(\x05R\x05total\"\xcf\x02\n" +
+	"\rOrderFillItem\x12\x1d\n" +
+	"\n" +
+	"market_pda\x18\x01 \x01(\tR\tmarketPda\x12\x1f\n" +
+	"\vbase_symbol\x18\x02 \x01(\tR\n" +
+	"baseSymbol\x12!\n" +
+	"\fquote_symbol\x18\x03 \x01(\tR\vquoteSymbol\x12\x14\n" +
+	"\x05maker\x18\x04 \x01(\tR\x05maker\x12\x14\n" +
+	"\x05taker\x18\x05 \x01(\tR\x05taker\x12\x1a\n" +
+	"\bquantity\x18\x06 \x01(\tR\bquantity\x12\x14\n" +
+	"\x05price\x18\a \x01(\tR\x05price\x12\x10\n" +
+	"\x03fee\x18\b \x01(\tR\x03fee\x12\x1f\n" +
+	"\vtotal_value\x18\t \x01(\tR\n" +
+	"totalValue\x12\x17\n" +
+	"\atx_hash\x18\n" +
+	" \x01(\tR\x06txHash\x12\x12\n" +
+	"\x04slot\x18\v \x01(\x03R\x04slot\x12\x1d\n" +
+	"\n" +
+	"created_at\x18\f \x01(\x03R\tcreatedAt2\x94\f\n" +
 	"\x06Market\x12U\n" +
 	"\x10GetPumpTokenList\x12\x1f.market.GetPumpTokenListRequest\x1a .market.GetPumpTokenListResponse\x12R\n" +
 	"\x0fGetClmmPoolList\x12\x1e.market.GetClmmPoolListRequest\x1a\x1f.market.GetClmmPoolListResponse\x12L\n" +
@@ -3332,7 +5292,14 @@ const file_market_proto_rawDesc = "" +
 	"\tQuoteCpmm\x12\x18.market.QuoteCpmmRequest\x1a\x19.market.QuoteCpmmResponse\x12@\n" +
 	"\tQuoteClmm\x12\x18.market.QuoteClmmRequest\x1a\x19.market.QuoteClmmResponse\x12a\n" +
 	"\x14GetClmmPoolDepthData\x12#.market.GetClmmPoolDepthDataRequest\x1a$.market.GetClmmPoolDepthDataResponse\x12U\n" +
-	"\x10GetUserPositions\x12\x1f.market.GetUserPositionsRequest\x1a .market.GetUserPositionsResponseB\n" +
+	"\x10GetUserPositions\x12\x1f.market.GetUserPositionsRequest\x1a .market.GetUserPositionsResponse\x12X\n" +
+	"\x11GetLimitOrderBook\x12 .market.GetLimitOrderBookRequest\x1a!.market.GetLimitOrderBookResponse\x12[\n" +
+	"\x12GetUserLimitOrders\x12!.market.GetUserLimitOrdersRequest\x1a\".market.GetUserLimitOrdersResponse\x12^\n" +
+	"\x13GetLimitOrderDetail\x12\".market.GetLimitOrderDetailRequest\x1a#.market.GetLimitOrderDetailResponse\x12a\n" +
+	"\x14GetLimitOrderMarkets\x12#.market.GetLimitOrderMarketsRequest\x1a$.market.GetLimitOrderMarketsResponse\x12L\n" +
+	"\rGetUserMargin\x12\x1c.market.GetUserMarginRequest\x1a\x1d.market.GetUserMarginResponse\x12X\n" +
+	"\x11SyncMarginBalance\x12 .market.SyncMarginBalanceRequest\x1a!.market.SyncMarginBalanceResponse\x12[\n" +
+	"\x12GetLimitOrderFills\x12!.market.GetLimitOrderFillsRequest\x1a\".market.GetLimitOrderFillsResponseB\n" +
 	"Z\b./marketb\x06proto3"
 
 var (
@@ -3347,7 +5314,7 @@ func file_market_proto_rawDescGZIP() []byte {
 	return file_market_proto_rawDescData
 }
 
-var file_market_proto_msgTypes = make([]protoimpl.MessageInfo, 26)
+var file_market_proto_msgTypes = make([]protoimpl.MessageInfo, 46)
 var file_market_proto_goTypes = []any{
 	(*GetPumpTokenListRequest)(nil),      // 0: market.GetPumpTokenListRequest
 	(*GetPumpTokenListResponse)(nil),     // 1: market.GetPumpTokenListResponse
@@ -3375,39 +5342,82 @@ var file_market_proto_goTypes = []any{
 	(*GetUserPositionsRequest)(nil),      // 23: market.GetUserPositionsRequest
 	(*GetUserPositionsResponse)(nil),     // 24: market.GetUserPositionsResponse
 	(*PositionItem)(nil),                 // 25: market.PositionItem
+	(*GetLimitOrderBookRequest)(nil),     // 26: market.GetLimitOrderBookRequest
+	(*GetLimitOrderBookResponse)(nil),    // 27: market.GetLimitOrderBookResponse
+	(*OrderBookLevel)(nil),               // 28: market.OrderBookLevel
+	(*GetUserLimitOrdersRequest)(nil),    // 29: market.GetUserLimitOrdersRequest
+	(*GetUserLimitOrdersResponse)(nil),   // 30: market.GetUserLimitOrdersResponse
+	(*UserOrderItem)(nil),                // 31: market.UserOrderItem
+	(*GetLimitOrderDetailRequest)(nil),   // 32: market.GetLimitOrderDetailRequest
+	(*GetLimitOrderDetailResponse)(nil),  // 33: market.GetLimitOrderDetailResponse
+	(*OrderDetailItem)(nil),              // 34: market.OrderDetailItem
+	(*GetLimitOrderMarketsRequest)(nil),  // 35: market.GetLimitOrderMarketsRequest
+	(*GetLimitOrderMarketsResponse)(nil), // 36: market.GetLimitOrderMarketsResponse
+	(*MarketItem)(nil),                   // 37: market.MarketItem
+	(*GetUserMarginRequest)(nil),         // 38: market.GetUserMarginRequest
+	(*GetUserMarginResponse)(nil),        // 39: market.GetUserMarginResponse
+	(*SyncMarginBalanceRequest)(nil),     // 40: market.SyncMarginBalanceRequest
+	(*SyncMarginBalanceResponse)(nil),    // 41: market.SyncMarginBalanceResponse
+	(*MarginAccountItem)(nil),            // 42: market.MarginAccountItem
+	(*GetLimitOrderFillsRequest)(nil),    // 43: market.GetLimitOrderFillsRequest
+	(*GetLimitOrderFillsResponse)(nil),   // 44: market.GetLimitOrderFillsResponse
+	(*OrderFillItem)(nil),                // 45: market.OrderFillItem
 }
 var file_market_proto_depIdxs = []int32{
 	2,  // 0: market.GetPumpTokenListResponse.list:type_name -> market.PumpTokenItem
 	5,  // 1: market.GetClmmPoolListResponse.list:type_name -> market.ClmmPoolItem
 	22, // 2: market.GetClmmPoolDepthDataResponse.line:type_name -> market.DepthDataPoint
 	25, // 3: market.GetUserPositionsResponse.items:type_name -> market.PositionItem
-	0,  // 4: market.Market.GetPumpTokenList:input_type -> market.GetPumpTokenListRequest
-	3,  // 5: market.Market.GetClmmPoolList:input_type -> market.GetClmmPoolListRequest
-	7,  // 6: market.Market.GetPoolDetail:input_type -> market.GetPoolDetailRequest
-	6,  // 7: market.Market.PushTokenInfo:input_type -> market.PushTokenInfoRequest
-	10, // 8: market.Market.GetPairInfoByToken:input_type -> market.GetPairInfoByTokenRequest
-	12, // 9: market.Market.GetNativeTokenPrice:input_type -> market.GetNativeTokenPriceRequest
-	14, // 10: market.Market.GetTokenInfo:input_type -> market.GetTokenInfoRequest
-	16, // 11: market.Market.QuoteCpmm:input_type -> market.QuoteCpmmRequest
-	18, // 12: market.Market.QuoteClmm:input_type -> market.QuoteClmmRequest
-	20, // 13: market.Market.GetClmmPoolDepthData:input_type -> market.GetClmmPoolDepthDataRequest
-	23, // 14: market.Market.GetUserPositions:input_type -> market.GetUserPositionsRequest
-	1,  // 15: market.Market.GetPumpTokenList:output_type -> market.GetPumpTokenListResponse
-	4,  // 16: market.Market.GetClmmPoolList:output_type -> market.GetClmmPoolListResponse
-	8,  // 17: market.Market.GetPoolDetail:output_type -> market.GetPoolDetailResponse
-	9,  // 18: market.Market.PushTokenInfo:output_type -> market.PushTokenInfoResponse
-	11, // 19: market.Market.GetPairInfoByToken:output_type -> market.GetPairInfoByTokenResponse
-	13, // 20: market.Market.GetNativeTokenPrice:output_type -> market.GetNativeTokenPriceResponse
-	15, // 21: market.Market.GetTokenInfo:output_type -> market.GetTokenInfoResponse
-	17, // 22: market.Market.QuoteCpmm:output_type -> market.QuoteCpmmResponse
-	19, // 23: market.Market.QuoteClmm:output_type -> market.QuoteClmmResponse
-	21, // 24: market.Market.GetClmmPoolDepthData:output_type -> market.GetClmmPoolDepthDataResponse
-	24, // 25: market.Market.GetUserPositions:output_type -> market.GetUserPositionsResponse
-	15, // [15:26] is the sub-list for method output_type
-	4,  // [4:15] is the sub-list for method input_type
-	4,  // [4:4] is the sub-list for extension type_name
-	4,  // [4:4] is the sub-list for extension extendee
-	0,  // [0:4] is the sub-list for field type_name
+	28, // 4: market.GetLimitOrderBookResponse.bids:type_name -> market.OrderBookLevel
+	28, // 5: market.GetLimitOrderBookResponse.asks:type_name -> market.OrderBookLevel
+	31, // 6: market.GetUserLimitOrdersResponse.orders:type_name -> market.UserOrderItem
+	34, // 7: market.GetLimitOrderDetailResponse.order:type_name -> market.OrderDetailItem
+	45, // 8: market.OrderDetailItem.fills:type_name -> market.OrderFillItem
+	37, // 9: market.GetLimitOrderMarketsResponse.markets:type_name -> market.MarketItem
+	42, // 10: market.GetUserMarginResponse.margin:type_name -> market.MarginAccountItem
+	42, // 11: market.SyncMarginBalanceResponse.margin:type_name -> market.MarginAccountItem
+	45, // 12: market.GetLimitOrderFillsResponse.fills:type_name -> market.OrderFillItem
+	0,  // 13: market.Market.GetPumpTokenList:input_type -> market.GetPumpTokenListRequest
+	3,  // 14: market.Market.GetClmmPoolList:input_type -> market.GetClmmPoolListRequest
+	7,  // 15: market.Market.GetPoolDetail:input_type -> market.GetPoolDetailRequest
+	6,  // 16: market.Market.PushTokenInfo:input_type -> market.PushTokenInfoRequest
+	10, // 17: market.Market.GetPairInfoByToken:input_type -> market.GetPairInfoByTokenRequest
+	12, // 18: market.Market.GetNativeTokenPrice:input_type -> market.GetNativeTokenPriceRequest
+	14, // 19: market.Market.GetTokenInfo:input_type -> market.GetTokenInfoRequest
+	16, // 20: market.Market.QuoteCpmm:input_type -> market.QuoteCpmmRequest
+	18, // 21: market.Market.QuoteClmm:input_type -> market.QuoteClmmRequest
+	20, // 22: market.Market.GetClmmPoolDepthData:input_type -> market.GetClmmPoolDepthDataRequest
+	23, // 23: market.Market.GetUserPositions:input_type -> market.GetUserPositionsRequest
+	26, // 24: market.Market.GetLimitOrderBook:input_type -> market.GetLimitOrderBookRequest
+	29, // 25: market.Market.GetUserLimitOrders:input_type -> market.GetUserLimitOrdersRequest
+	32, // 26: market.Market.GetLimitOrderDetail:input_type -> market.GetLimitOrderDetailRequest
+	35, // 27: market.Market.GetLimitOrderMarkets:input_type -> market.GetLimitOrderMarketsRequest
+	38, // 28: market.Market.GetUserMargin:input_type -> market.GetUserMarginRequest
+	40, // 29: market.Market.SyncMarginBalance:input_type -> market.SyncMarginBalanceRequest
+	43, // 30: market.Market.GetLimitOrderFills:input_type -> market.GetLimitOrderFillsRequest
+	1,  // 31: market.Market.GetPumpTokenList:output_type -> market.GetPumpTokenListResponse
+	4,  // 32: market.Market.GetClmmPoolList:output_type -> market.GetClmmPoolListResponse
+	8,  // 33: market.Market.GetPoolDetail:output_type -> market.GetPoolDetailResponse
+	9,  // 34: market.Market.PushTokenInfo:output_type -> market.PushTokenInfoResponse
+	11, // 35: market.Market.GetPairInfoByToken:output_type -> market.GetPairInfoByTokenResponse
+	13, // 36: market.Market.GetNativeTokenPrice:output_type -> market.GetNativeTokenPriceResponse
+	15, // 37: market.Market.GetTokenInfo:output_type -> market.GetTokenInfoResponse
+	17, // 38: market.Market.QuoteCpmm:output_type -> market.QuoteCpmmResponse
+	19, // 39: market.Market.QuoteClmm:output_type -> market.QuoteClmmResponse
+	21, // 40: market.Market.GetClmmPoolDepthData:output_type -> market.GetClmmPoolDepthDataResponse
+	24, // 41: market.Market.GetUserPositions:output_type -> market.GetUserPositionsResponse
+	27, // 42: market.Market.GetLimitOrderBook:output_type -> market.GetLimitOrderBookResponse
+	30, // 43: market.Market.GetUserLimitOrders:output_type -> market.GetUserLimitOrdersResponse
+	33, // 44: market.Market.GetLimitOrderDetail:output_type -> market.GetLimitOrderDetailResponse
+	36, // 45: market.Market.GetLimitOrderMarkets:output_type -> market.GetLimitOrderMarketsResponse
+	39, // 46: market.Market.GetUserMargin:output_type -> market.GetUserMarginResponse
+	41, // 47: market.Market.SyncMarginBalance:output_type -> market.SyncMarginBalanceResponse
+	44, // 48: market.Market.GetLimitOrderFills:output_type -> market.GetLimitOrderFillsResponse
+	31, // [31:49] is the sub-list for method output_type
+	13, // [13:31] is the sub-list for method input_type
+	13, // [13:13] is the sub-list for extension type_name
+	13, // [13:13] is the sub-list for extension extendee
+	0,  // [0:13] is the sub-list for field type_name
 }
 
 func init() { file_market_proto_init() }
@@ -3421,7 +5431,7 @@ func file_market_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_market_proto_rawDesc), len(file_market_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   26,
+			NumMessages:   46,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

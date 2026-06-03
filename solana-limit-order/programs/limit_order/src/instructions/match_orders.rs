@@ -38,6 +38,10 @@ pub struct MatchParams {
     pub match_qty_lots: u64,
 }
 
+/// 撮合订单指令处理函数：
+/// 验证订单状态、价格、过期时间等条件
+/// 执行撮合逻辑
+/// 更新订单和保证金状态，发出成交事件
 pub fn match_orders(ctx: Context<MatchOrders>, params: MatchParams) -> Result<()> {
     let config = &ctx.accounts.config;
     require!(!config.paused, LimitOrderError::ProgramPaused);
@@ -54,7 +58,7 @@ pub fn match_orders(ctx: Context<MatchOrders>, params: MatchParams) -> Result<()
     require!(params.match_qty_lots <= ctx.accounts.maker_order.remaining_lots, LimitOrderError::InvalidAmount);
     require!(params.match_qty_lots <= ctx.accounts.taker_order.remaining_lots, LimitOrderError::InvalidAmount);
 
-    // Handle self-trading
+    // 处理同钱包订单互相撮合的情况，根据taker订单的self_trade_behavior决定是部分成交还是取消订单
     if ctx.accounts.maker_order.owner == ctx.accounts.taker_order.owner {
         match ctx.accounts.taker_order.self_trade_behavior {
             SelfTradeBehavior::DecrementTake => {

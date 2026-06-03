@@ -756,6 +756,7 @@ func (tm *TxManager) CreateMarketOrder4Pumpfun(ctx context.Context, in *CreateMa
 	}
 
 	// #1 - Compute Budget: SetComputeUnitPrice
+	// 计算gas费用和jito费用
 	instructions, lamportCostFee, err := tm.CreateGasAndJitoByGasFee(ctx, in.IsAntiMev, initiator, sol.PumpFunSwapCU, sol.GasMODE[1])
 	lamportCost += lamportCostFee
 	if nil != err {

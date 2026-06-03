@@ -21,14 +21,14 @@ pub struct InitProgram<'info> {
 
 #[derive(AnchorSerialize, AnchorDeserialize)]
 pub struct InitProgramParams {
-    pub admin: Pubkey,
-    pub treasury: Pubkey,
-    pub whitelist_root: [u8; 32],
-    pub whitelist_version: u64,
-    pub pyth_confidence_tol_bps: u16,
-    pub pyth_max_staleness_slots: u64,
-    pub fee_bps_limit: u16,
-    pub matcher: Pubkey,
+    pub admin: Pubkey, // 管理员地址，拥有权限更新程序参数和暂停/恢复程序
+    pub treasury: Pubkey, // 金库地址，接收交易手续费
+    pub whitelist_root: [u8; 32], // 白名单根地址，用于验证白名单地址
+    pub whitelist_version: u64, // 白名单版本号，用于验证白名单地址
+    pub pyth_confidence_tol_bps: u16, // Pyth价格容忍度，以百分比表示
+    pub pyth_max_staleness_slots: u64, // Pyth最大过时槽数
+    pub fee_bps_limit: u16, // 交易手续费百分比限制
+    pub matcher: Pubkey, // 匹配器地址，用于处理订单
 }
 
 pub fn init_program(ctx: Context<InitProgram>, params: InitProgramParams) -> Result<()> {

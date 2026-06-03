@@ -18,6 +18,7 @@ import (
 	"gorm.io/gorm/logger"
 	"richcode.cc/dex/consumer/internal/config"
 	"richcode.cc/dex/market/marketclient"
+	"richcode.cc/dex/model/limitordermodel"
 	"richcode.cc/dex/model/solmodel"
 	"richcode.cc/dex/trade/tradeclient"
 )
@@ -28,12 +29,12 @@ type ServiceContext struct {
 	TradeService              tradeclient.Trade
 	Redis                     *redis.Redis
 	MetadataCache             *redis.Redis
+	DB                        *gorm.DB // Database connection for direct queries
 	BlockPipelineSettings     config.BlockPipelineConfig
 	solClientLock             sync.Mutex
 	solClientIndex            int
 	solClient                 *client.Client
 	solClients                []*client.Client
-	DB                        *gorm.DB // 数据库连接，供需要直接操作的组件使用
 	PairModel                 solmodel.PairModel
 	BlockModel                solmodel.BlockModel
 	TokenModel                solmodel.TokenModel
@@ -45,6 +46,10 @@ type ServiceContext struct {
 	SolRaydiumCPMMPoolModel   solmodel.CpmmPoolInfoModel
 	SolRaydiumPoolModel       solmodel.RaydiumPoolModel
 	ClmmPositionModel         solmodel.ClmmPositionModel
+	// Limit Order models
+	LimitOrderModel       limitordermodel.LimitOrderModel
+	LimitOrderMarginModel limitordermodel.LimitOrderMarginModel
+	LimitOrderMarketModel limitordermodel.LimitOrderMarketModel
 	// Pump migration pipeline
 	PumpMigrationChan chan PumpMigrationJob
 	PumpMigrationOnce *sync.Map
@@ -133,9 +138,9 @@ func NewSolServiceContext(c config.Config) *ServiceContext {
 		TradeService:              tradeSvc,
 		Redis:                     redisClient,
 		MetadataCache:             redisClient,
+		DB:                        db, // Add DB connection
 		BlockPipelineSettings:     c.BlockPipeline,
 		solClients:                solClients,
-		DB:                        db, // 保存数据库连接
 		BlockModel:                blockModel,
 		PairModel:                 solmodel.NewPairModel(db),
 		TokenModel:                solmodel.NewTokenModel(db),
@@ -146,6 +151,9 @@ func NewSolServiceContext(c config.Config) *ServiceContext {
 		SolRaydiumCLMMPoolV2Model: solmodel.NewClmmPoolInfoV2Model(db),
 		SolRaydiumCPMMPoolModel:   solmodel.NewCpmmPoolInfoModel(db),
 		ClmmPositionModel:         solmodel.NewClmmPositionModel(db),
+		LimitOrderModel:           limitordermodel.NewLimitOrderModel(db),
+		LimitOrderMarginModel:     limitordermodel.NewLimitOrderMarginModel(db),
+		LimitOrderMarketModel:     limitordermodel.NewLimitOrderMarketModel(db),
 		PumpMigrationChan:         make(chan PumpMigrationJob, 128),
 		PumpMigrationOnce:         &sync.Map{},
 	}

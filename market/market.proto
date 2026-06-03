@@ -368,4 +368,216 @@ service Market {
   rpc GetClmmPoolDepthData(GetClmmPoolDepthDataRequest) returns (GetClmmPoolDepthDataResponse);
   // Get user's liquidity positions
   rpc GetUserPositions(GetUserPositionsRequest) returns (GetUserPositionsResponse);
+    // Limit order queries
+  rpc GetLimitOrderBook(GetLimitOrderBookRequest) returns (GetLimitOrderBookResponse);
+  rpc GetUserLimitOrders(GetUserLimitOrdersRequest) returns (GetUserLimitOrdersResponse);
+  rpc GetLimitOrderDetail(GetLimitOrderDetailRequest) returns (GetLimitOrderDetailResponse);
+  rpc GetLimitOrderMarkets(GetLimitOrderMarketsRequest) returns (GetLimitOrderMarketsResponse);
+  rpc GetUserMargin(GetUserMarginRequest) returns (GetUserMarginResponse);
+
+  // Sync margin account balance from blockchain
+  rpc SyncMarginBalance(SyncMarginBalanceRequest) returns (SyncMarginBalanceResponse);
+  rpc GetLimitOrderFills(GetLimitOrderFillsRequest) returns (GetLimitOrderFillsResponse);
+}
+
+
+// ============================================================
+// Limit Order Query Messages
+// ============================================================
+
+// Get order book request
+message GetLimitOrderBookRequest {
+  int64 chain_id = 1;                    // Chain ID (100000 for Solana)
+  string market_pda = 2;                 // Market PDA address
+  int32 depth = 3;                       // Order book depth (default 20)
+}
+
+message GetLimitOrderBookResponse {
+  repeated OrderBookLevel bids = 1;      // Buy orders (price descending)
+  repeated OrderBookLevel asks = 2;      // Sell orders (price ascending)
+  string best_bid = 3;                   // Best bid price
+  string best_ask = 4;                   // Best ask price
+  string spread = 5;                     // Bid-ask spread
+  string mid_price = 6;                  // Mid price
+}
+
+message OrderBookLevel {
+  string price = 1;                      // Price (display value)
+  string quantity = 2;                   // Total quantity at this price level
+  string total_value = 3;                // Total value (price * quantity)
+  int32 order_count = 4;                 // Number of orders at this level
+}
+
+// Get user orders request
+message GetUserLimitOrdersRequest {
+  int64 chain_id = 1;                    // Chain ID
+  string user_wallet_address = 2;        // User wallet address
+  string market_pda = 3;                 // Market PDA (optional filter)
+  int32 status = 4;                      // Status filter: 0=All, 1=Active, 2=Filled, 3=Cancelled, 4=Expired
+  int32 page_no = 5;                     // Page number (default 1)
+  int32 page_size = 6;                   // Page size (default 20)
+}
+
+message GetUserLimitOrdersResponse {
+  repeated UserOrderItem orders = 1;
+  int32 total = 2;
+  int32 page_no = 3;
+  int32 page_size = 4;
+}
+
+message UserOrderItem {
+  string order_pda = 1;                  // Order PDA
+  string market_pda = 2;                 // Market PDA
+  string base_symbol = 3;                // Base token symbol
+  string quote_symbol = 4;               // Quote token symbol
+  int32 side = 5;                        // 1=Bid(Buy), 2=Ask(Sell)
+  string price = 6;                      // Price (display value)
+  string quantity = 7;                   // Original quantity
+  string remaining = 8;                  // Remaining quantity
+  string filled_percent = 9;             // Filled percentage (0-100)
+  int32 status = 10;                     // Status: 1=Active, 2=Filled, 3=Cancelled, 4=Expired
+  int64 created_at = 11;                 // Creation timestamp (Unix seconds)
+  int64 expiry_slot = 12;                // Expiry slot (0 for no expiry)
+  string total_value = 13;               // Total value (price * quantity)
+}
+
+// Get order detail request
+message GetLimitOrderDetailRequest {
+  int64 chain_id = 1;                    // Chain ID
+  string order_pda = 2;                  // Order PDA address
+}
+
+message GetLimitOrderDetailResponse {
+  OrderDetailItem order = 1;
+}
+
+message OrderDetailItem {
+  string order_pda = 1;
+  int64 order_id = 2;
+  string market_pda = 3;
+  string base_symbol = 4;
+  string quote_symbol = 5;
+  string owner = 6;
+  string margin_pda = 7;
+  int32 side = 8;                        // 1=Bid, 2=Ask
+  string price = 9;
+  string quantity = 10;
+  string remaining = 11;
+  string total_value = 12;
+  string filled_percent = 13;
+  int32 status = 14;
+  int64 expiry_slot = 15;
+  int32 self_trade_behavior = 16;
+  string create_tx_hash = 17;
+  string cancel_tx_hash = 18;
+  int64 created_at = 19;
+  int64 updated_at = 20;
+  int64 filled_at = 21;
+  int64 cancelled_at = 22;
+  int64 expired_at = 23;
+  repeated OrderFillItem fills = 24;     // Fill history
+}
+
+// Get market list request
+message GetLimitOrderMarketsRequest {
+  int64 chain_id = 1;                    // Chain ID
+  int32 page_no = 2;                     // Page number
+  int32 page_size = 3;                   // Page size
+}
+
+message GetLimitOrderMarketsResponse {
+  repeated MarketItem markets = 1;
+  int32 total = 2;
+}
+
+message MarketItem {
+  string market_pda = 1;
+  string base_mint = 2;
+  string quote_mint = 3;
+  string base_symbol = 4;
+  string quote_symbol = 5;
+  int32 base_decimals = 6;
+  int32 quote_decimals = 7;
+  string tick_size = 8;                  // Price tick size (display value)
+  string min_quantity = 9;               // Minimum order quantity (display value)
+  int32 maker_fee_bps = 10;              // Maker fee in bps
+  int32 taker_fee_bps = 11;              // Taker fee in bps
+  bool paused = 12;                      // Is market paused
+  int64 active_orders = 13;              // Active order count
+  string volume_24h = 14;                // 24h volume
+  string best_bid = 15;                  // Best bid price
+  string best_ask = 16;                  // Best ask price
+  int32 status = 17;
+  string init_tx_hash = 18;
+}
+
+// Get user margin request
+message GetUserMarginRequest {
+  int64 chain_id = 1;                    // Chain ID
+  string user_wallet_address = 2;        // User wallet address
+  string market_pda = 3;                 // Market PDA
+}
+
+message GetUserMarginResponse {
+  MarginAccountItem margin = 1;
+}
+
+// Sync margin balance from blockchain
+message SyncMarginBalanceRequest {
+  int64 chain_id = 1;
+  string market_pda = 2;
+  string user_wallet_address = 3;
+  string tx_hash = 4; // Transaction hash for reference
+}
+
+message SyncMarginBalanceResponse {
+  bool success = 1;
+  string message = 2;
+  MarginAccountItem margin = 3;
+}
+
+message MarginAccountItem {
+  string margin_pda = 1;
+  string market_pda = 2;
+  string base_symbol = 3;
+  string quote_symbol = 4;
+  string base_free = 5;                  // Base token available balance
+  string base_locked = 6;                // Base token locked balance
+  string quote_free = 7;                 // Quote token available balance
+  string quote_locked = 8;               // Quote token locked balance
+  string base_total = 9;                 // Base total (free + locked)
+  string quote_total = 10;               // Quote total (free + locked)
+  int64 last_sync_slot = 11;             // Last sync slot
+  int32 status = 12;                     // Status: 0=Creating, 1=Normal, 2=Closed
+  string init_tx_hash = 13;              // Initialize transaction hash
+}
+
+// Get order fills request
+message GetLimitOrderFillsRequest {
+  int64 chain_id = 1;                    // Chain ID
+  string order_pda = 2;                  // Order PDA (optional)
+  string user_wallet_address = 3;        // User wallet address (optional)
+  string market_pda = 4;                 // Market PDA (optional)
+  int32 page_no = 5;                     // Page number
+  int32 page_size = 6;                   // Page size
+}
+
+message GetLimitOrderFillsResponse {
+  repeated OrderFillItem fills = 1;
+  int32 total = 2;
+}
+
+message OrderFillItem {
+  string market_pda = 1;
+  string base_symbol = 2;
+  string quote_symbol = 3;
+  string maker = 4;                      // Maker address
+  string taker = 5;                      // Taker address
+  string quantity = 6;                   // Fill quantity
+  string price = 7;                      // Fill price
+  string fee = 8;                        // Fee paid
+  string total_value = 9;                // Total value
+  string tx_hash = 10;                   // Transaction hash
+  int64 slot = 11;                       // Slot number
+  int64 created_at = 12;                 // Fill timestamp
 }

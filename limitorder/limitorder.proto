@@ -1,0 +1,156 @@
+syntax = "proto3";
+
+package limitorder;
+option go_package = "./limitorder";
+
+// ============================================================
+// LimitOrder Service (only gateway-used RPCs)
+// ============================================================
+service LimitOrder {
+  // Initialize margin account
+  rpc InitializeMarginAccount(InitializeMarginAccountRequest) returns(InitializeMarginAccountResponse);
+
+  // Sync margin account status (check chain + update DB)
+  rpc SyncMarginAccountStatus(SyncMarginAccountStatusRequest) returns(SyncMarginAccountStatusResponse);
+
+  // Create limit order market
+  rpc CreateMarket(CreateMarketRequest) returns(CreateMarketResponse);
+
+  // Sync market status
+  rpc SyncMarketStatus(SyncMarketStatusRequest) returns(SyncMarketStatusResponse);
+}
+
+// ============================================================
+// Initialize margin account
+// ============================================================
+message InitializeMarginAccountRequest {
+  int64 chain_id = 1;                // Chain ID
+  string user_wallet_address = 2;    // User wallet address
+  string market_pda = 3;             // Market PDA
+}
+
+message InitializeMarginAccountResponse {
+  bool success = 1;
+  string message = 2;
+  string margin_pda = 3;       // Margin account PDA
+  string tx_hash = 4;          // Transaction hash
+}
+
+// ============================================================
+// Sync margin account data (used internally, no RPC exposed)
+// ============================================================
+message SyncMarginAccountRequest {
+  int64 chain_id = 1;          // Chain ID
+  string user_wallet_address = 2;  // User wallet address
+  string market_pda = 3;       // Market PDA
+  string tx_hash = 4;          // Init tx hash (optional, for DB update)
+}
+
+message SyncMarginAccountResponse {
+  bool success = 1;
+  string message = 2;
+  MarginAccount margin = 3;    // Synced margin account data
+}
+
+// ============================================================
+// Sync margin account status
+// ============================================================
+message SyncMarginAccountStatusRequest {
+  int64 chain_id = 1;          // Chain ID
+  string user_wallet_address = 2;  // User wallet address
+  string market_pda = 3;       // Market PDA
+  string tx_hash = 4;          // Init tx hash (optional, for DB update)
+}
+
+message SyncMarginAccountStatusResponse {
+  bool success = 1;
+  string message = 2;
+  int32 status = 3;            // 0=Creating (not on-chain) 1=Active 2=Closed
+  string margin_pda = 4;       // Margin account PDA
+  string tx_base64 = 5;        // Unsigned tx if account missing on-chain
+  MarginAccount margin = 6;    // Margin data if account exists
+}
+
+// ============================================================
+// Margin account data structure
+// ============================================================
+message MarginAccount {
+  int64 id = 1;
+  string margin_pda = 2;
+  string market_pda = 3;
+  string owner = 4;
+  string base_free = 5;        // Base free balance (display)
+  string base_locked = 6;      // Base locked balance (display)
+  string quote_free = 7;       // Quote free balance (display)
+  string quote_locked = 8;     // Quote locked balance (display)
+  int32 status = 9;            // 0=Creating 1=Active 2=Closed
+  string init_tx_hash = 10;    // Init tx hash
+  int64 last_sync_slot = 11;
+}
+
+// ============================================================
+// Create limit order market
+// ============================================================
+message CreateMarketRequest {
+  int64 chain_id = 1;          // Chain ID
+  string admin = 2;            // Market admin wallet address
+  string base_mint = 3;        // Base token mint address
+  string quote_mint = 4;       // Quote token mint address
+  string base_symbol = 5;      // Base token symbol
+  string quote_symbol = 6;     // Quote token symbol
+  int32 base_decimals = 7;     // Base token decimals
+  int32 quote_decimals = 8;    // Quote token decimals
+  double tick_size = 9;        // Price tick size (display value, e.g., 0.01)
+  double min_base_lot = 10;    // Minimum base lot size (display value, e.g., 0.001 SOL)
+  int32 maker_fee_bps = 11;    // Maker fee in basis points
+  int32 taker_fee_bps = 12;    // Taker fee in basis points
+  string pyth_price_feed = 13; // Pyth price feed address (optional)
+}
+
+message CreateMarketResponse {
+  bool success = 1;
+  string message = 2;
+  string market_pda = 3;       // Created market PDA
+  string tx_base64 = 4;        // Unsigned tx (init_market + init_vaults)
+  int64 expires_at = 5;        // Transaction expiration timestamp
+}
+
+// ============================================================
+// Sync market status
+// ============================================================
+message SyncMarketStatusRequest {
+  int64 chain_id = 1;          // Chain ID
+  string market_pda = 2;       // Market PDA address
+  string tx_hash = 3;          // Transaction hash (optional, for DB update)
+  string admin = 4;            // Admin wallet address (optional, for tx rebuild)
+}
+
+message SyncMarketStatusResponse {
+  bool success = 1;
+  string message = 2;
+  int32 status = 3;            // 0=Creating (not on-chain) 1=Active 2=Closed
+  string market_pda = 4;       // Market PDA
+  string tx_base64 = 5;        // Unsigned tx if market missing on-chain
+  MarketInfo market = 6;       // Market data if exists
+}
+
+// Market info from database
+message MarketInfo {
+  int64 id = 1;
+  string market_pda = 2;
+  string base_mint = 3;
+  string quote_mint = 4;
+  string base_symbol = 5;
+  string quote_symbol = 6;
+  int32 base_decimals = 7;
+  int32 quote_decimals = 8;
+  string base_vault = 9;
+  string quote_vault = 10;
+  int64 tick_size = 11;
+  int64 min_base_lot = 12;
+  int64 min_quote_lot = 13;
+  int32 maker_fee_bps = 14;
+  int32 taker_fee_bps = 15;
+  int32 status = 16;
+  bool paused = 17;
+}

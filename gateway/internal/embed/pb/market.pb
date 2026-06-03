@@ -1,5 +1,5 @@
 
-ÑP
+Ïx
 market.protomarket"Ú
 GetPumpTokenListRequest
 chain_id (RchainId
@@ -336,7 +336,200 @@ block_time$ (R	blockTime
 
 created_at% (R	createdAt
 
-updated_at& (R	updatedAt2ï
+updated_at& (R	updatedAt"j
+GetLimitOrderBookRequest
+chain_id (RchainId
+
+market_pda (	R	marketPda
+depth (Rdepth"ﬁ
+GetLimitOrderBookResponse*
+bids (2.market.OrderBookLevelRbids*
+asks (2.market.OrderBookLevelRasks
+best_bid (	RbestBid
+best_ask (	RbestAsk
+spread (	Rspread
+	mid_price (	RmidPrice"Ñ
+OrderBookLevel
+price (	Rprice
+quantity (	Rquantity
+total_value (	R
+totalValue
+order_count (R
+orderCount"”
+GetUserLimitOrdersRequest
+chain_id (RchainId.
+user_wallet_address (	RuserWalletAddress
+
+market_pda (	R	marketPda
+status (Rstatus
+page_no (RpageNo
+	page_size (RpageSize"ó
+GetUserLimitOrdersResponse-
+orders (2.market.UserOrderItemRorders
+total (Rtotal
+page_no (RpageNo
+	page_size (RpageSize"ì
+UserOrderItem
+	order_pda (	RorderPda
+
+market_pda (	R	marketPda
+base_symbol (	R
+baseSymbol!
+quote_symbol (	RquoteSymbol
+side (Rside
+price (	Rprice
+quantity (	Rquantity
+	remaining (	R	remaining%
+filled_percent	 (	RfilledPercent
+status
+ (Rstatus
+
+created_at (R	createdAt
+expiry_slot (R
+expirySlot
+total_value (	R
+totalValue"T
+GetLimitOrderDetailRequest
+chain_id (RchainId
+	order_pda (	RorderPda"L
+GetLimitOrderDetailResponse-
+order (2.market.OrderDetailItemRorder"å
+OrderDetailItem
+	order_pda (	RorderPda
+order_id (RorderId
+
+market_pda (	R	marketPda
+base_symbol (	R
+baseSymbol!
+quote_symbol (	RquoteSymbol
+owner (	Rowner
+
+margin_pda (	R	marginPda
+side (Rside
+price	 (	Rprice
+quantity
+ (	Rquantity
+	remaining (	R	remaining
+total_value (	R
+totalValue%
+filled_percent (	RfilledPercent
+status (Rstatus
+expiry_slot (R
+expirySlot.
+self_trade_behavior (RselfTradeBehavior$
+create_tx_hash (	RcreateTxHash$
+cancel_tx_hash (	RcancelTxHash
+
+created_at (R	createdAt
+
+updated_at (R	updatedAt
+	filled_at (RfilledAt!
+cancelled_at (RcancelledAt
+
+expired_at (R	expiredAt+
+fills (2.market.OrderFillItemRfills"n
+GetLimitOrderMarketsRequest
+chain_id (RchainId
+page_no (RpageNo
+	page_size (RpageSize"b
+GetLimitOrderMarketsResponse,
+markets (2.market.MarketItemRmarkets
+total (Rtotal"À
+
+MarketItem
+
+market_pda (	R	marketPda
+	base_mint (	RbaseMint
+
+quote_mint (	R	quoteMint
+base_symbol (	R
+baseSymbol!
+quote_symbol (	RquoteSymbol#
+base_decimals (RbaseDecimals%
+quote_decimals (RquoteDecimals
+	tick_size (	RtickSize!
+min_quantity	 (	RminQuantity"
+maker_fee_bps
+ (RmakerFeeBps"
+taker_fee_bps (RtakerFeeBps
+paused (Rpaused#
+active_orders (RactiveOrders
+
+volume_24h (	R	volume24h
+best_bid (	RbestBid
+best_ask (	RbestAsk
+status (Rstatus 
+init_tx_hash (	R
+initTxHash"Ä
+GetUserMarginRequest
+chain_id (RchainId.
+user_wallet_address (	RuserWalletAddress
+
+market_pda (	R	marketPda"J
+GetUserMarginResponse1
+margin (2.market.MarginAccountItemRmargin"ù
+SyncMarginBalanceRequest
+chain_id (RchainId
+
+market_pda (	R	marketPda.
+user_wallet_address (	RuserWalletAddress
+tx_hash (	RtxHash"Ç
+SyncMarginBalanceResponse
+success (Rsuccess
+message (	Rmessage1
+margin (2.market.MarginAccountItemRmargin"µ
+MarginAccountItem
+
+margin_pda (	R	marginPda
+
+market_pda (	R	marketPda
+base_symbol (	R
+baseSymbol!
+quote_symbol (	RquoteSymbol
+	base_free (	RbaseFree
+base_locked (	R
+baseLocked
+
+quote_free (	R	quoteFree!
+quote_locked (	RquoteLocked
+
+base_total	 (	R	baseTotal
+quote_total
+ (	R
+quoteTotal$
+last_sync_slot (RlastSyncSlot
+status (Rstatus 
+init_tx_hash (	R
+initTxHash"ÿ
+GetLimitOrderFillsRequest
+chain_id (RchainId
+	order_pda (	RorderPda.
+user_wallet_address (	RuserWalletAddress
+
+market_pda (	R	marketPda
+page_no (RpageNo
+	page_size (RpageSize"_
+GetLimitOrderFillsResponse+
+fills (2.market.OrderFillItemRfills
+total (Rtotal"œ
+OrderFillItem
+
+market_pda (	R	marketPda
+base_symbol (	R
+baseSymbol!
+quote_symbol (	RquoteSymbol
+maker (	Rmaker
+taker (	Rtaker
+quantity (	Rquantity
+price (	Rprice
+fee (	Rfee
+total_value	 (	R
+totalValue
+tx_hash
+ (	RtxHash
+slot (Rslot
+
+created_at (R	createdAt2î
 MarketU
 GetPumpTokenList.market.GetPumpTokenListRequest .market.GetPumpTokenListResponseR
 GetClmmPoolList.market.GetClmmPoolListRequest.market.GetClmmPoolListResponseL
@@ -348,5 +541,12 @@ updated_at& (R	updatedAt2ï
 	QuoteCpmm.market.QuoteCpmmRequest.market.QuoteCpmmResponse@
 	QuoteClmm.market.QuoteClmmRequest.market.QuoteClmmResponsea
 GetClmmPoolDepthData#.market.GetClmmPoolDepthDataRequest$.market.GetClmmPoolDepthDataResponseU
-GetUserPositions.market.GetUserPositionsRequest .market.GetUserPositionsResponseB
+GetUserPositions.market.GetUserPositionsRequest .market.GetUserPositionsResponseX
+GetLimitOrderBook .market.GetLimitOrderBookRequest!.market.GetLimitOrderBookResponse[
+GetUserLimitOrders!.market.GetUserLimitOrdersRequest".market.GetUserLimitOrdersResponse^
+GetLimitOrderDetail".market.GetLimitOrderDetailRequest#.market.GetLimitOrderDetailResponsea
+GetLimitOrderMarkets#.market.GetLimitOrderMarketsRequest$.market.GetLimitOrderMarketsResponseL
+GetUserMargin.market.GetUserMarginRequest.market.GetUserMarginResponseX
+SyncMarginBalance .market.SyncMarginBalanceRequest!.market.SyncMarginBalanceResponse[
+GetLimitOrderFills!.market.GetLimitOrderFillsRequest".market.GetLimitOrderFillsResponseB
 Z./marketbproto3

@@ -34,6 +34,7 @@ pub struct Deposit<'info> {
     pub token_program: Program<'info, Token>,
 }
 
+/// 用户充值，用户ATA账户 -> 向市场金库转移代币，并更新保证金账户余额
 pub fn deposit(ctx: Context<Deposit>, amount: u64, side: TokenSide, whitelist_proof: Vec<[u8; 32]>) -> Result<()> {
     let config = &ctx.accounts.config;
     require!(!config.paused, LimitOrderError::ProgramPaused);
@@ -42,6 +43,8 @@ pub fn deposit(ctx: Context<Deposit>, amount: u64, side: TokenSide, whitelist_pr
 
     verify_whitelist(config, ctx.accounts.owner.key(), &whitelist_proof)?;
 
+    // 根据side判断如果side是base，则从用户基础代币ATA账户 -> 市场金库
+    // 如果side是quote，则从用户报价代币ATA账户 -> 市场金库
     let (source, dest) = match side {
         TokenSide::Base => (&ctx.accounts.user_base_token, &ctx.accounts.base_vault),
         TokenSide::Quote => (&ctx.accounts.user_quote_token, &ctx.accounts.quote_vault),
@@ -58,12 +61,15 @@ pub fn deposit(ctx: Context<Deposit>, amount: u64, side: TokenSide, whitelist_pr
     let margin = &mut ctx.accounts.margin;
     match side {
         TokenSide::Base => {
+            // 充值基础代币，增加保证金账户的基础可用余额
             margin.base_free = margin.base_free.checked_add(amount).ok_or(LimitOrderError::MathOverflow)?;
         }
         TokenSide::Quote => {
+            // 充值报价代币，增加保证金账户的报价可用余额
             margin.quote_free = margin.quote_free.checked_add(amount).ok_or(LimitOrderError::MathOverflow)?;
         }
     }
+    // 发出充值事件
     emit!(DepositEvent {
         market: ctx.accounts.market.key(),
         owner: margin.owner,

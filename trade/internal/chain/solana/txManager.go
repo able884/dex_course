@@ -245,6 +245,8 @@ func (tm *TxManager) CreateMarketOrder4PumpSwap(ctx context.Context, in *CreateM
 	default:
 		return nil, fmt.Errorf("trade pool :%s not support", in.TradePoolName)
 	}
+	// 计算资源费 = 总钱(gasFee) - 固定签名费(GasPerSignature)
+	// 计算jito费用
 	instructions, lamportCostFee, err := tm.CreateGasAndJitoByGasFee(ctx, in.IsAntiMev, initiator, cu, sol.GasMODE[sol.GasType(in.GasType)])
 	if nil != err {
 		return nil, err
@@ -349,7 +351,7 @@ func (tm *TxManager) CreateMarketOrder4PumpSwap(ctx context.Context, in *CreateM
 	return instructions, nil
 }
 
-// CreateMarketOrderDex creates instructions for a market order on Raydium DEX
+// 创建市价单交易的指令，支持Raydium V4、Raydium Concentrated Liquidity、Raydium CPMM和PumpSwap交易池
 func (tm *TxManager) CreateMarketOrderDex(ctx context.Context, in *CreateMarketTx) ([]aSDK.Instruction, error) {
 	initiator := in.UserWalletAccount
 	outMint := in.OutMint
@@ -378,6 +380,7 @@ func (tm *TxManager) CreateMarketOrderDex(ctx context.Context, in *CreateMarketT
 	default:
 		return nil, fmt.Errorf("trade pool :%s not support", in.TradePoolName)
 	}
+	// 计算资源费 = 总钱(gasFee) - 固定签名费(GasPerSignature)
 	instructions, lamportCostFee, err := tm.CreateGasAndJitoByGasFee(ctx, in.IsAntiMev, initiator, cu, sol.GasMODE[sol.GasType(in.GasType)])
 	if nil != err {
 		return nil, err

@@ -75,6 +75,11 @@ service Trade {
   rpc IncreaseClmmLiquidity(IncreaseClmmLiquidityRequest) returns(IncreaseClmmLiquidityResponse);
   // Build unsigned tx for decreasing liquidity in CLMM position
   rpc DecreaseClmmLiquidity(DecreaseClmmLiquidityRequest) returns(DecreaseClmmLiquidityResponse);
+  // Limit order operations
+  rpc CreateLimitOrder(CreateLimitOrderRequest) returns(CreateLimitOrderResponse);
+  rpc CancelLimitOrder(CancelLimitOrderRequest) returns(CancelLimitOrderResponse);
+  rpc DepositMargin(DepositMarginRequest) returns(DepositMarginResponse);
+  rpc WithdrawMargin(WithdrawMarginRequest) returns(WithdrawMarginResponse);
 }
 // Request to create a PumpFun token; backend returns unsigned transaction (base64)
 message CreatePumpTokenRequest {
@@ -388,3 +393,71 @@ message DecreaseClmmLiquidityResponse {
 }
 
 
+
+// ============================================================
+// Limit Order Messages
+// ============================================================
+
+// Create limit order request
+message CreateLimitOrderRequest {
+  int32 chain_id = 1;                    // Chain ID (100000 for Solana)
+  string market_pda = 2;                 // Market PDA address
+  string user_wallet_address = 3;        // User wallet address
+  int32 side = 4;                        // 1=Bid(Buy), 2=Ask(Sell)
+  string price = 5;                      // Price (display value, e.g., "10.5")
+  string quantity = 6;                   // Quantity (display value, e.g., "100.0")
+  int64 expiry_slot = 7;                 // Expiry slot (0 for no expiry)
+  int32 min_fill_bps = 8;                // Min fill percentage (optional, 0-10000 bps)
+  int32 self_trade_behavior = 9;         // Self-trade behavior: 1=DecrementTake, 2=CancelNew
+}
+
+message CreateLimitOrderResponse {
+  string tx_type = 1;                    // Transaction type
+  string tx_base64 = 2;                  // Base64-encoded unsigned transaction
+  int64 expires_at = 3;                  // Transaction expiration timestamp
+  string order_pda = 4;                  // Order PDA address (predicted)
+  int64 order_id = 5;                    // Order ID (sequence number)
+}
+
+// Cancel limit order request
+message CancelLimitOrderRequest {
+  int32 chain_id = 1;                    // Chain ID (100000 for Solana)
+  string order_pda = 2;                  // Order PDA address
+  string user_wallet_address = 3;        // User wallet address
+}
+
+message CancelLimitOrderResponse {
+  string tx_type = 1;                    // Transaction type
+  string tx_base64 = 2;                  // Base64-encoded unsigned transaction
+  int64 expires_at = 3;                  // Transaction expiration timestamp
+}
+
+// Deposit margin request
+message DepositMarginRequest {
+  int32 chain_id = 1;                    // Chain ID (100000 for Solana)
+  string market_pda = 2;                 // Market PDA address
+  string user_wallet_address = 3;        // User wallet address
+  int32 side = 4;                        // 1=Base, 2=Quote
+  string amount = 5;                     // Amount to deposit (display value)
+}
+
+message DepositMarginResponse {
+  string tx_type = 1;                    // Transaction type
+  string tx_base64 = 2;                  // Base64-encoded unsigned transaction
+  int64 expires_at = 3;                  // Transaction expiration timestamp
+}
+
+// Withdraw margin request
+message WithdrawMarginRequest {
+  int32 chain_id = 1;                    // Chain ID (100000 for Solana)
+  string market_pda = 2;                 // Market PDA address
+  string user_wallet_address = 3;        // User wallet address
+  int32 side = 4;                        // 1=Base, 2=Quote
+  string amount = 5;                     // Amount to withdraw (display value)
+}
+
+message WithdrawMarginResponse {
+  string tx_type = 1;                    // Transaction type
+  string tx_base64 = 2;                  // Base64-encoded unsigned transaction
+  int64 expires_at = 3;                  // Transaction expiration timestamp
+}

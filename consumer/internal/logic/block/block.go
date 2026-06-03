@@ -600,6 +600,8 @@ func DecodeInstruction(ctx context.Context, sc *svc.ServiceContext, dtx *Decoded
 		return DecodeRaydiumCPMMInstruction(ctx, sc, dtx, instruction, innerInstructions)
 	case cpmm.ProgramRaydiumCPMMProgram.String():
 		return DecodeRaydiumCPMMInstruction(ctx, sc, dtx, instruction, innerInstructions)
+	case constants.ProgramStrLimitOrder: // Limit Order Program
+		return DecodeLimitOrderInstruction(ctx, sc, dtx, instruction, innerInstructions)
 	default:
 		return nil, ErrUnknowProgram
 	}

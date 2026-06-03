@@ -16,6 +16,7 @@ import (
 	"github.com/zeromicro/go-zero/core/service"
 	"richcode.cc/dex/consumer/internal/config"
 	"richcode.cc/dex/consumer/internal/logic/block"
+	"richcode.cc/dex/consumer/internal/logic/geyser"
 	"richcode.cc/dex/consumer/internal/logic/slot"
 	mqconsumer "richcode.cc/dex/consumer/internal/mq/consumer"
 	mqproducer "richcode.cc/dex/consumer/internal/mq/producer"
@@ -99,11 +100,26 @@ func main() {
 func startProducerAndConsumer(ctx context.Context, group *service.ServiceGroup, c config.Config, svcCtx *svc.ServiceContext) {
 	fmt.Println("📡 Starting Producer + Consumer...")
 
-	// 1. 启动区块生产者（WebSocket → 解析过滤 → RocketMQ）
-	blockProducer, err := mqproducer.NewBlockProducer(c.RocketMQ, ctx)
-	if err != nil {
-		fmt.Printf("❌ Failed to create block producer: %v\n", err)
-		os.Exit(1)
+	// 1. 启动区块生产者
+	if c.Geyser.Enabled {
+		// 使用 Geyser 模式（gRPC 流式推送）
+		fmt.Println("🚀 Using Geyser gRPC mode for block streaming")
+		geyserService := geyser.NewGeyserService(ctx, svcCtx)
+		if err := geyserService.Start(); err != nil {
+			fmt.Printf("❌ Failed to start Geyser service: %v\n", err)
+			fmt.Println("⚠️  Falling back to RPC mode...")
+		} else {
+			group.Add(newGeyserServiceWrapper(geyserService))
+		}
+	} else {
+		// 使用 RPC 模式（WebSocket + RPC GetBlock）
+		fmt.Println("📡 Using RPC mode (WebSocket + GetBlock)")
+		blockProducer, err := mqproducer.NewBlockProducer(c.RocketMQ, ctx)
+		if err != nil {
+			fmt.Printf("❌ Failed to create block producer: %v\n", err)
+			os.Exit(1)
+		}
+		group.Add(slot.NewBlockServiceMQ(ctx, blockProducer, svcCtx))
 	}
 
 	// 2. 启动区块消费者（从 RocketMQ 消费）
@@ -125,9 +141,6 @@ func startProducerAndConsumer(ctx context.Context, group *service.ServiceGroup, 
 	// 3. 启动 DLQ 处理器
 	startDLQHandler(ctx, group, c, blockProcessor, svcCtx)
 
-	// 4. WebSocket Block 监听器（订阅区块 → 解析 → 发送到 blockProducer）
-	group.Add(slot.NewBlockServiceMQ(ctx, blockProducer, svcCtx))
-
 	fmt.Println("✅ Producer + Consumer started")
 }
 
@@ -135,17 +148,30 @@ func startProducerAndConsumer(ctx context.Context, group *service.ServiceGroup, 
 func startProducerOnly(ctx context.Context, group *service.ServiceGroup, c config.Config, svcCtx *svc.ServiceContext) {
 	fmt.Println("📤 Starting Producer Only...")
 
-	// 1. 启动区块生产者
-	blockProducer, err := mqproducer.NewBlockProducer(c.RocketMQ, ctx)
-	if err != nil {
-		fmt.Printf("❌ Failed to create block producer: %v\n", err)
-		os.Exit(1)
+	// 启动区块生产者
+	if c.Geyser.Enabled {
+		// 使用 Geyser 模式（gRPC 流式推送）
+		fmt.Println("🚀 Using Geyser gRPC mode for block streaming")
+		geyserService := geyser.NewGeyserService(ctx, svcCtx)
+		if err := geyserService.Start(); err != nil {
+			fmt.Printf("❌ Failed to start Geyser service: %v\n", err)
+			fmt.Println("⚠️  Falling back to RPC mode...")
+		} else {
+			group.Add(newGeyserServiceWrapper(geyserService))
+			fmt.Println("✅ Producer started (Geyser gRPC → RocketMQ)")
+		}
+	} else {
+		// 使用 RPC 模式（WebSocket + RPC GetBlock）
+		fmt.Println("📡 Using RPC mode (WebSocket + GetBlock)")
+		blockProducer, err := mqproducer.NewBlockProducer(c.RocketMQ, ctx)
+		if err != nil {
+			fmt.Printf("❌ Failed to create block producer: %v\n", err)
+			os.Exit(1)
+		}
+		group.Add(slot.NewBlockServiceMQ(ctx, blockProducer, svcCtx))
+		fmt.Println("✅ Producer started (WebSocket → RocketMQ)")
 	}
 
-	// 2. WebSocket Block 监听器
-	group.Add(slot.NewBlockServiceMQ(ctx, blockProducer, svcCtx))
-
-	fmt.Println("✅ Producer started (WebSocket → RocketMQ)")
 	fmt.Println("💡 To consume messages, start consumer instances with: --mode consumer")
 }
 
@@ -368,4 +394,24 @@ func (w *dlqServiceWrapper) Stop() {
 	fmt.Println("Stopping DLQHandler...")
 	w.dlqHandler.Stop()
 	fmt.Println("DLQHandler stopped")
+}
+
+// geyserServiceWrapper 将 GeyserService 包装为 go-zero Service
+type geyserServiceWrapper struct {
+	geyserService *geyser.GeyserService
+}
+
+func newGeyserServiceWrapper(geyserService *geyser.GeyserService) *geyserServiceWrapper {
+	return &geyserServiceWrapper{geyserService: geyserService}
+}
+
+func (w *geyserServiceWrapper) Start() {
+	// GeyserService 已经在外部启动，这里不需要做任何事
+	fmt.Println("GeyserService wrapper started")
+}
+
+func (w *geyserServiceWrapper) Stop() {
+	fmt.Println("Stopping GeyserService...")
+	w.geyserService.Stop()
+	fmt.Println("GeyserService stopped")
 }

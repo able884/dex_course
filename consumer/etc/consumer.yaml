@@ -156,3 +156,36 @@ StartupBackfill:
 # 失败 Slot 日志配置
 FailedSlotLog:
   LogDir: "./logs/failed_slots/" # 失败 slot 日志目录
+
+
+# Geyser gRPC 配置（默认禁用，需要手动启用）
+Geyser:
+  Enabled: true                     # 是否启用 Geyser 模式（设置为 true 启用）
+  Endpoints:
+    - "84.32.220.111:10000"          # Helius Geyser 端点（DevNet/MainNet）
+    # - "grpc.triton.one:443"        # Triton 备用端点
+  Commitment: "confirmed"            # 承诺级别：processed/confirmed/finalized
+  EnableTLS: false                   # 启用 TLS
+  ReconnectInterval: 5s              # 重连间隔
+  HealthCheckInterval: 10s           # 健康检查间隔
+  ConnectionTimeout: 30s             # 连接超时
+  StreamTimeout: 60s                 # 流超时
+
+  # 服务端过滤器（按 Program ID 过滤交易）
+  Filters:
+    AccountInclude:
+      - "6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEwF6P"  # PumpFun
+      - "pAMMBay6oceH9fJKBRHGP5D4bD4sWpmSwMn52FMfXEA"  # PumpSwap
+      - "CAMMCzo5YL8w4VFF8KVHrK22GGUsp5VTaW7grrKgrWqK"  # Raydium CLMM (MainNet)
+      - "GodmWN2QXikut2nwHuFGpCPeN6nBb2vuCFknVy3edxVw"  # Raydium CLMM (DevNet)
+      - "CPMMoo8L3F4NbTegBCKVNunggL7H1ZpdTHKxQB5qKP1C"  # Raydium CPMM (MainNet)
+      - "6Phx6fHxjmyXLpqFdPgSwe8VkCnaBX2FMH3ZHchGHvA2"  # Raydium CPMM (DevNet)
+      - "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"  # SPL Token
+      - "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"  # SPL Token 2022
+
+  # 降级配置（Geyser 不可用时自动切换到 RPC）
+  Fallback:
+    Enabled: true                    # 启用自动降级
+    MaxConsecutiveFailures: 3        # 连续失败 3 次触发降级
+    RecoveryCheckInterval: 30s       # 恢复检查间隔（每 30 秒尝试恢复）
+    SlotDelayThreshold: 10s          # slot 延迟阈值（超过 10 秒触发降级）

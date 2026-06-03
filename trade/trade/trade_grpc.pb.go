@@ -36,6 +36,10 @@ const (
 	Trade_OpenPosition_FullMethodName           = "/trade.Trade/OpenPosition"
 	Trade_IncreaseClmmLiquidity_FullMethodName  = "/trade.Trade/IncreaseClmmLiquidity"
 	Trade_DecreaseClmmLiquidity_FullMethodName  = "/trade.Trade/DecreaseClmmLiquidity"
+	Trade_CreateLimitOrder_FullMethodName       = "/trade.Trade/CreateLimitOrder"
+	Trade_CancelLimitOrder_FullMethodName       = "/trade.Trade/CancelLimitOrder"
+	Trade_DepositMargin_FullMethodName          = "/trade.Trade/DepositMargin"
+	Trade_WithdrawMargin_FullMethodName         = "/trade.Trade/WithdrawMargin"
 )
 
 // TradeClient is the client API for Trade service.
@@ -72,6 +76,11 @@ type TradeClient interface {
 	IncreaseClmmLiquidity(ctx context.Context, in *IncreaseClmmLiquidityRequest, opts ...grpc.CallOption) (*IncreaseClmmLiquidityResponse, error)
 	// Build unsigned tx for decreasing liquidity in CLMM position
 	DecreaseClmmLiquidity(ctx context.Context, in *DecreaseClmmLiquidityRequest, opts ...grpc.CallOption) (*DecreaseClmmLiquidityResponse, error)
+	// Limit order operations
+	CreateLimitOrder(ctx context.Context, in *CreateLimitOrderRequest, opts ...grpc.CallOption) (*CreateLimitOrderResponse, error)
+	CancelLimitOrder(ctx context.Context, in *CancelLimitOrderRequest, opts ...grpc.CallOption) (*CancelLimitOrderResponse, error)
+	DepositMargin(ctx context.Context, in *DepositMarginRequest, opts ...grpc.CallOption) (*DepositMarginResponse, error)
+	WithdrawMargin(ctx context.Context, in *WithdrawMarginRequest, opts ...grpc.CallOption) (*WithdrawMarginResponse, error)
 }
 
 type tradeClient struct {
@@ -252,6 +261,46 @@ func (c *tradeClient) DecreaseClmmLiquidity(ctx context.Context, in *DecreaseClm
 	return out, nil
 }
 
+func (c *tradeClient) CreateLimitOrder(ctx context.Context, in *CreateLimitOrderRequest, opts ...grpc.CallOption) (*CreateLimitOrderResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CreateLimitOrderResponse)
+	err := c.cc.Invoke(ctx, Trade_CreateLimitOrder_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *tradeClient) CancelLimitOrder(ctx context.Context, in *CancelLimitOrderRequest, opts ...grpc.CallOption) (*CancelLimitOrderResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CancelLimitOrderResponse)
+	err := c.cc.Invoke(ctx, Trade_CancelLimitOrder_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *tradeClient) DepositMargin(ctx context.Context, in *DepositMarginRequest, opts ...grpc.CallOption) (*DepositMarginResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DepositMarginResponse)
+	err := c.cc.Invoke(ctx, Trade_DepositMargin_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *tradeClient) WithdrawMargin(ctx context.Context, in *WithdrawMarginRequest, opts ...grpc.CallOption) (*WithdrawMarginResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(WithdrawMarginResponse)
+	err := c.cc.Invoke(ctx, Trade_WithdrawMargin_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // TradeServer is the server API for Trade service.
 // All implementations must embed UnimplementedTradeServer
 // for forward compatibility.
@@ -286,6 +335,11 @@ type TradeServer interface {
 	IncreaseClmmLiquidity(context.Context, *IncreaseClmmLiquidityRequest) (*IncreaseClmmLiquidityResponse, error)
 	// Build unsigned tx for decreasing liquidity in CLMM position
 	DecreaseClmmLiquidity(context.Context, *DecreaseClmmLiquidityRequest) (*DecreaseClmmLiquidityResponse, error)
+	// Limit order operations
+	CreateLimitOrder(context.Context, *CreateLimitOrderRequest) (*CreateLimitOrderResponse, error)
+	CancelLimitOrder(context.Context, *CancelLimitOrderRequest) (*CancelLimitOrderResponse, error)
+	DepositMargin(context.Context, *DepositMarginRequest) (*DepositMarginResponse, error)
+	WithdrawMargin(context.Context, *WithdrawMarginRequest) (*WithdrawMarginResponse, error)
 	mustEmbedUnimplementedTradeServer()
 }
 
@@ -346,6 +400,18 @@ func (UnimplementedTradeServer) IncreaseClmmLiquidity(context.Context, *Increase
 }
 func (UnimplementedTradeServer) DecreaseClmmLiquidity(context.Context, *DecreaseClmmLiquidityRequest) (*DecreaseClmmLiquidityResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method DecreaseClmmLiquidity not implemented")
+}
+func (UnimplementedTradeServer) CreateLimitOrder(context.Context, *CreateLimitOrderRequest) (*CreateLimitOrderResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method CreateLimitOrder not implemented")
+}
+func (UnimplementedTradeServer) CancelLimitOrder(context.Context, *CancelLimitOrderRequest) (*CancelLimitOrderResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method CancelLimitOrder not implemented")
+}
+func (UnimplementedTradeServer) DepositMargin(context.Context, *DepositMarginRequest) (*DepositMarginResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method DepositMargin not implemented")
+}
+func (UnimplementedTradeServer) WithdrawMargin(context.Context, *WithdrawMarginRequest) (*WithdrawMarginResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method WithdrawMargin not implemented")
 }
 func (UnimplementedTradeServer) mustEmbedUnimplementedTradeServer() {}
 func (UnimplementedTradeServer) testEmbeddedByValue()               {}
@@ -674,6 +740,78 @@ func _Trade_DecreaseClmmLiquidity_Handler(srv interface{}, ctx context.Context, 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Trade_CreateLimitOrder_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateLimitOrderRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TradeServer).CreateLimitOrder(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Trade_CreateLimitOrder_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TradeServer).CreateLimitOrder(ctx, req.(*CreateLimitOrderRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Trade_CancelLimitOrder_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CancelLimitOrderRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TradeServer).CancelLimitOrder(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Trade_CancelLimitOrder_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TradeServer).CancelLimitOrder(ctx, req.(*CancelLimitOrderRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Trade_DepositMargin_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DepositMarginRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TradeServer).DepositMargin(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Trade_DepositMargin_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TradeServer).DepositMargin(ctx, req.(*DepositMarginRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Trade_WithdrawMargin_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(WithdrawMarginRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TradeServer).WithdrawMargin(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Trade_WithdrawMargin_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TradeServer).WithdrawMargin(ctx, req.(*WithdrawMarginRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Trade_ServiceDesc is the grpc.ServiceDesc for Trade service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -748,6 +886,22 @@ var Trade_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "DecreaseClmmLiquidity",
 			Handler:    _Trade_DecreaseClmmLiquidity_Handler,
+		},
+		{
+			MethodName: "CreateLimitOrder",
+			Handler:    _Trade_CreateLimitOrder_Handler,
+		},
+		{
+			MethodName: "CancelLimitOrder",
+			Handler:    _Trade_CancelLimitOrder_Handler,
+		},
+		{
+			MethodName: "DepositMargin",
+			Handler:    _Trade_DepositMargin_Handler,
+		},
+		{
+			MethodName: "WithdrawMargin",
+			Handler:    _Trade_WithdrawMargin_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

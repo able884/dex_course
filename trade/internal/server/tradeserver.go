@@ -120,3 +120,24 @@ func (s *TradeServer) DecreaseClmmLiquidity(ctx context.Context, in *trade.Decre
 	l := logic.NewDecreaseClmmLiquidityLogic(ctx, s.svcCtx)
 	return l.DecreaseClmmLiquidity(in)
 }
+
+// Limit order operations
+func (s *TradeServer) CreateLimitOrder(ctx context.Context, in *trade.CreateLimitOrderRequest) (*trade.CreateLimitOrderResponse, error) {
+	l := logic.NewCreateLimitOrderLogic(ctx, s.svcCtx)
+	return l.CreateLimitOrder(in)
+}
+
+func (s *TradeServer) CancelLimitOrder(ctx context.Context, in *trade.CancelLimitOrderRequest) (*trade.CancelLimitOrderResponse, error) {
+	l := logic.NewCancelLimitOrderLogic(ctx, s.svcCtx)
+	return l.CancelLimitOrder(in)
+}
+
+func (s *TradeServer) DepositMargin(ctx context.Context, in *trade.DepositMarginRequest) (*trade.DepositMarginResponse, error) {
+	l := logic.NewDepositMarginLogic(ctx, s.svcCtx)
+	return l.DepositMargin(in)
+}
+
+func (s *TradeServer) WithdrawMargin(ctx context.Context, in *trade.WithdrawMarginRequest) (*trade.WithdrawMarginResponse, error) {
+	l := logic.NewWithdrawMarginLogic(ctx, s.svcCtx)
+	return l.WithdrawMargin(in)
+}

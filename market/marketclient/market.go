@@ -20,6 +20,14 @@ type (
 	GetClmmPoolDepthDataResponse = market.GetClmmPoolDepthDataResponse
 	GetClmmPoolListRequest       = market.GetClmmPoolListRequest
 	GetClmmPoolListResponse      = market.GetClmmPoolListResponse
+	GetLimitOrderBookRequest     = market.GetLimitOrderBookRequest
+	GetLimitOrderBookResponse    = market.GetLimitOrderBookResponse
+	GetLimitOrderDetailRequest   = market.GetLimitOrderDetailRequest
+	GetLimitOrderDetailResponse  = market.GetLimitOrderDetailResponse
+	GetLimitOrderFillsRequest    = market.GetLimitOrderFillsRequest
+	GetLimitOrderFillsResponse   = market.GetLimitOrderFillsResponse
+	GetLimitOrderMarketsRequest  = market.GetLimitOrderMarketsRequest
+	GetLimitOrderMarketsResponse = market.GetLimitOrderMarketsResponse
 	GetNativeTokenPriceRequest   = market.GetNativeTokenPriceRequest
 	GetNativeTokenPriceResponse  = market.GetNativeTokenPriceResponse
 	GetPairInfoByTokenRequest    = market.GetPairInfoByTokenRequest
@@ -30,8 +38,17 @@ type (
 	GetPumpTokenListResponse     = market.GetPumpTokenListResponse
 	GetTokenInfoRequest          = market.GetTokenInfoRequest
 	GetTokenInfoResponse         = market.GetTokenInfoResponse
+	GetUserLimitOrdersRequest    = market.GetUserLimitOrdersRequest
+	GetUserLimitOrdersResponse   = market.GetUserLimitOrdersResponse
+	GetUserMarginRequest         = market.GetUserMarginRequest
+	GetUserMarginResponse        = market.GetUserMarginResponse
 	GetUserPositionsRequest      = market.GetUserPositionsRequest
 	GetUserPositionsResponse     = market.GetUserPositionsResponse
+	MarginAccountItem            = market.MarginAccountItem
+	MarketItem                   = market.MarketItem
+	OrderBookLevel               = market.OrderBookLevel
+	OrderDetailItem              = market.OrderDetailItem
+	OrderFillItem                = market.OrderFillItem
 	PositionItem                 = market.PositionItem
 	PumpTokenItem                = market.PumpTokenItem
 	PushTokenInfoRequest         = market.PushTokenInfoRequest
@@ -40,6 +57,9 @@ type (
 	QuoteClmmResponse            = market.QuoteClmmResponse
 	QuoteCpmmRequest             = market.QuoteCpmmRequest
 	QuoteCpmmResponse            = market.QuoteCpmmResponse
+	SyncMarginBalanceRequest     = market.SyncMarginBalanceRequest
+	SyncMarginBalanceResponse    = market.SyncMarginBalanceResponse
+	UserOrderItem                = market.UserOrderItem
 
 	Market interface {
 		GetPumpTokenList(ctx context.Context, in *GetPumpTokenListRequest, opts ...grpc.CallOption) (*GetPumpTokenListResponse, error)
@@ -54,6 +74,15 @@ type (
 		GetClmmPoolDepthData(ctx context.Context, in *GetClmmPoolDepthDataRequest, opts ...grpc.CallOption) (*GetClmmPoolDepthDataResponse, error)
 		// Get user's liquidity positions
 		GetUserPositions(ctx context.Context, in *GetUserPositionsRequest, opts ...grpc.CallOption) (*GetUserPositionsResponse, error)
+		// Limit order queries
+		GetLimitOrderBook(ctx context.Context, in *GetLimitOrderBookRequest, opts ...grpc.CallOption) (*GetLimitOrderBookResponse, error)
+		GetUserLimitOrders(ctx context.Context, in *GetUserLimitOrdersRequest, opts ...grpc.CallOption) (*GetUserLimitOrdersResponse, error)
+		GetLimitOrderDetail(ctx context.Context, in *GetLimitOrderDetailRequest, opts ...grpc.CallOption) (*GetLimitOrderDetailResponse, error)
+		GetLimitOrderMarkets(ctx context.Context, in *GetLimitOrderMarketsRequest, opts ...grpc.CallOption) (*GetLimitOrderMarketsResponse, error)
+		GetUserMargin(ctx context.Context, in *GetUserMarginRequest, opts ...grpc.CallOption) (*GetUserMarginResponse, error)
+		// Sync margin account balance from blockchain
+		SyncMarginBalance(ctx context.Context, in *SyncMarginBalanceRequest, opts ...grpc.CallOption) (*SyncMarginBalanceResponse, error)
+		GetLimitOrderFills(ctx context.Context, in *GetLimitOrderFillsRequest, opts ...grpc.CallOption) (*GetLimitOrderFillsResponse, error)
 	}
 
 	defaultMarket struct {
@@ -121,4 +150,41 @@ func (m *defaultMarket) GetClmmPoolDepthData(ctx context.Context, in *GetClmmPoo
 func (m *defaultMarket) GetUserPositions(ctx context.Context, in *GetUserPositionsRequest, opts ...grpc.CallOption) (*GetUserPositionsResponse, error) {
 	client := market.NewMarketClient(m.cli.Conn())
 	return client.GetUserPositions(ctx, in, opts...)
+}
+
+// Limit order queries
+func (m *defaultMarket) GetLimitOrderBook(ctx context.Context, in *GetLimitOrderBookRequest, opts ...grpc.CallOption) (*GetLimitOrderBookResponse, error) {
+	client := market.NewMarketClient(m.cli.Conn())
+	return client.GetLimitOrderBook(ctx, in, opts...)
+}
+
+func (m *defaultMarket) GetUserLimitOrders(ctx context.Context, in *GetUserLimitOrdersRequest, opts ...grpc.CallOption) (*GetUserLimitOrdersResponse, error) {
+	client := market.NewMarketClient(m.cli.Conn())
+	return client.GetUserLimitOrders(ctx, in, opts...)
+}
+
+func (m *defaultMarket) GetLimitOrderDetail(ctx context.Context, in *GetLimitOrderDetailRequest, opts ...grpc.CallOption) (*GetLimitOrderDetailResponse, error) {
+	client := market.NewMarketClient(m.cli.Conn())
+	return client.GetLimitOrderDetail(ctx, in, opts...)
+}
+
+func (m *defaultMarket) GetLimitOrderMarkets(ctx context.Context, in *GetLimitOrderMarketsRequest, opts ...grpc.CallOption) (*GetLimitOrderMarketsResponse, error) {
+	client := market.NewMarketClient(m.cli.Conn())
+	return client.GetLimitOrderMarkets(ctx, in, opts...)
+}
+
+func (m *defaultMarket) GetUserMargin(ctx context.Context, in *GetUserMarginRequest, opts ...grpc.CallOption) (*GetUserMarginResponse, error) {
+	client := market.NewMarketClient(m.cli.Conn())
+	return client.GetUserMargin(ctx, in, opts...)
+}
+
+// Sync margin account balance from blockchain
+func (m *defaultMarket) SyncMarginBalance(ctx context.Context, in *SyncMarginBalanceRequest, opts ...grpc.CallOption) (*SyncMarginBalanceResponse, error) {
+	client := market.NewMarketClient(m.cli.Conn())
+	return client.SyncMarginBalance(ctx, in, opts...)
+}
+
+func (m *defaultMarket) GetLimitOrderFills(ctx context.Context, in *GetLimitOrderFillsRequest, opts ...grpc.CallOption) (*GetLimitOrderFillsResponse, error) {
+	client := market.NewMarketClient(m.cli.Conn())
+	return client.GetLimitOrderFills(ctx, in, opts...)
 }

@@ -37,6 +37,7 @@ pub struct PlaceOrderParams {
     pub self_trade_behavior: SelfTradeBehavior,
 }
 
+/// 下单操作，更新保证金账户锁定余额，并创建订单账户记录订单信息
 pub fn place_order(ctx: Context<PlaceOrder>, params: PlaceOrderParams, whitelist_proof: Vec<[u8; 32]>) -> Result<()> {
     let config = &ctx.accounts.config;
     require!(!config.paused, LimitOrderError::ProgramPaused);
@@ -62,6 +63,7 @@ pub fn place_order(ctx: Context<PlaceOrder>, params: PlaceOrderParams, whitelist
                 .ok_or(LimitOrderError::MathOverflow)?;
             require!(params.qty_lots >= market.min_base_lot, LimitOrderError::InvalidAmount);
             require!(margin.quote_free >= quote_needed, LimitOrderError::InsufficientFreeBalance);
+            // 如果买入base代币，则锁定相应数量的quote代币
             margin.quote_free = margin.quote_free.checked_sub(quote_needed).ok_or(LimitOrderError::MathOverflow)?;
             margin.quote_locked =
                 margin.quote_locked.checked_add(quote_needed).ok_or(LimitOrderError::MathOverflow)?;
@@ -69,6 +71,7 @@ pub fn place_order(ctx: Context<PlaceOrder>, params: PlaceOrderParams, whitelist
         }
         Side::Ask => {
             require!(params.qty_lots >= market.min_base_lot, LimitOrderError::InvalidAmount);
+            // 如果卖出base代币，则锁定相应数量的base代币
             require!(margin.base_free >= params.qty_lots, LimitOrderError::InsufficientFreeBalance);
             margin.base_free = margin.base_free.checked_sub(params.qty_lots).ok_or(LimitOrderError::MathOverflow)?;
             margin.base_locked =

@@ -9,6 +9,7 @@ import (
 	ag_rpc "github.com/gagliardetto/solana-go/rpc"
 	"richcode.cc/dex/market/internal/config"
 	"richcode.cc/dex/pkg/constants"
+	"richcode.cc/dex/pkg/limitorder"
 
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/redis"
@@ -125,6 +126,7 @@ type ServiceContext struct {
 	SolTokenAccountModel solmodel.SolTokenAccountModel
 	ClmmPositionModel    solmodel.ClmmPositionModel
 	PriceRangeCache      *PriceRangeCacheReader
+	LimitOrderPublisher  *limitorder.Publisher // 限价订单消息发布器
 }
 
 func NewServiceContext(c config.Config) *ServiceContext {
@@ -173,5 +175,6 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		SolTokenAccountModel: solmodel.NewSolTokenAccountModel(db),
 		ClmmPositionModel:    solmodel.NewClmmPositionModel(db),
 		PriceRangeCache:      NewPriceRangeCacheReader(rds, constants.SolChainIdInt),
+		LimitOrderPublisher:  limitorder.NewPublisher(rds),
 	}
 }

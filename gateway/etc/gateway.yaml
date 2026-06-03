@@ -1,5 +1,5 @@
-Name: gateway-example # gateway name
-Host: 0.0.0.0 # gateway host
+Name: gateway # gateway name
+Host: localhost # gateway host
 Port: 8888 # gateway port
 timeout: 60000000
 MaxBytes: 3145728
@@ -37,6 +37,34 @@ RequestLimit:
     QPS: 60
   - Path: /v1/trade/open_position
     QPS: 20
+  - Path: /v1/limitorder/create
+    QPS: 30
+  - Path: /v1/limitorder/cancel
+    QPS: 30
+  - Path: /v1/limitorder/orderbook
+    QPS: 60
+  - Path: /v1/limitorder/user_orders
+    QPS: 30
+  - Path: /v1/limitorder/order_detail
+    QPS: 30
+  - Path: /v1/limitorder/markets
+    QPS: 30
+  - Path: /v1/limitorder/user_margin
+    QPS: 30
+  - Path: /v1/limitorder/fills
+    QPS: 30
+  - Path: /v1/limitorder/initialize_margin
+    QPS: 30
+  - Path: /v1/limitorder/sync_margin_status
+    QPS: 30
+  - Path: /v1/limitorder/create_market
+    QPS: 10
+  - Path: /v1/limitorder/sync_market_status
+    QPS: 30
+  - Path: /v1/limitorder/deposit_margin
+    QPS: 30
+  - Path: /v1/limitorder/withdraw_margin
+    QPS: 30
 
 IpRestriction:
   IsoCode: # example CN,US,HK,SG,JP
@@ -48,7 +76,7 @@ Auth:
   TgToken:
 
 Redis:
-  Host: 172.17.112.1
+  Host: 127.0.0.1
   Port: 6379
   Auth: "123456"
   MaxIdle: 20
@@ -66,7 +94,7 @@ Upstreams: # upstreams
   - Grpc: # grpc upstream
       Target: 127.0.0.1:8090 # grpc target,the direct grpc server address,for only one node
       nonblock: true
-      timeout: 100000
+      timeout: 5000 # 5 seconds timeout in milliseconds
     ProtoSets:
       - internal/embed/pb/market.pb
     # Mappings can also be written in proto options
@@ -86,15 +114,39 @@ Upstreams: # upstreams
       - Method: post
         Path: /v1/market/quote_cpmm
         RpcPath: market.Market/QuoteCpmm
+      - Method: post
+        Path: /v1/market/quote_clmm
+        RpcPath: market.Market/QuoteClmm
       - Method: get
         Path: /v1/market/clmm_pool_depth
         RpcPath: market.Market/GetClmmPoolDepthData
       - Method: get
         Path: /v1/market/user_positions
-        RpcPath: market.Market/GetUserPositions        
+        RpcPath: market.Market/GetUserPositions
+      - Method: get
+        Path: /v1/limitorder/orderbook
+        RpcPath: market.Market/GetLimitOrderBook
+      - Method: get
+        Path: /v1/limitorder/user_orders
+        RpcPath: market.Market/GetUserLimitOrders
+      - Method: get
+        Path: /v1/limitorder/order_detail
+        RpcPath: market.Market/GetLimitOrderDetail
+      - Method: get
+        Path: /v1/limitorder/markets
+        RpcPath: market.Market/GetLimitOrderMarkets
+      - Method: get
+        Path: /v1/limitorder/user_margin
+        RpcPath: market.Market/GetUserMargin
+      - Method: post
+        Path: /v1/limitorder/sync_margin_balance
+        RpcPath: market.Market/SyncMarginBalance
+      - Method: get
+        Path: /v1/limitorder/fills
+        RpcPath: market.Market/GetLimitOrderFills
   - Name: trade
     Grpc: # trade service upstream
-      Target: 127.0.0.1:8100 # grpc target,the direct grpc server address,for only one node
+      Target: localhost:8100 # grpc target,the direct grpc server address,for only one node
       nonblock: true
       timeout: 60000000
     ProtoSets:
@@ -139,6 +191,38 @@ Upstreams: # upstreams
       - Method: post
         Path: /v1/trade/decrease_clmm_liquidity
         RpcPath: trade.Trade/DecreaseClmmLiquidity
+      - Method: post
+        Path: /v1/limitorder/create
+        RpcPath: trade.Trade/CreateLimitOrder
+      - Method: post
+        Path: /v1/limitorder/cancel
+        RpcPath: trade.Trade/CancelLimitOrder
+      - Method: post
+        Path: /v1/limitorder/deposit_margin
+        RpcPath: trade.Trade/DepositMargin
+      - Method: post
+        Path: /v1/limitorder/withdraw_margin
+        RpcPath: trade.Trade/WithdrawMargin
+  - Name: limitorder
+    Grpc: # limitorder service upstream
+      Target: localhost:8120 # limitorder service
+      nonblock: true
+      timeout: 60000000
+    ProtoSets:
+      - internal/embed/pb/limitorder.pb
+    Mappings:
+      - Method: post
+        Path: /v1/limitorder/initialize_margin
+        RpcPath: limitorder.LimitOrder/InitializeMarginAccount
+      - Method: post
+        Path: /v1/limitorder/sync_margin_status
+        RpcPath: limitorder.LimitOrder/SyncMarginAccountStatus
+      - Method: post
+        Path: /v1/limitorder/create_market
+        RpcPath: limitorder.LimitOrder/CreateMarket
+      - Method: post
+        Path: /v1/limitorder/sync_market_status
+        RpcPath: limitorder.LimitOrder/SyncMarketStatus
 whitelist:
   path:
     - /v1/market/index_pump
@@ -160,6 +244,21 @@ whitelist:
     - /v1/trade/decrease_clmm_liquidity
     - /v1/trade/remove_cpmm_liquidity
     - /v1/trade/cpmm_swap
+    - /v1/limitorder/create
+    - /v1/limitorder/cancel
+    - /v1/limitorder/orderbook
+    - /v1/limitorder/user_orders
+    - /v1/limitorder/order_detail
+    - /v1/limitorder/markets
+    - /v1/limitorder/user_margin
+    - /v1/limitorder/sync_margin_balance
+    - /v1/limitorder/fills
+    - /v1/limitorder/initialize_margin
+    - /v1/limitorder/sync_margin_status
+    - /v1/limitorder/create_market
+    - /v1/limitorder/sync_market_status
+    - /v1/limitorder/deposit_margin
+    - /v1/limitorder/withdraw_margin
 Liquidity:
   CacheTTLSeconds: 60
   Paths:

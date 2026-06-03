@@ -23,6 +23,7 @@ pub struct CancelOrder<'info> {
     pub owner: Signer<'info>,
 }
 
+/// 取消订单指令处理函数
 pub fn cancel_order(ctx: Context<CancelOrder>) -> Result<()> {
     let margin = &mut ctx.accounts.margin;
     let order = &mut ctx.accounts.order;

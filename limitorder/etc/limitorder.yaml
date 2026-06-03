@@ -1,0 +1,69 @@
+Name: limitorder.rpc
+ListenOn: 0.0.0.0:8120
+Timeout: 600000 # ms, extend RPC handler timeout to 10 minutes
+# Etcd:
+#   Hosts:
+#   - 127.0.0.1:2379
+#   Key: limitorder.rpc
+
+Sol:
+  ChainId: 100000
+  #jito 不为空，就用jito地址来发送 (disabled for devnet)
+  Jito: ""
+  NodeUrl:
+    - "https://devnet.helius-rpc.com/?api-key=ffb452cc-5d85-4d2c-b3b1-2fc808745116"
+  Enable: true
+  UUID: "limitorder-service"
+  # Matcher 私钥（Base58编码）- 用于签名撮合交易和取消过期订单
+  # 生产环境建议使用环境变量或密钥管理服务
+  MatcherPrivateKey: "2yfeSnhj59HFGTu7gDKvt46u3ojqCW5ZHKu8WuZqcqYwSHZHcwvvMgXAxmPUMqQToKBigC8yA16cHis1LQHS5oWd"  # TODO: 填入实际的 matcher 私钥
+
+Mysql:
+  User: root
+  Password: "123456"
+  Host: localhost
+  Port: 3306
+  DBname: rc_dex_study
+
+# 数据库连接字符串(带时间解析)
+DSN: "root:123456@tcp(localhost:3306)/rc_dex_study?parseTime=true"
+
+# Redis 缓存配置(可选)
+Cache:
+  - Host: localhost:6379
+    Type: node
+    Pass: "123456"
+
+# 撮合引擎配置
+Matcher:
+  Enable: true                  # 启用撮合引擎
+  WorkerPoolSize: 10            # 撮合工作协程池大小
+  OrderBookDepth: 100           # 订单簿深度
+  MatchInterval: 1000           # 撮合间隔(ms)
+  EventBufferSize: 1000         # 事件缓冲区大小
+
+# 清理服务配置
+Cranker:
+  Enable: true                  # 启用清理服务
+  ScanInterval: 60000           # 扫描间隔(ms, 默认60秒)
+  BatchSize: 50                 # 批量清理大小
+  ExpiredOrderLimit: 100        # 单次处理过期订单数量上限
+
+# Solana WebSocket 配置(用于事件监听)
+WebSocket:
+  Enable: true
+  Url: "wss://devnet.helius-rpc.com/?api-key=ffb452cc-5d85-4d2c-b3b1-2fc808745116"
+  ReconnectInterval: 5000       # 重连间隔(ms)
+
+# 依赖的其他服务
+trade_service:
+  target: localhost:8100
+  nonblock: true
+  timeout: 10000  # 10 seconds timeout
+  transport: tcp
+
+market_service:
+  target: localhost:8090
+  nonblock: true
+  timeout: 10000  # 10 seconds timeout
+  transport: tcp

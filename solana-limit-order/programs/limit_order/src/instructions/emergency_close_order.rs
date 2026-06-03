@@ -24,6 +24,7 @@ pub struct EmergencyCloseOrder<'info> {
     pub owner: Signer<'info>,
 }
 
+/// 紧急平仓指令，允许用户在程序或市场被暂停后，解锁订单剩余未成交部分的保证金
 pub fn emergency_close_order(ctx: Context<EmergencyCloseOrder>) -> Result<()> {
     let config = &ctx.accounts.config;
     require!(config.paused || ctx.accounts.market.paused, LimitOrderError::EmergencyOnly);

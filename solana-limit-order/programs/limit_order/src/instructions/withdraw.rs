@@ -27,6 +27,7 @@ pub struct Withdraw<'info> {
     pub token_program: Program<'info, Token>,
 }
 
+/// 提现操作，更新保证金账户余额，并将对应数量的代币从市场金库转移到用户ATA账户
 pub fn withdraw(ctx: Context<Withdraw>, amount: u64, side: TokenSide) -> Result<()> {
     require!(amount > 0, LimitOrderError::InvalidAmount);
     let margin = &mut ctx.accounts.margin;

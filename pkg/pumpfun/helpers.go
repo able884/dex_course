@@ -59,6 +59,7 @@ func GetBondingCurveState(ctx context.Context, client *ag_rpc.Client, mint ag_so
 		return nil, fmt.Errorf("invalid bonding curve data length")
 	}
 
+	// solana上int64和uint64都是8字节，且是小端序存储，所以需要反转字节顺序后转换成uint64
 	virtualTokenReserves := new(big.Int).SetBytes(reverseBytes(data[8:16])).Uint64()
 	virtualSolReserves := new(big.Int).SetBytes(reverseBytes(data[16:24])).Uint64()
 

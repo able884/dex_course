@@ -30,6 +30,13 @@ const (
 	Market_QuoteClmm_FullMethodName            = "/market.Market/QuoteClmm"
 	Market_GetClmmPoolDepthData_FullMethodName = "/market.Market/GetClmmPoolDepthData"
 	Market_GetUserPositions_FullMethodName     = "/market.Market/GetUserPositions"
+	Market_GetLimitOrderBook_FullMethodName    = "/market.Market/GetLimitOrderBook"
+	Market_GetUserLimitOrders_FullMethodName   = "/market.Market/GetUserLimitOrders"
+	Market_GetLimitOrderDetail_FullMethodName  = "/market.Market/GetLimitOrderDetail"
+	Market_GetLimitOrderMarkets_FullMethodName = "/market.Market/GetLimitOrderMarkets"
+	Market_GetUserMargin_FullMethodName        = "/market.Market/GetUserMargin"
+	Market_SyncMarginBalance_FullMethodName    = "/market.Market/SyncMarginBalance"
+	Market_GetLimitOrderFills_FullMethodName   = "/market.Market/GetLimitOrderFills"
 )
 
 // MarketClient is the client API for Market service.
@@ -48,6 +55,15 @@ type MarketClient interface {
 	GetClmmPoolDepthData(ctx context.Context, in *GetClmmPoolDepthDataRequest, opts ...grpc.CallOption) (*GetClmmPoolDepthDataResponse, error)
 	// Get user's liquidity positions
 	GetUserPositions(ctx context.Context, in *GetUserPositionsRequest, opts ...grpc.CallOption) (*GetUserPositionsResponse, error)
+	// Limit order queries
+	GetLimitOrderBook(ctx context.Context, in *GetLimitOrderBookRequest, opts ...grpc.CallOption) (*GetLimitOrderBookResponse, error)
+	GetUserLimitOrders(ctx context.Context, in *GetUserLimitOrdersRequest, opts ...grpc.CallOption) (*GetUserLimitOrdersResponse, error)
+	GetLimitOrderDetail(ctx context.Context, in *GetLimitOrderDetailRequest, opts ...grpc.CallOption) (*GetLimitOrderDetailResponse, error)
+	GetLimitOrderMarkets(ctx context.Context, in *GetLimitOrderMarketsRequest, opts ...grpc.CallOption) (*GetLimitOrderMarketsResponse, error)
+	GetUserMargin(ctx context.Context, in *GetUserMarginRequest, opts ...grpc.CallOption) (*GetUserMarginResponse, error)
+	// Sync margin account balance from blockchain
+	SyncMarginBalance(ctx context.Context, in *SyncMarginBalanceRequest, opts ...grpc.CallOption) (*SyncMarginBalanceResponse, error)
+	GetLimitOrderFills(ctx context.Context, in *GetLimitOrderFillsRequest, opts ...grpc.CallOption) (*GetLimitOrderFillsResponse, error)
 }
 
 type marketClient struct {
@@ -168,6 +184,76 @@ func (c *marketClient) GetUserPositions(ctx context.Context, in *GetUserPosition
 	return out, nil
 }
 
+func (c *marketClient) GetLimitOrderBook(ctx context.Context, in *GetLimitOrderBookRequest, opts ...grpc.CallOption) (*GetLimitOrderBookResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetLimitOrderBookResponse)
+	err := c.cc.Invoke(ctx, Market_GetLimitOrderBook_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *marketClient) GetUserLimitOrders(ctx context.Context, in *GetUserLimitOrdersRequest, opts ...grpc.CallOption) (*GetUserLimitOrdersResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetUserLimitOrdersResponse)
+	err := c.cc.Invoke(ctx, Market_GetUserLimitOrders_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *marketClient) GetLimitOrderDetail(ctx context.Context, in *GetLimitOrderDetailRequest, opts ...grpc.CallOption) (*GetLimitOrderDetailResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetLimitOrderDetailResponse)
+	err := c.cc.Invoke(ctx, Market_GetLimitOrderDetail_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *marketClient) GetLimitOrderMarkets(ctx context.Context, in *GetLimitOrderMarketsRequest, opts ...grpc.CallOption) (*GetLimitOrderMarketsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetLimitOrderMarketsResponse)
+	err := c.cc.Invoke(ctx, Market_GetLimitOrderMarkets_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *marketClient) GetUserMargin(ctx context.Context, in *GetUserMarginRequest, opts ...grpc.CallOption) (*GetUserMarginResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetUserMarginResponse)
+	err := c.cc.Invoke(ctx, Market_GetUserMargin_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *marketClient) SyncMarginBalance(ctx context.Context, in *SyncMarginBalanceRequest, opts ...grpc.CallOption) (*SyncMarginBalanceResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SyncMarginBalanceResponse)
+	err := c.cc.Invoke(ctx, Market_SyncMarginBalance_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *marketClient) GetLimitOrderFills(ctx context.Context, in *GetLimitOrderFillsRequest, opts ...grpc.CallOption) (*GetLimitOrderFillsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetLimitOrderFillsResponse)
+	err := c.cc.Invoke(ctx, Market_GetLimitOrderFills_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // MarketServer is the server API for Market service.
 // All implementations must embed UnimplementedMarketServer
 // for forward compatibility.
@@ -184,6 +270,15 @@ type MarketServer interface {
 	GetClmmPoolDepthData(context.Context, *GetClmmPoolDepthDataRequest) (*GetClmmPoolDepthDataResponse, error)
 	// Get user's liquidity positions
 	GetUserPositions(context.Context, *GetUserPositionsRequest) (*GetUserPositionsResponse, error)
+	// Limit order queries
+	GetLimitOrderBook(context.Context, *GetLimitOrderBookRequest) (*GetLimitOrderBookResponse, error)
+	GetUserLimitOrders(context.Context, *GetUserLimitOrdersRequest) (*GetUserLimitOrdersResponse, error)
+	GetLimitOrderDetail(context.Context, *GetLimitOrderDetailRequest) (*GetLimitOrderDetailResponse, error)
+	GetLimitOrderMarkets(context.Context, *GetLimitOrderMarketsRequest) (*GetLimitOrderMarketsResponse, error)
+	GetUserMargin(context.Context, *GetUserMarginRequest) (*GetUserMarginResponse, error)
+	// Sync margin account balance from blockchain
+	SyncMarginBalance(context.Context, *SyncMarginBalanceRequest) (*SyncMarginBalanceResponse, error)
+	GetLimitOrderFills(context.Context, *GetLimitOrderFillsRequest) (*GetLimitOrderFillsResponse, error)
 	mustEmbedUnimplementedMarketServer()
 }
 
@@ -226,6 +321,27 @@ func (UnimplementedMarketServer) GetClmmPoolDepthData(context.Context, *GetClmmP
 }
 func (UnimplementedMarketServer) GetUserPositions(context.Context, *GetUserPositionsRequest) (*GetUserPositionsResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetUserPositions not implemented")
+}
+func (UnimplementedMarketServer) GetLimitOrderBook(context.Context, *GetLimitOrderBookRequest) (*GetLimitOrderBookResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetLimitOrderBook not implemented")
+}
+func (UnimplementedMarketServer) GetUserLimitOrders(context.Context, *GetUserLimitOrdersRequest) (*GetUserLimitOrdersResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetUserLimitOrders not implemented")
+}
+func (UnimplementedMarketServer) GetLimitOrderDetail(context.Context, *GetLimitOrderDetailRequest) (*GetLimitOrderDetailResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetLimitOrderDetail not implemented")
+}
+func (UnimplementedMarketServer) GetLimitOrderMarkets(context.Context, *GetLimitOrderMarketsRequest) (*GetLimitOrderMarketsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetLimitOrderMarkets not implemented")
+}
+func (UnimplementedMarketServer) GetUserMargin(context.Context, *GetUserMarginRequest) (*GetUserMarginResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetUserMargin not implemented")
+}
+func (UnimplementedMarketServer) SyncMarginBalance(context.Context, *SyncMarginBalanceRequest) (*SyncMarginBalanceResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method SyncMarginBalance not implemented")
+}
+func (UnimplementedMarketServer) GetLimitOrderFills(context.Context, *GetLimitOrderFillsRequest) (*GetLimitOrderFillsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetLimitOrderFills not implemented")
 }
 func (UnimplementedMarketServer) mustEmbedUnimplementedMarketServer() {}
 func (UnimplementedMarketServer) testEmbeddedByValue()                {}
@@ -446,6 +562,132 @@ func _Market_GetUserPositions_Handler(srv interface{}, ctx context.Context, dec 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Market_GetLimitOrderBook_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetLimitOrderBookRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MarketServer).GetLimitOrderBook(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Market_GetLimitOrderBook_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MarketServer).GetLimitOrderBook(ctx, req.(*GetLimitOrderBookRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Market_GetUserLimitOrders_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetUserLimitOrdersRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MarketServer).GetUserLimitOrders(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Market_GetUserLimitOrders_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MarketServer).GetUserLimitOrders(ctx, req.(*GetUserLimitOrdersRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Market_GetLimitOrderDetail_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetLimitOrderDetailRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MarketServer).GetLimitOrderDetail(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Market_GetLimitOrderDetail_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MarketServer).GetLimitOrderDetail(ctx, req.(*GetLimitOrderDetailRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Market_GetLimitOrderMarkets_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetLimitOrderMarketsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MarketServer).GetLimitOrderMarkets(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Market_GetLimitOrderMarkets_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MarketServer).GetLimitOrderMarkets(ctx, req.(*GetLimitOrderMarketsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Market_GetUserMargin_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetUserMarginRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MarketServer).GetUserMargin(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Market_GetUserMargin_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MarketServer).GetUserMargin(ctx, req.(*GetUserMarginRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Market_SyncMarginBalance_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SyncMarginBalanceRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MarketServer).SyncMarginBalance(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Market_SyncMarginBalance_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MarketServer).SyncMarginBalance(ctx, req.(*SyncMarginBalanceRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Market_GetLimitOrderFills_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetLimitOrderFillsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MarketServer).GetLimitOrderFills(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Market_GetLimitOrderFills_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MarketServer).GetLimitOrderFills(ctx, req.(*GetLimitOrderFillsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Market_ServiceDesc is the grpc.ServiceDesc for Market service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -496,6 +738,34 @@ var Market_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetUserPositions",
 			Handler:    _Market_GetUserPositions_Handler,
+		},
+		{
+			MethodName: "GetLimitOrderBook",
+			Handler:    _Market_GetLimitOrderBook_Handler,
+		},
+		{
+			MethodName: "GetUserLimitOrders",
+			Handler:    _Market_GetUserLimitOrders_Handler,
+		},
+		{
+			MethodName: "GetLimitOrderDetail",
+			Handler:    _Market_GetLimitOrderDetail_Handler,
+		},
+		{
+			MethodName: "GetLimitOrderMarkets",
+			Handler:    _Market_GetLimitOrderMarkets_Handler,
+		},
+		{
+			MethodName: "GetUserMargin",
+			Handler:    _Market_GetUserMargin_Handler,
+		},
+		{
+			MethodName: "SyncMarginBalance",
+			Handler:    _Market_SyncMarginBalance_Handler,
+		},
+		{
+			MethodName: "GetLimitOrderFills",
+			Handler:    _Market_GetLimitOrderFills_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

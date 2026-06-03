@@ -1,34 +1,34 @@
-use anchor_lang::prelude::*;
-use crate::state::config::ProgramConfig;
 use crate::error::LimitOrderError;
-use pyth_solana_receiver_sdk::price_update::PriceUpdateV2;
+use crate::state::config::ProgramConfig;
+use anchor_lang::prelude::*;
 use anchor_lang::solana_program::clock::Clock;
+use pyth_solana_receiver_sdk::price_update::PriceUpdateV2;
 
 #[account]
 pub struct Market {
-    pub base_mint: Pubkey,
-    pub quote_mint: Pubkey,
-    pub base_vault: Pubkey,
-    pub quote_vault: Pubkey,
-    pub tick_size: u64,
-    pub min_base_lot: u64,
-    pub min_quote_lot: u64,
-    pub maker_fee_bps: u16,
-    pub taker_fee_bps: u16,
-    pub fee_accumulator: u64,
-    pub seq_num: u64,
+    pub base_mint: Pubkey,    // 基础代币地址
+    pub quote_mint: Pubkey,   // 报价代币地址
+    pub base_vault: Pubkey,   // 基础代币金库地址
+    pub quote_vault: Pubkey,  // 报价代币金库地址
+    pub tick_size: u64,       // 报价最小变动价位（报价币最小单位）
+    pub min_base_lot: u64,    // 最小基础代币下单量（以基础代币最小单位表示）
+    pub min_quote_lot: u64,   // 最小报价代币下单量（以报价代币最小单位表示）
+    pub maker_fee_bps: u16,   // 挂单手续费费率(bps)
+    pub taker_fee_bps: u16,   // 吃单手续费费率(bps)
+    pub fee_accumulator: u64, // 累计归集手续费（quote最小单位）
+    pub seq_num: u64,         // 市场全局订单序列号
 
-    // Price oracle configuration
+    // 价格预言机相关参数
     pub oracle_type: PriceOracleType,
-    pub pyth_price_feed_id: [u8; 32],  // Pyth price feed ID (only used if oracle_type == Pyth)
+    pub pyth_price_feed_id: [u8; 32], // Pyth price feed ID (only used if oracle_type == Pyth)
 
-    // Custom price oracle (only used if oracle_type == Custom)
-    pub custom_price: i64,              // Price with exponent
-    pub custom_price_exponent: i32,     // Price exponent (e.g., -8 means price * 10^-8)
-    pub custom_price_conf: u64,         // Price confidence interval
-    pub custom_price_slot: u64,         // Slot when price was last updated
+    // 自定义价格预言机（仅用于 oracle_type == Custom）
+    pub custom_price: i64,          // Price with exponent
+    pub custom_price_exponent: i32, // Price exponent (e.g., -8 means price * 10^-8)
+    pub custom_price_conf: u64,     // Price confidence interval
+    pub custom_price_slot: u64,     // Slot when price was last updated
 
-    pub paused: bool,
+    pub paused: bool, // 市场是否暂停
     pub bump: u8,
 }
 
@@ -40,9 +40,9 @@ impl Market {
 
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, PartialEq, Eq)]
 pub enum PriceOracleType {
-    None,           // No price verification
-    Pyth,           // Use Pyth price feed
-    Custom,         // Use custom maintained price
+    None,   // 没有价格验证
+    Pyth,   // 使用 Pyth价格预言机，价格由Pyth提供
+    Custom, // 使用自定义价格预言机，价格由管理员或可信第三方定期更新
 }
 
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, PartialEq, Eq)]
@@ -51,6 +51,7 @@ pub enum TokenSide {
     Quote,
 }
 
+/// 验证 Pyth 价格是否有效，包括价格正数、置信区间、过时检查等
 pub fn verify_pyth_price(
     config: &ProgramConfig,
     pyth_price_account: &AccountInfo,
@@ -119,6 +120,7 @@ pub fn verify_pyth_price(
     Ok(())
 }
 
+/// 验证自定义价格是否有效，包括价格正数、置信区间、过时检查等
 pub fn verify_custom_price(
     config: &ProgramConfig,
     market: &Market,
@@ -126,10 +128,7 @@ pub fn verify_custom_price(
     slot: u64,
 ) -> Result<()> {
     // Validate custom price has been set and is positive
-    require!(
-        market.custom_price > 0,
-        LimitOrderError::CustomPriceNotSet
-    );
+    require!(market.custom_price > 0, LimitOrderError::CustomPriceNotSet);
 
     // Check price staleness
     let price_age = slot
@@ -144,7 +143,7 @@ pub fn verify_custom_price(
     // Check confidence interval (same logic as Pyth)
     // Safe division: we already checked custom_price > 0
     let price_abs = market.custom_price.abs() as u64;
-    require!(price_abs > 0, LimitOrderError::InvalidPythPrice);  // Extra safety check
+    require!(price_abs > 0, LimitOrderError::InvalidPythPrice); // Extra safety check
 
     let confidence_bps = market
         .custom_price_conf

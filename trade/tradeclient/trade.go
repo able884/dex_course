@@ -16,18 +16,24 @@ import (
 type (
 	AddCpmmLiquidityRequest        = trade.AddCpmmLiquidityRequest
 	AddCpmmLiquidityResponse       = trade.AddCpmmLiquidityResponse
+	CancelLimitOrderRequest        = trade.CancelLimitOrderRequest
+	CancelLimitOrderResponse       = trade.CancelLimitOrderResponse
 	CpmmFeeTierItem                = trade.CpmmFeeTierItem
 	CpmmTokenItem                  = trade.CpmmTokenItem
 	CreateClmmPoolRequest          = trade.CreateClmmPoolRequest
 	CreateClmmPoolResponse         = trade.CreateClmmPoolResponse
 	CreateCpmmPoolRequest          = trade.CreateCpmmPoolRequest
 	CreateCpmmPoolResponse         = trade.CreateCpmmPoolResponse
+	CreateLimitOrderRequest        = trade.CreateLimitOrderRequest
+	CreateLimitOrderResponse       = trade.CreateLimitOrderResponse
 	CreateMarketOrderRequest       = trade.CreateMarketOrderRequest
 	CreateMarketOrderResponse      = trade.CreateMarketOrderResponse
 	CreatePumpTokenRequest         = trade.CreatePumpTokenRequest
 	CreatePumpTokenResponse        = trade.CreatePumpTokenResponse
 	DecreaseClmmLiquidityRequest   = trade.DecreaseClmmLiquidityRequest
 	DecreaseClmmLiquidityResponse  = trade.DecreaseClmmLiquidityResponse
+	DepositMarginRequest           = trade.DepositMarginRequest
+	DepositMarginResponse          = trade.DepositMarginResponse
 	GetCpmmFeeTiersRequest         = trade.GetCpmmFeeTiersRequest
 	GetCpmmFeeTiersResponse        = trade.GetCpmmFeeTiersResponse
 	GetCpmmTokensRequest           = trade.GetCpmmTokensRequest
@@ -50,6 +56,8 @@ type (
 	UploadIpfsFileResponse         = trade.UploadIpfsFileResponse
 	UploadMetadataRequest          = trade.UploadMetadataRequest
 	UploadMetadataResponse         = trade.UploadMetadataResponse
+	WithdrawMarginRequest          = trade.WithdrawMarginRequest
+	WithdrawMarginResponse         = trade.WithdrawMarginResponse
 
 	Trade interface {
 		CreateMarketOrder(ctx context.Context, in *CreateMarketOrderRequest, opts ...grpc.CallOption) (*CreateMarketOrderResponse, error)
@@ -82,6 +90,11 @@ type (
 		IncreaseClmmLiquidity(ctx context.Context, in *IncreaseClmmLiquidityRequest, opts ...grpc.CallOption) (*IncreaseClmmLiquidityResponse, error)
 		// Build unsigned tx for decreasing liquidity in CLMM position
 		DecreaseClmmLiquidity(ctx context.Context, in *DecreaseClmmLiquidityRequest, opts ...grpc.CallOption) (*DecreaseClmmLiquidityResponse, error)
+		// Limit order operations
+		CreateLimitOrder(ctx context.Context, in *CreateLimitOrderRequest, opts ...grpc.CallOption) (*CreateLimitOrderResponse, error)
+		CancelLimitOrder(ctx context.Context, in *CancelLimitOrderRequest, opts ...grpc.CallOption) (*CancelLimitOrderResponse, error)
+		DepositMargin(ctx context.Context, in *DepositMarginRequest, opts ...grpc.CallOption) (*DepositMarginResponse, error)
+		WithdrawMargin(ctx context.Context, in *WithdrawMarginRequest, opts ...grpc.CallOption) (*WithdrawMarginResponse, error)
 	}
 
 	defaultTrade struct {
@@ -191,4 +204,25 @@ func (m *defaultTrade) IncreaseClmmLiquidity(ctx context.Context, in *IncreaseCl
 func (m *defaultTrade) DecreaseClmmLiquidity(ctx context.Context, in *DecreaseClmmLiquidityRequest, opts ...grpc.CallOption) (*DecreaseClmmLiquidityResponse, error) {
 	client := trade.NewTradeClient(m.cli.Conn())
 	return client.DecreaseClmmLiquidity(ctx, in, opts...)
+}
+
+// Limit order operations
+func (m *defaultTrade) CreateLimitOrder(ctx context.Context, in *CreateLimitOrderRequest, opts ...grpc.CallOption) (*CreateLimitOrderResponse, error) {
+	client := trade.NewTradeClient(m.cli.Conn())
+	return client.CreateLimitOrder(ctx, in, opts...)
+}
+
+func (m *defaultTrade) CancelLimitOrder(ctx context.Context, in *CancelLimitOrderRequest, opts ...grpc.CallOption) (*CancelLimitOrderResponse, error) {
+	client := trade.NewTradeClient(m.cli.Conn())
+	return client.CancelLimitOrder(ctx, in, opts...)
+}
+
+func (m *defaultTrade) DepositMargin(ctx context.Context, in *DepositMarginRequest, opts ...grpc.CallOption) (*DepositMarginResponse, error) {
+	client := trade.NewTradeClient(m.cli.Conn())
+	return client.DepositMargin(ctx, in, opts...)
+}
+
+func (m *defaultTrade) WithdrawMargin(ctx context.Context, in *WithdrawMarginRequest, opts ...grpc.CallOption) (*WithdrawMarginResponse, error) {
+	client := trade.NewTradeClient(m.cli.Conn())
+	return client.WithdrawMargin(ctx, in, opts...)
 }

@@ -78,3 +78,40 @@ func (s *MarketServer) GetUserPositions(ctx context.Context, in *market.GetUserP
 	l := logic.NewGetUserPositionsLogic(ctx, s.svcCtx)
 	return l.GetUserPositions(in)
 }
+
+// Limit order queries
+func (s *MarketServer) GetLimitOrderBook(ctx context.Context, in *market.GetLimitOrderBookRequest) (*market.GetLimitOrderBookResponse, error) {
+	l := logic.NewGetLimitOrderBookLogic(ctx, s.svcCtx)
+	return l.GetLimitOrderBook(in)
+}
+
+func (s *MarketServer) GetUserLimitOrders(ctx context.Context, in *market.GetUserLimitOrdersRequest) (*market.GetUserLimitOrdersResponse, error) {
+	l := logic.NewGetUserLimitOrdersLogic(ctx, s.svcCtx)
+	return l.GetUserLimitOrders(in)
+}
+
+func (s *MarketServer) GetLimitOrderDetail(ctx context.Context, in *market.GetLimitOrderDetailRequest) (*market.GetLimitOrderDetailResponse, error) {
+	l := logic.NewGetLimitOrderDetailLogic(ctx, s.svcCtx)
+	return l.GetLimitOrderDetail(in)
+}
+
+func (s *MarketServer) GetLimitOrderMarkets(ctx context.Context, in *market.GetLimitOrderMarketsRequest) (*market.GetLimitOrderMarketsResponse, error) {
+	l := logic.NewGetLimitOrderMarketsLogic(ctx, s.svcCtx)
+	return l.GetLimitOrderMarkets(in)
+}
+
+func (s *MarketServer) GetUserMargin(ctx context.Context, in *market.GetUserMarginRequest) (*market.GetUserMarginResponse, error) {
+	l := logic.NewGetUserMarginLogic(ctx, s.svcCtx)
+	return l.GetUserMargin(in)
+}
+
+// Sync margin account balance from blockchain
+func (s *MarketServer) SyncMarginBalance(ctx context.Context, in *market.SyncMarginBalanceRequest) (*market.SyncMarginBalanceResponse, error) {
+	l := logic.NewSyncMarginBalanceLogic(ctx, s.svcCtx)
+	return l.SyncMarginBalance(in)
+}
+
+func (s *MarketServer) GetLimitOrderFills(ctx context.Context, in *market.GetLimitOrderFillsRequest) (*market.GetLimitOrderFillsResponse, error) {
+	l := logic.NewGetLimitOrderFillsLogic(ctx, s.svcCtx)
+	return l.GetLimitOrderFills(in)
+}

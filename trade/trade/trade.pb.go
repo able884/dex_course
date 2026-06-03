@@ -3184,6 +3184,586 @@ func (x *DecreaseClmmLiquidityResponse) GetExpiresAt() int64 {
 	return 0
 }
 
+// Create limit order request
+type CreateLimitOrderRequest struct {
+	state             protoimpl.MessageState `protogen:"open.v1"`
+	ChainId           int32                  `protobuf:"varint,1,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`                                 // Chain ID (100000 for Solana)
+	MarketPda         string                 `protobuf:"bytes,2,opt,name=market_pda,json=marketPda,proto3" json:"market_pda,omitempty"`                            // Market PDA address
+	UserWalletAddress string                 `protobuf:"bytes,3,opt,name=user_wallet_address,json=userWalletAddress,proto3" json:"user_wallet_address,omitempty"`  // User wallet address
+	Side              int32                  `protobuf:"varint,4,opt,name=side,proto3" json:"side,omitempty"`                                                      // 1=Bid(Buy), 2=Ask(Sell)
+	Price             string                 `protobuf:"bytes,5,opt,name=price,proto3" json:"price,omitempty"`                                                     // Price (display value, e.g., "10.5")
+	Quantity          string                 `protobuf:"bytes,6,opt,name=quantity,proto3" json:"quantity,omitempty"`                                               // Quantity (display value, e.g., "100.0")
+	ExpirySlot        int64                  `protobuf:"varint,7,opt,name=expiry_slot,json=expirySlot,proto3" json:"expiry_slot,omitempty"`                        // Expiry slot (0 for no expiry)
+	MinFillBps        int32                  `protobuf:"varint,8,opt,name=min_fill_bps,json=minFillBps,proto3" json:"min_fill_bps,omitempty"`                      // Min fill percentage (optional, 0-10000 bps)
+	SelfTradeBehavior int32                  `protobuf:"varint,9,opt,name=self_trade_behavior,json=selfTradeBehavior,proto3" json:"self_trade_behavior,omitempty"` // Self-trade behavior: 1=DecrementTake, 2=CancelNew
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
+}
+
+func (x *CreateLimitOrderRequest) Reset() {
+	*x = CreateLimitOrderRequest{}
+	mi := &file_trade_proto_msgTypes[36]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CreateLimitOrderRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CreateLimitOrderRequest) ProtoMessage() {}
+
+func (x *CreateLimitOrderRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_trade_proto_msgTypes[36]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CreateLimitOrderRequest.ProtoReflect.Descriptor instead.
+func (*CreateLimitOrderRequest) Descriptor() ([]byte, []int) {
+	return file_trade_proto_rawDescGZIP(), []int{36}
+}
+
+func (x *CreateLimitOrderRequest) GetChainId() int32 {
+	if x != nil {
+		return x.ChainId
+	}
+	return 0
+}
+
+func (x *CreateLimitOrderRequest) GetMarketPda() string {
+	if x != nil {
+		return x.MarketPda
+	}
+	return ""
+}
+
+func (x *CreateLimitOrderRequest) GetUserWalletAddress() string {
+	if x != nil {
+		return x.UserWalletAddress
+	}
+	return ""
+}
+
+func (x *CreateLimitOrderRequest) GetSide() int32 {
+	if x != nil {
+		return x.Side
+	}
+	return 0
+}
+
+func (x *CreateLimitOrderRequest) GetPrice() string {
+	if x != nil {
+		return x.Price
+	}
+	return ""
+}
+
+func (x *CreateLimitOrderRequest) GetQuantity() string {
+	if x != nil {
+		return x.Quantity
+	}
+	return ""
+}
+
+func (x *CreateLimitOrderRequest) GetExpirySlot() int64 {
+	if x != nil {
+		return x.ExpirySlot
+	}
+	return 0
+}
+
+func (x *CreateLimitOrderRequest) GetMinFillBps() int32 {
+	if x != nil {
+		return x.MinFillBps
+	}
+	return 0
+}
+
+func (x *CreateLimitOrderRequest) GetSelfTradeBehavior() int32 {
+	if x != nil {
+		return x.SelfTradeBehavior
+	}
+	return 0
+}
+
+type CreateLimitOrderResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	TxType        string                 `protobuf:"bytes,1,opt,name=tx_type,json=txType,proto3" json:"tx_type,omitempty"`           // Transaction type
+	TxBase64      string                 `protobuf:"bytes,2,opt,name=tx_base64,json=txBase64,proto3" json:"tx_base64,omitempty"`     // Base64-encoded unsigned transaction
+	ExpiresAt     int64                  `protobuf:"varint,3,opt,name=expires_at,json=expiresAt,proto3" json:"expires_at,omitempty"` // Transaction expiration timestamp
+	OrderPda      string                 `protobuf:"bytes,4,opt,name=order_pda,json=orderPda,proto3" json:"order_pda,omitempty"`     // Order PDA address (predicted)
+	OrderId       int64                  `protobuf:"varint,5,opt,name=order_id,json=orderId,proto3" json:"order_id,omitempty"`       // Order ID (sequence number)
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CreateLimitOrderResponse) Reset() {
+	*x = CreateLimitOrderResponse{}
+	mi := &file_trade_proto_msgTypes[37]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CreateLimitOrderResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CreateLimitOrderResponse) ProtoMessage() {}
+
+func (x *CreateLimitOrderResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_trade_proto_msgTypes[37]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CreateLimitOrderResponse.ProtoReflect.Descriptor instead.
+func (*CreateLimitOrderResponse) Descriptor() ([]byte, []int) {
+	return file_trade_proto_rawDescGZIP(), []int{37}
+}
+
+func (x *CreateLimitOrderResponse) GetTxType() string {
+	if x != nil {
+		return x.TxType
+	}
+	return ""
+}
+
+func (x *CreateLimitOrderResponse) GetTxBase64() string {
+	if x != nil {
+		return x.TxBase64
+	}
+	return ""
+}
+
+func (x *CreateLimitOrderResponse) GetExpiresAt() int64 {
+	if x != nil {
+		return x.ExpiresAt
+	}
+	return 0
+}
+
+func (x *CreateLimitOrderResponse) GetOrderPda() string {
+	if x != nil {
+		return x.OrderPda
+	}
+	return ""
+}
+
+func (x *CreateLimitOrderResponse) GetOrderId() int64 {
+	if x != nil {
+		return x.OrderId
+	}
+	return 0
+}
+
+// Cancel limit order request
+type CancelLimitOrderRequest struct {
+	state             protoimpl.MessageState `protogen:"open.v1"`
+	ChainId           int32                  `protobuf:"varint,1,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`                                // Chain ID (100000 for Solana)
+	OrderPda          string                 `protobuf:"bytes,2,opt,name=order_pda,json=orderPda,proto3" json:"order_pda,omitempty"`                              // Order PDA address
+	UserWalletAddress string                 `protobuf:"bytes,3,opt,name=user_wallet_address,json=userWalletAddress,proto3" json:"user_wallet_address,omitempty"` // User wallet address
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
+}
+
+func (x *CancelLimitOrderRequest) Reset() {
+	*x = CancelLimitOrderRequest{}
+	mi := &file_trade_proto_msgTypes[38]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CancelLimitOrderRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CancelLimitOrderRequest) ProtoMessage() {}
+
+func (x *CancelLimitOrderRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_trade_proto_msgTypes[38]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CancelLimitOrderRequest.ProtoReflect.Descriptor instead.
+func (*CancelLimitOrderRequest) Descriptor() ([]byte, []int) {
+	return file_trade_proto_rawDescGZIP(), []int{38}
+}
+
+func (x *CancelLimitOrderRequest) GetChainId() int32 {
+	if x != nil {
+		return x.ChainId
+	}
+	return 0
+}
+
+func (x *CancelLimitOrderRequest) GetOrderPda() string {
+	if x != nil {
+		return x.OrderPda
+	}
+	return ""
+}
+
+func (x *CancelLimitOrderRequest) GetUserWalletAddress() string {
+	if x != nil {
+		return x.UserWalletAddress
+	}
+	return ""
+}
+
+type CancelLimitOrderResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	TxType        string                 `protobuf:"bytes,1,opt,name=tx_type,json=txType,proto3" json:"tx_type,omitempty"`           // Transaction type
+	TxBase64      string                 `protobuf:"bytes,2,opt,name=tx_base64,json=txBase64,proto3" json:"tx_base64,omitempty"`     // Base64-encoded unsigned transaction
+	ExpiresAt     int64                  `protobuf:"varint,3,opt,name=expires_at,json=expiresAt,proto3" json:"expires_at,omitempty"` // Transaction expiration timestamp
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CancelLimitOrderResponse) Reset() {
+	*x = CancelLimitOrderResponse{}
+	mi := &file_trade_proto_msgTypes[39]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CancelLimitOrderResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CancelLimitOrderResponse) ProtoMessage() {}
+
+func (x *CancelLimitOrderResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_trade_proto_msgTypes[39]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CancelLimitOrderResponse.ProtoReflect.Descriptor instead.
+func (*CancelLimitOrderResponse) Descriptor() ([]byte, []int) {
+	return file_trade_proto_rawDescGZIP(), []int{39}
+}
+
+func (x *CancelLimitOrderResponse) GetTxType() string {
+	if x != nil {
+		return x.TxType
+	}
+	return ""
+}
+
+func (x *CancelLimitOrderResponse) GetTxBase64() string {
+	if x != nil {
+		return x.TxBase64
+	}
+	return ""
+}
+
+func (x *CancelLimitOrderResponse) GetExpiresAt() int64 {
+	if x != nil {
+		return x.ExpiresAt
+	}
+	return 0
+}
+
+// Deposit margin request
+type DepositMarginRequest struct {
+	state             protoimpl.MessageState `protogen:"open.v1"`
+	ChainId           int32                  `protobuf:"varint,1,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`                                // Chain ID (100000 for Solana)
+	MarketPda         string                 `protobuf:"bytes,2,opt,name=market_pda,json=marketPda,proto3" json:"market_pda,omitempty"`                           // Market PDA address
+	UserWalletAddress string                 `protobuf:"bytes,3,opt,name=user_wallet_address,json=userWalletAddress,proto3" json:"user_wallet_address,omitempty"` // User wallet address
+	Side              int32                  `protobuf:"varint,4,opt,name=side,proto3" json:"side,omitempty"`                                                     // 1=Base, 2=Quote
+	Amount            string                 `protobuf:"bytes,5,opt,name=amount,proto3" json:"amount,omitempty"`                                                  // Amount to deposit (display value)
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
+}
+
+func (x *DepositMarginRequest) Reset() {
+	*x = DepositMarginRequest{}
+	mi := &file_trade_proto_msgTypes[40]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DepositMarginRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DepositMarginRequest) ProtoMessage() {}
+
+func (x *DepositMarginRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_trade_proto_msgTypes[40]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DepositMarginRequest.ProtoReflect.Descriptor instead.
+func (*DepositMarginRequest) Descriptor() ([]byte, []int) {
+	return file_trade_proto_rawDescGZIP(), []int{40}
+}
+
+func (x *DepositMarginRequest) GetChainId() int32 {
+	if x != nil {
+		return x.ChainId
+	}
+	return 0
+}
+
+func (x *DepositMarginRequest) GetMarketPda() string {
+	if x != nil {
+		return x.MarketPda
+	}
+	return ""
+}
+
+func (x *DepositMarginRequest) GetUserWalletAddress() string {
+	if x != nil {
+		return x.UserWalletAddress
+	}
+	return ""
+}
+
+func (x *DepositMarginRequest) GetSide() int32 {
+	if x != nil {
+		return x.Side
+	}
+	return 0
+}
+
+func (x *DepositMarginRequest) GetAmount() string {
+	if x != nil {
+		return x.Amount
+	}
+	return ""
+}
+
+type DepositMarginResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	TxType        string                 `protobuf:"bytes,1,opt,name=tx_type,json=txType,proto3" json:"tx_type,omitempty"`           // Transaction type
+	TxBase64      string                 `protobuf:"bytes,2,opt,name=tx_base64,json=txBase64,proto3" json:"tx_base64,omitempty"`     // Base64-encoded unsigned transaction
+	ExpiresAt     int64                  `protobuf:"varint,3,opt,name=expires_at,json=expiresAt,proto3" json:"expires_at,omitempty"` // Transaction expiration timestamp
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DepositMarginResponse) Reset() {
+	*x = DepositMarginResponse{}
+	mi := &file_trade_proto_msgTypes[41]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DepositMarginResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DepositMarginResponse) ProtoMessage() {}
+
+func (x *DepositMarginResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_trade_proto_msgTypes[41]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DepositMarginResponse.ProtoReflect.Descriptor instead.
+func (*DepositMarginResponse) Descriptor() ([]byte, []int) {
+	return file_trade_proto_rawDescGZIP(), []int{41}
+}
+
+func (x *DepositMarginResponse) GetTxType() string {
+	if x != nil {
+		return x.TxType
+	}
+	return ""
+}
+
+func (x *DepositMarginResponse) GetTxBase64() string {
+	if x != nil {
+		return x.TxBase64
+	}
+	return ""
+}
+
+func (x *DepositMarginResponse) GetExpiresAt() int64 {
+	if x != nil {
+		return x.ExpiresAt
+	}
+	return 0
+}
+
+// Withdraw margin request
+type WithdrawMarginRequest struct {
+	state             protoimpl.MessageState `protogen:"open.v1"`
+	ChainId           int32                  `protobuf:"varint,1,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`                                // Chain ID (100000 for Solana)
+	MarketPda         string                 `protobuf:"bytes,2,opt,name=market_pda,json=marketPda,proto3" json:"market_pda,omitempty"`                           // Market PDA address
+	UserWalletAddress string                 `protobuf:"bytes,3,opt,name=user_wallet_address,json=userWalletAddress,proto3" json:"user_wallet_address,omitempty"` // User wallet address
+	Side              int32                  `protobuf:"varint,4,opt,name=side,proto3" json:"side,omitempty"`                                                     // 1=Base, 2=Quote
+	Amount            string                 `protobuf:"bytes,5,opt,name=amount,proto3" json:"amount,omitempty"`                                                  // Amount to withdraw (display value)
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
+}
+
+func (x *WithdrawMarginRequest) Reset() {
+	*x = WithdrawMarginRequest{}
+	mi := &file_trade_proto_msgTypes[42]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *WithdrawMarginRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*WithdrawMarginRequest) ProtoMessage() {}
+
+func (x *WithdrawMarginRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_trade_proto_msgTypes[42]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use WithdrawMarginRequest.ProtoReflect.Descriptor instead.
+func (*WithdrawMarginRequest) Descriptor() ([]byte, []int) {
+	return file_trade_proto_rawDescGZIP(), []int{42}
+}
+
+func (x *WithdrawMarginRequest) GetChainId() int32 {
+	if x != nil {
+		return x.ChainId
+	}
+	return 0
+}
+
+func (x *WithdrawMarginRequest) GetMarketPda() string {
+	if x != nil {
+		return x.MarketPda
+	}
+	return ""
+}
+
+func (x *WithdrawMarginRequest) GetUserWalletAddress() string {
+	if x != nil {
+		return x.UserWalletAddress
+	}
+	return ""
+}
+
+func (x *WithdrawMarginRequest) GetSide() int32 {
+	if x != nil {
+		return x.Side
+	}
+	return 0
+}
+
+func (x *WithdrawMarginRequest) GetAmount() string {
+	if x != nil {
+		return x.Amount
+	}
+	return ""
+}
+
+type WithdrawMarginResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	TxType        string                 `protobuf:"bytes,1,opt,name=tx_type,json=txType,proto3" json:"tx_type,omitempty"`           // Transaction type
+	TxBase64      string                 `protobuf:"bytes,2,opt,name=tx_base64,json=txBase64,proto3" json:"tx_base64,omitempty"`     // Base64-encoded unsigned transaction
+	ExpiresAt     int64                  `protobuf:"varint,3,opt,name=expires_at,json=expiresAt,proto3" json:"expires_at,omitempty"` // Transaction expiration timestamp
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *WithdrawMarginResponse) Reset() {
+	*x = WithdrawMarginResponse{}
+	mi := &file_trade_proto_msgTypes[43]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *WithdrawMarginResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*WithdrawMarginResponse) ProtoMessage() {}
+
+func (x *WithdrawMarginResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_trade_proto_msgTypes[43]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use WithdrawMarginResponse.ProtoReflect.Descriptor instead.
+func (*WithdrawMarginResponse) Descriptor() ([]byte, []int) {
+	return file_trade_proto_rawDescGZIP(), []int{43}
+}
+
+func (x *WithdrawMarginResponse) GetTxType() string {
+	if x != nil {
+		return x.TxType
+	}
+	return ""
+}
+
+func (x *WithdrawMarginResponse) GetTxBase64() string {
+	if x != nil {
+		return x.TxBase64
+	}
+	return ""
+}
+
+func (x *WithdrawMarginResponse) GetExpiresAt() int64 {
+	if x != nil {
+		return x.ExpiresAt
+	}
+	return 0
+}
+
 var File_trade_proto protoreflect.FileDescriptor
 
 const file_trade_proto_rawDesc = "" +
@@ -3468,6 +4048,59 @@ const file_trade_proto_rawDesc = "" +
 	"\atx_type\x18\x01 \x01(\tR\x06txType\x12\x1b\n" +
 	"\ttx_base64\x18\x02 \x01(\tR\btxBase64\x12\x1d\n" +
 	"\n" +
+	"expires_at\x18\x03 \x01(\x03R\texpiresAt\"\xbc\x02\n" +
+	"\x17CreateLimitOrderRequest\x12\x19\n" +
+	"\bchain_id\x18\x01 \x01(\x05R\achainId\x12\x1d\n" +
+	"\n" +
+	"market_pda\x18\x02 \x01(\tR\tmarketPda\x12.\n" +
+	"\x13user_wallet_address\x18\x03 \x01(\tR\x11userWalletAddress\x12\x12\n" +
+	"\x04side\x18\x04 \x01(\x05R\x04side\x12\x14\n" +
+	"\x05price\x18\x05 \x01(\tR\x05price\x12\x1a\n" +
+	"\bquantity\x18\x06 \x01(\tR\bquantity\x12\x1f\n" +
+	"\vexpiry_slot\x18\a \x01(\x03R\n" +
+	"expirySlot\x12 \n" +
+	"\fmin_fill_bps\x18\b \x01(\x05R\n" +
+	"minFillBps\x12.\n" +
+	"\x13self_trade_behavior\x18\t \x01(\x05R\x11selfTradeBehavior\"\xa7\x01\n" +
+	"\x18CreateLimitOrderResponse\x12\x17\n" +
+	"\atx_type\x18\x01 \x01(\tR\x06txType\x12\x1b\n" +
+	"\ttx_base64\x18\x02 \x01(\tR\btxBase64\x12\x1d\n" +
+	"\n" +
+	"expires_at\x18\x03 \x01(\x03R\texpiresAt\x12\x1b\n" +
+	"\torder_pda\x18\x04 \x01(\tR\borderPda\x12\x19\n" +
+	"\border_id\x18\x05 \x01(\x03R\aorderId\"\x81\x01\n" +
+	"\x17CancelLimitOrderRequest\x12\x19\n" +
+	"\bchain_id\x18\x01 \x01(\x05R\achainId\x12\x1b\n" +
+	"\torder_pda\x18\x02 \x01(\tR\borderPda\x12.\n" +
+	"\x13user_wallet_address\x18\x03 \x01(\tR\x11userWalletAddress\"o\n" +
+	"\x18CancelLimitOrderResponse\x12\x17\n" +
+	"\atx_type\x18\x01 \x01(\tR\x06txType\x12\x1b\n" +
+	"\ttx_base64\x18\x02 \x01(\tR\btxBase64\x12\x1d\n" +
+	"\n" +
+	"expires_at\x18\x03 \x01(\x03R\texpiresAt\"\xac\x01\n" +
+	"\x14DepositMarginRequest\x12\x19\n" +
+	"\bchain_id\x18\x01 \x01(\x05R\achainId\x12\x1d\n" +
+	"\n" +
+	"market_pda\x18\x02 \x01(\tR\tmarketPda\x12.\n" +
+	"\x13user_wallet_address\x18\x03 \x01(\tR\x11userWalletAddress\x12\x12\n" +
+	"\x04side\x18\x04 \x01(\x05R\x04side\x12\x16\n" +
+	"\x06amount\x18\x05 \x01(\tR\x06amount\"l\n" +
+	"\x15DepositMarginResponse\x12\x17\n" +
+	"\atx_type\x18\x01 \x01(\tR\x06txType\x12\x1b\n" +
+	"\ttx_base64\x18\x02 \x01(\tR\btxBase64\x12\x1d\n" +
+	"\n" +
+	"expires_at\x18\x03 \x01(\x03R\texpiresAt\"\xad\x01\n" +
+	"\x15WithdrawMarginRequest\x12\x19\n" +
+	"\bchain_id\x18\x01 \x01(\x05R\achainId\x12\x1d\n" +
+	"\n" +
+	"market_pda\x18\x02 \x01(\tR\tmarketPda\x12.\n" +
+	"\x13user_wallet_address\x18\x03 \x01(\tR\x11userWalletAddress\x12\x12\n" +
+	"\x04side\x18\x04 \x01(\x05R\x04side\x12\x16\n" +
+	"\x06amount\x18\x05 \x01(\tR\x06amount\"m\n" +
+	"\x16WithdrawMarginResponse\x12\x17\n" +
+	"\atx_type\x18\x01 \x01(\tR\x06txType\x12\x1b\n" +
+	"\ttx_base64\x18\x02 \x01(\tR\btxBase64\x12\x1d\n" +
+	"\n" +
 	"expires_at\x18\x03 \x01(\x03R\texpiresAt*.\n" +
 	"\bSwapType\x12\x0f\n" +
 	"\vSwapTypeAll\x10\x00\x12\a\n" +
@@ -3495,7 +4128,7 @@ const file_trade_proto_rawDesc = "" +
 	"QuoteAsset\x12\x15\n" +
 	"\x11QuoteAssetUnknown\x10\x00\x12\x11\n" +
 	"\rQuoteAssetSol\x10\x01\x12\x13\n" +
-	"\x0fQuoteAssetToken\x10\x022\x84\v\n" +
+	"\x0fQuoteAssetToken\x10\x022\xc9\r\n" +
 	"\x05Trade\x12V\n" +
 	"\x11CreateMarketOrder\x12\x1f.trade.CreateMarketOrderRequest\x1a .trade.CreateMarketOrderResponse\x12P\n" +
 	"\x0fCreatePumpToken\x12\x1d.trade.CreatePumpTokenRequest\x1a\x1e.trade.CreatePumpTokenResponse\x12M\n" +
@@ -3513,7 +4146,11 @@ const file_trade_proto_rawDesc = "" +
 	"\x0eCreateClmmPool\x12\x1c.trade.CreateClmmPoolRequest\x1a\x1d.trade.CreateClmmPoolResponse\x12G\n" +
 	"\fOpenPosition\x12\x1a.trade.OpenPositionRequest\x1a\x1b.trade.OpenPositionResponse\x12b\n" +
 	"\x15IncreaseClmmLiquidity\x12#.trade.IncreaseClmmLiquidityRequest\x1a$.trade.IncreaseClmmLiquidityResponse\x12b\n" +
-	"\x15DecreaseClmmLiquidity\x12#.trade.DecreaseClmmLiquidityRequest\x1a$.trade.DecreaseClmmLiquidityResponseB\tZ\a./tradeb\x06proto3"
+	"\x15DecreaseClmmLiquidity\x12#.trade.DecreaseClmmLiquidityRequest\x1a$.trade.DecreaseClmmLiquidityResponse\x12S\n" +
+	"\x10CreateLimitOrder\x12\x1e.trade.CreateLimitOrderRequest\x1a\x1f.trade.CreateLimitOrderResponse\x12S\n" +
+	"\x10CancelLimitOrder\x12\x1e.trade.CancelLimitOrderRequest\x1a\x1f.trade.CancelLimitOrderResponse\x12J\n" +
+	"\rDepositMargin\x12\x1b.trade.DepositMarginRequest\x1a\x1c.trade.DepositMarginResponse\x12M\n" +
+	"\x0eWithdrawMargin\x12\x1c.trade.WithdrawMarginRequest\x1a\x1d.trade.WithdrawMarginResponseB\tZ\a./tradeb\x06proto3"
 
 var (
 	file_trade_proto_rawDescOnce sync.Once
@@ -3528,7 +4165,7 @@ func file_trade_proto_rawDescGZIP() []byte {
 }
 
 var file_trade_proto_enumTypes = make([]protoimpl.EnumInfo, 4)
-var file_trade_proto_msgTypes = make([]protoimpl.MessageInfo, 36)
+var file_trade_proto_msgTypes = make([]protoimpl.MessageInfo, 44)
 var file_trade_proto_goTypes = []any{
 	(SwapType)(0),                          // 0: trade.SwapType
 	(TradeType)(0),                         // 1: trade.TradeType
@@ -3570,6 +4207,14 @@ var file_trade_proto_goTypes = []any{
 	(*IncreaseClmmLiquidityResponse)(nil),  // 37: trade.IncreaseClmmLiquidityResponse
 	(*DecreaseClmmLiquidityRequest)(nil),   // 38: trade.DecreaseClmmLiquidityRequest
 	(*DecreaseClmmLiquidityResponse)(nil),  // 39: trade.DecreaseClmmLiquidityResponse
+	(*CreateLimitOrderRequest)(nil),        // 40: trade.CreateLimitOrderRequest
+	(*CreateLimitOrderResponse)(nil),       // 41: trade.CreateLimitOrderResponse
+	(*CancelLimitOrderRequest)(nil),        // 42: trade.CancelLimitOrderRequest
+	(*CancelLimitOrderResponse)(nil),       // 43: trade.CancelLimitOrderResponse
+	(*DepositMarginRequest)(nil),           // 44: trade.DepositMarginRequest
+	(*DepositMarginResponse)(nil),          // 45: trade.DepositMarginResponse
+	(*WithdrawMarginRequest)(nil),          // 46: trade.WithdrawMarginRequest
+	(*WithdrawMarginResponse)(nil),         // 47: trade.WithdrawMarginResponse
 }
 var file_trade_proto_depIdxs = []int32{
 	0,  // 0: trade.CreateMarketOrderRequest.swap_type:type_name -> trade.SwapType
@@ -3596,25 +4241,33 @@ var file_trade_proto_depIdxs = []int32{
 	34, // 21: trade.Trade.OpenPosition:input_type -> trade.OpenPositionRequest
 	36, // 22: trade.Trade.IncreaseClmmLiquidity:input_type -> trade.IncreaseClmmLiquidityRequest
 	38, // 23: trade.Trade.DecreaseClmmLiquidity:input_type -> trade.DecreaseClmmLiquidityRequest
-	5,  // 24: trade.Trade.CreateMarketOrder:output_type -> trade.CreateMarketOrderResponse
-	7,  // 25: trade.Trade.CreatePumpToken:output_type -> trade.CreatePumpTokenResponse
-	9,  // 26: trade.Trade.UploadIpfsFile:output_type -> trade.UploadIpfsFileResponse
-	11, // 27: trade.Trade.UploadTokenMetadata:output_type -> trade.UploadMetadataResponse
-	13, // 28: trade.Trade.ReportPumpCreateResult:output_type -> trade.ReportPumpCreateResultResponse
-	15, // 29: trade.Trade.QuotePumpTrade:output_type -> trade.QuotePumpTradeResponse
-	18, // 30: trade.Trade.GetCpmmTokens:output_type -> trade.GetCpmmTokensResponse
-	21, // 31: trade.Trade.GetCpmmFeeTiers:output_type -> trade.GetCpmmFeeTiersResponse
-	23, // 32: trade.Trade.CreateCpmmPool:output_type -> trade.CreateCpmmPoolResponse
-	25, // 33: trade.Trade.AddCpmmLiquidity:output_type -> trade.AddCpmmLiquidityResponse
-	27, // 34: trade.Trade.RemoveCpmmLiquidity:output_type -> trade.RemoveCpmmLiquidityResponse
-	29, // 35: trade.Trade.SwapCpmm:output_type -> trade.SwapCpmmResponse
-	31, // 36: trade.Trade.SwapClmm:output_type -> trade.SwapClmmResponse
-	33, // 37: trade.Trade.CreateClmmPool:output_type -> trade.CreateClmmPoolResponse
-	35, // 38: trade.Trade.OpenPosition:output_type -> trade.OpenPositionResponse
-	37, // 39: trade.Trade.IncreaseClmmLiquidity:output_type -> trade.IncreaseClmmLiquidityResponse
-	39, // 40: trade.Trade.DecreaseClmmLiquidity:output_type -> trade.DecreaseClmmLiquidityResponse
-	24, // [24:41] is the sub-list for method output_type
-	7,  // [7:24] is the sub-list for method input_type
+	40, // 24: trade.Trade.CreateLimitOrder:input_type -> trade.CreateLimitOrderRequest
+	42, // 25: trade.Trade.CancelLimitOrder:input_type -> trade.CancelLimitOrderRequest
+	44, // 26: trade.Trade.DepositMargin:input_type -> trade.DepositMarginRequest
+	46, // 27: trade.Trade.WithdrawMargin:input_type -> trade.WithdrawMarginRequest
+	5,  // 28: trade.Trade.CreateMarketOrder:output_type -> trade.CreateMarketOrderResponse
+	7,  // 29: trade.Trade.CreatePumpToken:output_type -> trade.CreatePumpTokenResponse
+	9,  // 30: trade.Trade.UploadIpfsFile:output_type -> trade.UploadIpfsFileResponse
+	11, // 31: trade.Trade.UploadTokenMetadata:output_type -> trade.UploadMetadataResponse
+	13, // 32: trade.Trade.ReportPumpCreateResult:output_type -> trade.ReportPumpCreateResultResponse
+	15, // 33: trade.Trade.QuotePumpTrade:output_type -> trade.QuotePumpTradeResponse
+	18, // 34: trade.Trade.GetCpmmTokens:output_type -> trade.GetCpmmTokensResponse
+	21, // 35: trade.Trade.GetCpmmFeeTiers:output_type -> trade.GetCpmmFeeTiersResponse
+	23, // 36: trade.Trade.CreateCpmmPool:output_type -> trade.CreateCpmmPoolResponse
+	25, // 37: trade.Trade.AddCpmmLiquidity:output_type -> trade.AddCpmmLiquidityResponse
+	27, // 38: trade.Trade.RemoveCpmmLiquidity:output_type -> trade.RemoveCpmmLiquidityResponse
+	29, // 39: trade.Trade.SwapCpmm:output_type -> trade.SwapCpmmResponse
+	31, // 40: trade.Trade.SwapClmm:output_type -> trade.SwapClmmResponse
+	33, // 41: trade.Trade.CreateClmmPool:output_type -> trade.CreateClmmPoolResponse
+	35, // 42: trade.Trade.OpenPosition:output_type -> trade.OpenPositionResponse
+	37, // 43: trade.Trade.IncreaseClmmLiquidity:output_type -> trade.IncreaseClmmLiquidityResponse
+	39, // 44: trade.Trade.DecreaseClmmLiquidity:output_type -> trade.DecreaseClmmLiquidityResponse
+	41, // 45: trade.Trade.CreateLimitOrder:output_type -> trade.CreateLimitOrderResponse
+	43, // 46: trade.Trade.CancelLimitOrder:output_type -> trade.CancelLimitOrderResponse
+	45, // 47: trade.Trade.DepositMargin:output_type -> trade.DepositMarginResponse
+	47, // 48: trade.Trade.WithdrawMargin:output_type -> trade.WithdrawMarginResponse
+	28, // [28:49] is the sub-list for method output_type
+	7,  // [7:28] is the sub-list for method input_type
 	7,  // [7:7] is the sub-list for extension type_name
 	7,  // [7:7] is the sub-list for extension extendee
 	0,  // [0:7] is the sub-list for field type_name
@@ -3631,7 +4284,7 @@ func file_trade_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_trade_proto_rawDesc), len(file_trade_proto_rawDesc)),
 			NumEnums:      4,
-			NumMessages:   36,
+			NumMessages:   44,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
